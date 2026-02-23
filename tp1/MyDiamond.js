@@ -14,10 +14,10 @@ export class MyDiamond extends CGFobject {
     initBuffers() {
         // prettier-ignore
         this.vertices = [
-			-1, 0, 0,	//0
-			0, -1, 0,	//1
-			0, 1, 0,	//2
-			1, 0, 0		//3
+			-1,  0,  0,	 // 0
+			 0, -1,  0,	 // 1
+			 0,  1,  0,	 // 2
+			 1,  0,  0,  // 3
 		];
 
         // Counter-clockwise reference of vertices
