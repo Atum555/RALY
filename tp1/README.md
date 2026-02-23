@@ -6,7 +6,7 @@
 
 (add your main observations/remarks about your experiments here, in a bulleted list, and remove this line. Some examples below)
 
-- In exercise 1 we observed X
-- In exercise 2 we had difficulties in Y
+- In exercise 1 we observed that the order of the indexes affects which side will be visible, with counterclockwise giving visibility from the front and clockwise from the back.
 
-![Screenshot 1](screenshots/cg-t0xgxx-tp1-n.png)
+![Small triangle](screenshots/cg-t11g10-tp1-2.png)
+![Big triangle](screenshots/cg-t11-g10-tp1-2(1).png)
