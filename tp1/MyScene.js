@@ -1,5 +1,6 @@
 import { CGFscene, CGFcamera, CGFaxis } from "../lib/CGF.js";
 import { MyDiamond } from "./MyDiamond.js";
+import { MyTriangle } from "./MyTriangle.js";
 
 export class MyScene extends CGFscene {
     constructor() {
@@ -23,10 +24,13 @@ export class MyScene extends CGFscene {
         // Initialize scene objects
         this.axis = new CGFaxis(this);
         this.diamond = new MyDiamond(this);
+        this.triangle = new MyTriangle(this);
 
         // Objects connected to MyInterface
-        this.displayAxis = true;
         this.scaleFactor = 1;
+        this.displayAxis = true;
+        this.displayDiamond = true;
+        this.displayTriangle = false;
     }
 
     initLights() {
@@ -87,7 +91,8 @@ export class MyScene extends CGFscene {
         // ---- BEGIN Primitive drawing section
 
         this.diamond.display();
-
+        this.triangle.display();
+        
         // ---- END Primitive drawing section
     }
 }
