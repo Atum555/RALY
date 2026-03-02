@@ -26,6 +26,7 @@ export class MyInterface extends CGFinterface {
         this.gui.add(this.scene, "smallTriangleVisibility").name("Small Triangle Visibility");
         this.gui.add(this.scene, "tangramVisibility").name("Tangram Visibility");
         this.gui.add(this.scene, "cubeVisibility").name("Cube Visibility");
+        this.gui.add(this.scene, "quadCubeVisibility").name("QuadCube Visibility");
 
         return true;
     }

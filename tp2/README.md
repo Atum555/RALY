@@ -16,4 +16,9 @@
 
 On the first screenshot the tangram has been moved 0.01 to avoid the clipping
 ![moved tangram on red base](screenshots/cg-t11-g10-tp2-2(1).png)
-![tangram on red base](screenshots/cg-t11-g10-tp2-2.png)
+![Tangram on red base](screenshots/cg-t11-g10-tp2-2.png)
+
+- For this step no real problems were had as building the quad already gave the experience to create the composite object easily, and the pattern for creating it also ended up being quite simple
+
+the tangram has kept the slight displacement to avoid clipping
+![QuadCube with Tangram](screenshots/cg-tp11g10-tp2-3.png)

@@ -6,6 +6,8 @@ import { MyTriangleBig } from "./MyTriangleBig.js";
 import { MyTriangleSmall } from "./MyTriangleSmall.js";
 import { MyTangram } from "./MyTangram.js";
 import { MyUnitCube } from "./MyUnitCube.js";
+import { MyQuad } from "./MyQuad.js";
+import { MyUnitCubeQuad } from "./MyUnitCubeQuad.js";
 
 export class MyScene extends CGFscene {
     constructor() {
@@ -35,6 +37,8 @@ export class MyScene extends CGFscene {
         this.smallTriangle = new MyTriangleSmall(this);
         this.tangram = new MyTangram(this);
         this.unitCube = new MyUnitCube(this);
+        this.quad = new MyQuad(this);
+        this.unitCubeQuad = new MyUnitCubeQuad(this);
 
         // Objects connected to MyInterface
         this.diamondVisibility = false;
@@ -43,7 +47,8 @@ export class MyScene extends CGFscene {
         this.bigTriangleVisibility = false;
         this.smallTriangleVisibility = false;
         this.tangramVisibility = false;
-        this.cubeVisibility = true;
+        this.cubeVisibility = false;
+        this.quadCubeVisibility = true;
 
         this.displayAxis = true;
         this.scaleFactor = 1;
@@ -117,26 +122,50 @@ export class MyScene extends CGFscene {
         if (this.bigTriangleVisibility) this.bigTriangle.display();
         if (this.smallTriangleVisibility) this.smallTriangle.display();
         if (this.tangramVisibility) this.tangram.display();
+        if (this.cubeVisibility) {
+            this.pushMatrix();
 
-        this.pushMatrix();
+            this.rotate(Math.PI / 2, 1, 0, 0);
+            this.translate(7, 3, 0);
 
-        this.rotate(Math.PI / 2, 1, 0, 0);
-        this.translate(7, 3, 0);
+            this.pushMatrix();
+            this.setDiffuse(1, 0.2, 0.2, 1);
+            this.translate(-2, 2, 5);
+            this.scale(10, 10, 10);
 
-        this.pushMatrix();
-        this.setDiffuse(1, 0.2, 0.2, 1);
-        this.translate(-2, 2, 5);
-        this.scale(10, 10, 10);
+            this.unitCube.display();
+            this.popMatrix();
+            this.setDiffuse(0.2, 0.4, 0.8, 1.0);
 
-        this.unitCube.display();
-        this.popMatrix();
-        this.setDiffuse(0.2, 0.4, 0.8, 1.0);
-        
-        this.scale(1, -1, 1);
-        this.translate(0,0,-0.01)
-        this.tangram.display();
+            this.scale(1, -1, 1);
+            this.translate(0, 0, -0.01);
+            this.tangram.display();
 
-        this.popMatrix();
+            this.popMatrix();
+        }
+        if (this.quadCubeVisibility) {
+            this.pushMatrix();
+
+            this.rotate(Math.PI / 2, 1, 0, 0);
+            this.translate(7, 3, 0);
+
+            this.pushMatrix();
+            this.setDiffuse(1, 0.2, 0.2, 1);
+            this.translate(-2, 2, 5);
+            this.scale(10, 10, 10);
+
+            this.unitCubeQuad.display();
+            this.popMatrix();
+            this.setDiffuse(0.2, 0.4, 0.8, 1.0);
+
+            this.scale(1, -1, 1);
+            this.translate(0, 0, -0.01);
+            this.tangram.display();
+
+            this.popMatrix();
+        }
+
         // ---- END Primitive drawing section
+
     }
 }
