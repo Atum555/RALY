@@ -90,8 +90,8 @@ export class MyScene extends CGFscene {
 
         // ---- BEGIN Primitive drawing section
 
-        this.diamond.display();
-        this.triangle.display();
+        if (this.displayDiamond) this.diamond.display();
+        if (this.displayTriangle) this.triangle.display();
         
         // ---- END Primitive drawing section
     }
