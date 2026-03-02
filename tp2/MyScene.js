@@ -5,6 +5,7 @@ import { MyParallelogram } from "./MyParallelogram.js";
 import { MyTriangleBig } from "./MyTriangleBig.js";
 import { MyTriangleSmall } from "./MyTriangleSmall.js";
 import { MyTangram } from "./MyTangram.js";
+import { MyUnitCube } from "./MyUnitCube.js";
 
 export class MyScene extends CGFscene {
     constructor() {
@@ -33,6 +34,7 @@ export class MyScene extends CGFscene {
         this.bigTriangle = new MyTriangleBig(this);
         this.smallTriangle = new MyTriangleSmall(this);
         this.tangram = new MyTangram(this);
+        this.unitCube = new MyUnitCube(this);
 
         // Objects connected to MyInterface
         this.diamondVisibility = false;
@@ -40,14 +42,15 @@ export class MyScene extends CGFscene {
         this.parallelogramVisibility = false;
         this.bigTriangleVisibility = false;
         this.smallTriangleVisibility = false;
-        this.tangramVisibility = true;
+        this.tangramVisibility = false;
+        this.cubeVisibility = true;
 
         this.displayAxis = true;
         this.scaleFactor = 1;
     }
 
     initLights() {
-        this.lights[0].setPosition(15, 2, 5, 1);
+        this.lights[0].setPosition(10, 2, 5, 1);
         this.lights[0].setDiffuse(1.0, 1.0, 1.0, 1.0);
         this.lights[0].enable();
         this.lights[0].update();
@@ -114,6 +117,26 @@ export class MyScene extends CGFscene {
         if (this.bigTriangleVisibility) this.bigTriangle.display();
         if (this.smallTriangleVisibility) this.smallTriangle.display();
         if (this.tangramVisibility) this.tangram.display();
+
+        this.pushMatrix();
+
+        this.rotate(Math.PI / 2, 1, 0, 0);
+        this.translate(7, 3, 0);
+
+        this.pushMatrix();
+        this.setDiffuse(1, 0.2, 0.2, 1);
+        this.translate(-2, 2, 5);
+        this.scale(10, 10, 10);
+
+        this.unitCube.display();
+        this.popMatrix();
+        this.setDiffuse(0.2, 0.4, 0.8, 1.0);
+        
+        this.scale(1, -1, 1);
+        this.translate(0,0,-0.01)
+        this.tangram.display();
+
+        this.popMatrix();
         // ---- END Primitive drawing section
     }
 }
