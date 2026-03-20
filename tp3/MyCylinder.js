@@ -24,6 +24,65 @@ export class MyCylinder extends CGFobject {
         var alphaAng = (2 * Math.PI) / this.slices;
         var z = 0;
         var stackZ = 1 / this.stacks;
+
+        for (var j = 0; j <= this.stacks; j++) {
+            var ang = 0;
+            // Vertex + Normals
+            for (var i = 0; i < this.slices; i++) {
+                var x = Math.cos(ang);
+                var y = Math.sin(ang);
+                this.vertices.push(x, -y, z);
+
+                // Normals
+                var normal = [x, -y, 0];
+                var nsize = Math.sqrt(
+                    normal[0] * normal[0] +
+                        normal[1] * normal[1] +
+                        normal[2] * normal[2],
+                );
+                normal[0] /= nsize;
+                normal[1] /= nsize;
+                normal[2] /= nsize;
+
+                this.normals.push(...normal);
+                ang += alphaAng;
+            }
+            // Indices
+            for (var i = 0; i < this.slices; i++) {
+                this.indices.push(
+                    this.slices * j + i + 0,
+                    this.slices * j + i + this.slices,
+                    this.slices * j + i + 1,
+                ); // side tri 1
+                this.indices.push(
+                    this.slices * j + i + 0,
+                    this.slices * j + i + this.slices - 1,
+                    this.slices * j + i + this.slices,
+                ); // side tri 1
+            }
+
+            z += stackZ;
+        }
+        // Faces
+        this.vertices.push(0, 0, 0);
+        this.normals.push(0, 0, -1);
+        this.vertices.push(0, 0, z - stackZ);
+        this.normals.push(0, 0, 1);
+
+        for (var i = 0; i < this.slices; i++) {
+            this.indices.push(
+                this.vertices.length / 3 - 2,
+                i,
+                (i + 1) % this.slices,
+            );
+            this.indices.push(
+                this.vertices.length / 3 - 1,
+                this.vertices.length / 3 - (3 + i),
+                this.vertices.length / 3 - (3 + ((i + 1) % this.slices)),
+            );
+        }
+
+        /*
         for (var j = 0; j < this.stacks; j++) {
             for (var i = 0; i < this.slices; i++) {
                 var y1 = Math.sin(ang);
@@ -60,7 +119,8 @@ export class MyCylinder extends CGFobject {
                 ); // side tri 2
 
                 // triangle normal computed by cross product of two edges
-                var normal = [y2 - y1, x2 - x1, 0];
+                var normal = [x1,-y1,0];
+                var normal2 = [x2,-y2,0];
 
                 // normalization
                 var nsize = Math.sqrt(
@@ -72,19 +132,29 @@ export class MyCylinder extends CGFobject {
                 normal[1] /= nsize;
                 normal[2] /= nsize;
 
+                nsize = Math.sqrt(
+                    normal2[0] * normal2[0] +
+                        normal2[1] * normal2[1] +
+                        normal2[2] * normal2[2],
+                );
+
+                normal2[0] /= nsize;
+                normal2[1] /= nsize;
+                normal2[2] /= nsize;
+
                 // push normal once for each vertex of this triangle
                 this.normals.push(0, 0, j == 0 ? -1 : 0);
                 this.normals.push(...normal);
-                this.normals.push(...normal);
+                this.normals.push(...normal2);
                 this.normals.push(0, 0, j == this.stacks - 1 ? 1 : 0);
                 this.normals.push(...normal);
-                this.normals.push(...normal);
+                this.normals.push(...normal2);
 
                 ang += alphaAng;
             }
             z += stackZ;
         }
-
+        */
         // The defined indices (and corresponding vertices)
         // will be read in groups of three to draw triangles
         this.primitiveType = this.scene.gl.TRIANGLES;
