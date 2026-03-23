@@ -21,6 +21,9 @@ export class MyInterface extends CGFinterface {
 
         this.gui.add(this.scene, 'quadViz').name('Display Quad');
         this.gui.add(this.scene, "quadMat").name("Use QuadMat");
+        this.gui.add(this.scene, "tangramViz").name("Display Tangram");
+        this.gui.add(this.scene, "cubeViz").name("Display Cube");
+        this.gui.add(this.scene, "filter").name("Apply filter");
         //Checkbox element in GUI
         this.gui.add(this.scene, 'displayAxis').name('Display Axis');
 

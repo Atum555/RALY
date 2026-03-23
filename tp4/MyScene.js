@@ -7,6 +7,7 @@ import {
 } from "../lib/CGF.js";
 import { MyQuad } from "./MyQuad.js";
 import { MyTangram } from "./MyTangram.js";
+import { MyUnitCubeQuad } from "./MyUnitCubeQuad.js";
 
 /**
  * MyScene
@@ -37,7 +38,9 @@ export class MyScene extends CGFscene {
         this.tangram = new MyTangram(this);
 
         //Viz
-        this.tangramViz = true;
+        this.cubeViz = true;
+        this.filter = true;
+        this.tangramViz = false;
         this.quadViz = false;
         this.quadMat = false;
 
@@ -63,7 +66,29 @@ export class MyScene extends CGFscene {
         this.texture1 = new CGFtexture(this, "images/board.jpg");
         this.texture2 = new CGFtexture(this, "images/floor.png");
         this.texture3 = new CGFtexture(this, "images/window.jpg");
+
+        this.mineTexture = new CGFappearance(this);
+        this.mineTexture.setAmbient(0.1, 0.1, 0.1, 1);
+        this.mineTexture.setDiffuse(0.9, 0.9, 0.9, 1);
+        this.mineTexture.setSpecular(0.1, 0.1, 0.1, 1);
+        this.mineTexture.setShininess(10.0);
+        this.quadMaterial.loadTexture("images/default.png");
+        this.mineTexture.setTextureWrap("REPEAT", "REPEAT");
+
+        this.topMine = new CGFtexture(this, "images/mineTop.png");
+        this.sideMine = new CGFtexture(this, "images/mineSide.png");
+        this.bottomMine = new CGFtexture(this, "images/mineBottom.png");
         //-------
+
+        this.cube = new MyUnitCubeQuad(
+            this,
+            this.topMine,
+            this.sideMine,
+            this.sideMine,
+            this.sideMine,
+            this.sideMine,
+            this.bottomMine,
+        );
 
         //-------Objects connected to MyInterface
         this.displayAxis = true;
@@ -156,10 +181,12 @@ export class MyScene extends CGFscene {
         // Uncomment next line for NEAREST when magnifying, or
         // add a checkbox in the GUI to alternate in real time
 
-        // this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.NEAREST);
+
+            
 
         if (this.quadViz) this.quad.display();
         if (this.tangramViz) this.tangram.display();
+        if (this.cubeViz) this.cube.display();
         // ---- END Primitive drawing section
     }
 }

@@ -32,8 +32,8 @@ export class MyParallelogram extends CGFobject {
         // prettier-ignore
         this.texCoords = [
 			0.25, 0.75,
-			0.50, 1,
 			0.75, 0.75,
+			0.50, 1,
 			1, 1,
 		];
 

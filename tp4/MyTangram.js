@@ -21,6 +21,11 @@ export class MyTangram extends CGFobject {
     }
 
     display() {
+            this.scene.gl.texParameteri(
+                this.scene.gl.TEXTURE_2D,
+                this.scene.gl.TEXTURE_MAG_FILTER,
+                this.scene.gl.NEAREST,
+            );
         this.scene.tangramTexture.apply();
         // * big triangle left
         this.scene.pushMatrix();
@@ -41,7 +46,7 @@ export class MyTangram extends CGFobject {
 
         this.scene.multMatrix(tran);
         this.scene.multMatrix(rot);
-        this.bigTriangle.updateTexCoords([1, 0, 1, 1, 0.5, 0.5]);
+        this.bigTriangle.updateTexCoords([1, 0, 0.5, 0.5, 1, 1]);
         this.bigTriangle.display();
         this.scene.popMatrix();
 
@@ -64,7 +69,7 @@ export class MyTangram extends CGFobject {
 
         this.scene.multMatrix(tran);
         this.scene.multMatrix(rot);
-        this.bigTriangle.updateTexCoords([0, 0, 1, 0, 0.5, 0.5]);
+        this.bigTriangle.updateTexCoords([0, 0, 0.5, 0.5, 1, 0]);
         this.bigTriangle.display();
         this.scene.popMatrix();
 
@@ -94,7 +99,7 @@ export class MyTangram extends CGFobject {
         this.scene.translate(0, -1, 0);
         this.scene.rotate(Math.PI / 2, 0, 0, -1);
 
-        this.smallTriangle.updateTexCoords([0.25, 0.75, 0.75, 0.75, 0.5, 0.5]);
+        this.smallTriangle.updateTexCoords([0.25, 0.75, 0.5, 0.5, 0.75, 0.75]);
         this.smallTriangle.display();
         this.scene.popMatrix();
 
@@ -103,7 +108,7 @@ export class MyTangram extends CGFobject {
 
         this.scene.translate(1.71, -1.13, 0);
         this.scene.rotate(Math.PI / 4, 0, 0, -1);
-        this.smallTriangle.updateTexCoords([0, 0, 0, 0.5, 0.25, 0.25]);
+        this.smallTriangle.updateTexCoords([0, 0, 0.25, 0.25, 0, 0.5]);
         this.smallTriangle.display();
         this.scene.popMatrix();
 
