@@ -12,30 +12,45 @@ export class MyParallelogram extends CGFobject {
     }
 
     initBuffers() {
-        // prettier-ignore
         this.vertices = [
-            0, 0, 0, // 0
-            2, 0, 0, // 1
-            1, 1, 0, // 2
-            3, 1, 0  // 3
+            // Front face
+            0, 0, 0,  // 0
+            2, 0, 0,  // 1
+            1, 1, 0,  // 2
+            3, 1, 0,  // 3
+
+            // Back face
+            0, 0, 0,  // 4
+            2, 0, 0,  // 5
+            1, 1, 0,  // 6
+            3, 1, 0   // 7
         ];
 
-        // Clockwise is back visibility, counterclockwise is front visibility
-        // prettier-ignore
         this.indices = [
+            // Front
             1, 2, 0,
             3, 2, 1,
-            0, 2, 1,
-            1, 2, 3
+
+            // Back
+            4, 6, 5,
+            5, 6, 7
         ];
 
-        this.normals = [];
-        for (var i = 0; i <= 4; i++) {
-            this.normals.push(0, 0, 1);
-        }
+        this.normals = [
+            // Front
+             0, 0, 1,
+             0, 0, 1,
+             0, 0, 1,
+             0, 0, 1,
+
+            // Back
+             0, 0, -1,
+             0, 0, -1,
+             0, 0, -1,
+             0, 0, -1
+        ];
 
         this.primitiveType = this.scene.gl.TRIANGLES;
-
         this.initGLBuffers();
     }
 }

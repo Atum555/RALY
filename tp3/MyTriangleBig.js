@@ -1,7 +1,7 @@
 import { CGFobject } from "../lib/CGF.js";
 
 /**
- * MyTriangleSmall
+ * MyTriangleBig
  * @constructor
  * @param scene - Reference to MyScene object
  */
@@ -12,25 +12,39 @@ export class MyTriangleBig extends CGFobject {
     }
 
     initBuffers() {
-        // prettier-ignore
         this.vertices = [
-            -2, 0, 0, // 0
-            0, 2, 0,  // 1
-            2, 0, 0 // 2
+            // Front
+            -2, 0, 0,
+             0, 2, 0,
+             2, 0, 0,
+
+            // Back
+            -2, 0, 0,
+             0, 2, 0,
+             2, 0, 0
         ];
 
-        // prettier-ignore
         this.indices = [
-            2, 1, 0
+            // Front
+            2, 1, 0,
+
+            // Back
+            3, 4, 5
         ];
 
-        this.normals = [];
-        for (var i = 0; i <= 3; i++) {
-            this.normals.push(0, 0, 1);
-        }
+        this.normals = [
+            // Front
+             0, 0, 1,
+             0, 0, 1,
+             0, 0, 1,
+
+            // Back
+             0, 0, -1,
+             0, 0, -1,
+             0, 0, -1
+        ];
 
         this.primitiveType = this.scene.gl.TRIANGLES;
-
         this.initGLBuffers();
     }
 }

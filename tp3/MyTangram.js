@@ -18,61 +18,8 @@ export class MyTangram extends CGFobject {
         this.parallelogram = new MyParallelogram(scene);
         this.bigTriangle = new MyTriangleBig(scene);
         this.smallTriangle = new MyTriangleSmall(scene);
-
-        this.objects = [
-            this.diamond,
-            this.triangle,
-            this.parallelogram,
-            this.bigTriangle,
-            this.smallTriangle,
-        ];
-
+        this.objects = [this.diamond,this.triangle,this.bigTriangle,this.parallelogram,this.smallTriangle]
         this.initMaterials();
-    }
-
-    initMaterials() {
-        // Red Diffuse (no ambient, no specular)
-        this.materialRed = new CGFappearance(this.scene);
-        this.materialRed.setAmbient(1, 0.0, 0.0, 1.0);
-        this.materialRed.setDiffuse(0, 0, 0, 1.0);
-        this.materialRed.setSpecular(1, 0, 0, 1.0);
-        this.materialRed.setShininess(10.0);
-
-        this.materialBlue = new CGFappearance(this.scene);
-        this.materialBlue.setAmbient(0, 0.0, 1, 1.0);
-        this.materialBlue.setDiffuse(0, 0, 0, 1.0);
-        this.materialBlue.setSpecular(0, 0, 1, 1.0);
-        this.materialBlue.setShininess(10.0);
-
-        this.materialGreen = new CGFappearance(this.scene);
-        this.materialGreen.setAmbient(0.0, 1, 0.0, 1.0);
-        this.materialGreen.setDiffuse(0, 0, 0, 1.0);
-        this.materialGreen.setSpecular(0, 1, 0, 1.0);
-        this.materialGreen.setShininess(10.0);
-
-        this.materialYellow = new CGFappearance(this.scene);
-        this.materialYellow.setAmbient(1, 1.0, 0.0, 1.0);
-        this.materialYellow.setDiffuse(0, 0, 0, 1.0);
-        this.materialYellow.setSpecular(1, 1, 0, 1.0);
-        this.materialYellow.setShininess(10.0);
-
-        this.materialPurple = new CGFappearance(this.scene);
-        this.materialPurple.setAmbient(0.5, 0.0, 0.5, 1.0);
-        this.materialPurple.setDiffuse(0, 0, 0, 1.0);
-        this.materialPurple.setSpecular(0.5, 0, 0.5, 1.0);
-        this.materialPurple.setShininess(10.0);
-
-        this.materialPink = new CGFappearance(this.scene);
-        this.materialPink.setAmbient(1.0, 0.7, 0.8, 1.0);
-        this.materialPink.setDiffuse(0, 0, 0, 1.0);
-        this.materialPink.setSpecular(1, 0.7, 0.8, 1.0);
-        this.materialPink.setShininess(10.0);
-
-        this.materialOrange = new CGFappearance(this.scene);
-        this.materialOrange.setAmbient(1.0, 0.67, 0.0, 0.5);
-        this.materialOrange.setDiffuse(0, 0, 0, 1.0);
-        this.materialOrange.setSpecular(1, 0.67, 0, 1.0);
-        this.materialOrange.setShininess(10.0);
     }
 
     initNormalVizBuffers() {
@@ -93,10 +40,36 @@ export class MyTangram extends CGFobject {
         }
     }
 
+    initMaterials() {
+        this.orangeMaterial = this.createMaterial(1.0, 0.6, 0.0);
+        this.blueMaterial = this.createMaterial(31 / 255, 143 / 255, 214 / 255);
+        this.yellowMaterial = this.createMaterial(1.0, 1.0, 0.0);
+        this.pinkMaterial = this.createMaterial(
+            229 / 255,
+            138 / 255,
+            183 / 255,
+        );
+        this.greenMaterial = this.createMaterial(0.0, 1.0, 0.0);
+        this.redMaterial = this.createMaterial(1.0, 0.0, 0.0);
+        this.purpleMaterial = this.createMaterial(
+            163 / 255,
+            91 / 255,
+            198 / 255,
+        );
+    }
+
+    createMaterial(r, g, b) {
+        const material = new CGFappearance(this.scene);
+        material.setAmbient(r * 0.3, g * 0.3, b * 0.3, 1.0);
+        material.setDiffuse(r, g, b, 1.0);
+        material.setSpecular(0.9, 0.9, 0.9, 1.0);
+        material.setShininess(80.0);
+        return material;
+    }
+
     display() {
         // * big triangle left
         this.scene.pushMatrix();
-        this.materialOrange.apply();
         // prettier-ignore
         var tran = [
             1,0, 0, 0,
@@ -115,12 +88,12 @@ export class MyTangram extends CGFobject {
         this.scene.multMatrix(tran);
         this.scene.multMatrix(rot);
 
+        this.orangeMaterial.apply();
         this.bigTriangle.display();
         this.scene.popMatrix();
 
         // * big triangle left 2
         this.scene.pushMatrix();
-        this.materialBlue.apply();
         // prettier-ignore
         var tran = [
             1,0, 0, 0,
@@ -139,12 +112,14 @@ export class MyTangram extends CGFobject {
         this.scene.multMatrix(tran);
         this.scene.multMatrix(rot);
 
+        this.blueMaterial.apply();
         this.bigTriangle.display();
         this.scene.popMatrix();
 
         // * parallelogram
         this.scene.pushMatrix();
-        this.materialYellow.apply();
+        // Mirroring on X flips the winding order, so temporarily swap the front face.
+        this.scene.gl.frontFace(this.scene.gl.CW);
         // prettier-ignore
         var invert = [
             -1,0,0,0,
@@ -154,37 +129,40 @@ export class MyTangram extends CGFobject {
         ];
         this.scene.multMatrix(invert);
 
+        this.yellowMaterial.apply();
         this.parallelogram.display();
+        this.scene.gl.frontFace(this.scene.gl.CCW);
         this.scene.popMatrix();
 
         // * normal triangle
         this.scene.pushMatrix();
-        this.materialPink.apply();
         this.scene.rotate(Math.PI, 0, 0, 1);
 
+        this.pinkMaterial.apply();
         this.triangle.display();
         this.scene.popMatrix();
 
         // * close small triangle
         this.scene.pushMatrix();
-        this.materialRed.apply();
         this.scene.translate(0, -1, 0);
         this.scene.rotate(Math.PI / 2, 0, 0, -1);
 
+        this.redMaterial.apply();
         this.smallTriangle.display();
         this.scene.popMatrix();
 
         //* far small triangle
         this.scene.pushMatrix();
-        this.materialPurple.apply();
+
         this.scene.translate(1.71, -1.13, 0);
         this.scene.rotate(Math.PI / 4, 0, 0, -1);
+        this.purpleMaterial.apply();
         this.smallTriangle.display();
         this.scene.popMatrix();
 
-        //* diamond
+        // Diamond / square - Custom material
         this.scene.pushMatrix();
-        this.scene.customMaterial.apply();
+
         // prettier-ignore
         tran = [
             1,0, 0, 0,
@@ -204,6 +182,7 @@ export class MyTangram extends CGFobject {
         this.scene.multMatrix(tran);
         this.scene.multMatrix(rot);
 
+        this.scene.customMaterial.apply();
         this.diamond.display();
         this.scene.popMatrix();
     }

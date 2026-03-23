@@ -12,24 +12,39 @@ export class MyTriangleSmall extends CGFobject {
     }
 
     initBuffers() {
-        // prettier-ignore
         this.vertices = [
-            -1, 0, 0, // 0
-            0, 1, 0,  // 1
-            1, 0, 0 // 2
+            // Front
+            -1, 0, 0,
+             0, 1, 0,
+             1, 0, 0,
+
+            // Back
+            -1, 0, 0,
+             0, 1, 0,
+             1, 0, 0
         ];
 
-        // prettier-ignore
         this.indices = [
-            2, 1, 0
+            // Front
+            2, 1, 0,
+
+            // Back
+            3, 4, 5
         ];
 
-        this.normals = [];
-        for (var i = 0; i <= 3; i++) {
-            this.normals.push(0, 0, 1);
-        }
-        this.primitiveType = this.scene.gl.TRIANGLES;
+        this.normals = [
+            // Front
+             0, 0, 1,
+             0, 0, 1,
+             0, 0, 1,
 
+            // Back
+             0, 0, -1,
+             0, 0, -1,
+             0, 0, -1
+        ];
+
+        this.primitiveType = this.scene.gl.TRIANGLES;
         this.initGLBuffers();
     }
 }
