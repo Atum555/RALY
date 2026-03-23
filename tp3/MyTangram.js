@@ -18,18 +18,44 @@ export class MyTangram extends CGFobject {
         this.parallelogram = new MyParallelogram(scene);
         this.bigTriangle = new MyTriangleBig(scene);
         this.smallTriangle = new MyTriangleSmall(scene);
-
+        this.objects = [this.diamond,this.triangle,this.bigTriangle,this.parallelogram,this.smallTriangle]
         this.initMaterials();
+    }
+
+    initNormalVizBuffers() {
+        for (var i = 0; i < this.objects.length; i++) {
+            this.objects[i].initNormalVizBuffers();
+        }
+    }
+
+    enableNormalViz() {
+        for (var i = 0; i < this.objects.length; i++) {
+            this.objects[i].enableNormalViz();
+        }
+    }
+
+    disableNormalViz() {
+        for (var i = 0; i < this.objects.length; i++) {
+            this.objects[i].disableNormalViz();
+        }
     }
 
     initMaterials() {
         this.orangeMaterial = this.createMaterial(1.0, 0.6, 0.0);
         this.blueMaterial = this.createMaterial(31 / 255, 143 / 255, 214 / 255);
         this.yellowMaterial = this.createMaterial(1.0, 1.0, 0.0);
-        this.pinkMaterial = this.createMaterial(229 / 255, 138 / 255, 183 / 255);
+        this.pinkMaterial = this.createMaterial(
+            229 / 255,
+            138 / 255,
+            183 / 255,
+        );
         this.greenMaterial = this.createMaterial(0.0, 1.0, 0.0);
         this.redMaterial = this.createMaterial(1.0, 0.0, 0.0);
-        this.purpleMaterial = this.createMaterial(163 / 255, 91 / 255, 198 / 255);
+        this.purpleMaterial = this.createMaterial(
+            163 / 255,
+            91 / 255,
+            198 / 255,
+        );
     }
 
     createMaterial(r, g, b) {
@@ -40,7 +66,7 @@ export class MyTangram extends CGFobject {
         material.setShininess(80.0);
         return material;
     }
-    
+
     display() {
         // * big triangle left
         this.scene.pushMatrix();

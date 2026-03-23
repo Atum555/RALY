@@ -4,11 +4,14 @@ import { MyCone } from "./MyCone.js";
 import { MyPlane } from "./MyPlane.js";
 import { MyTangram } from "./MyTangram.js";
 import { MyUnitCube } from "./MyUnitCube.js";
+import { MyDiamond } from "./MyDiamond.js";
+import { MyPrism } from "./MyPrism.js";
+import { MyCylinder } from "./MyCylinder.js";
 
 /**
-* MyScene
-* @constructor
-*/
+ * MyScene
+ * @constructor
+ */
 export class MyScene extends CGFscene {
     constructor() {
         super();
@@ -29,17 +32,34 @@ export class MyScene extends CGFscene {
 
         //Initialize scene objects
         this.axis = new CGFaxis(this);
-        this.plane = new MyPlane(this, 5);
-        this.cone = new MyCone(this, 3, 1);
-        this.pyramid = new MyPyramid(this, 3, 1);
+        this.plane = new MyPlane(this);
+        this.cone = new MyCone(this);
+        this.pyramid = new MyPyramid(this);
         this.tangram = new MyTangram(this);
-        this.unitCube = new MyUnitCube(this);
-        
-        this.objects = [this.plane, this.pyramid, this.cone, this.tangram, this.unitCube];
+        this.cube = new MyUnitCube(this);
+        this.diamond = new MyDiamond(this);
+        this.prism = new MyPrism(this, 8, 20);
+        this.cylinder = new MyCylinder(this, 8, 20);
+        this.objects = [
+            this.plane,
+            this.pyramid,
+            this.cone,
+            this.tangram,
+            this.cube,
+            this.prism,
+            this.cylinder,
+        ];
 
         // Labels and ID's for object selection on MyInterface
-        this.objectIDs = { 'Plane': 0 , 'Pyramid': 1, 'Cone': 2, 'Tangram': 3, 'UnitCube': 4};
-
+        this.objectIDs = {
+            Plane: 0,
+            Pyramid: 1,
+            Cone: 2,
+            Tangram: 3,
+            Cube: 4,
+            Prism: 5,
+            Cylinder: 6,
+        };
         //Other variables connected to MyInterface
         this.selectedObject = 0;
         this.selectedMaterial = 0;
@@ -47,11 +67,12 @@ export class MyScene extends CGFscene {
         this.displayNormals = false;
         this.objectComplexity = 0.5;
         this.scaleFactor = 2.0;
-
     }
     initLights() {
+        this.customAmbient = {
+            Ambient: "#000000",
+        };
         this.setGlobalAmbientLight(0.3, 0.3, 0.3, 1.0);
-
         this.lights[0].setPosition(2.0, 2.0, -1.0, 1.0);
         this.lights[0].setDiffuse(1.0, 1.0, 1.0, 1.0);
         this.lights[0].setSpecular(1.0, 1.0, 1.0, 1.0);
@@ -67,48 +88,60 @@ export class MyScene extends CGFscene {
         this.lights[1].update();
     }
     initCameras() {
-        this.camera = new CGFcamera(0.4, 0.1, 500, vec3.fromValues(10, 10, 10), vec3.fromValues(0, 0, 0));
+        this.camera = new CGFcamera(
+            0.4,
+            0.1,
+            500,
+            vec3.fromValues(10, 10, 10),
+            vec3.fromValues(0, 0, 0),
+        );
     }
 
-    hexToRgbA(hex)
-    {
+    updateLights() {
+        this.setGlobalAmbientLight(
+            ...this.hexToRgbA(this.customAmbient["Ambient"]),
+        );
+    }
+
+    hexToRgbA(hex) {
         var ret;
         //either we receive a html/css color or a RGB vector
-        if(/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)){
-            ret=[
-                parseInt(hex.substring(1,3),16).toPrecision()/255.0,
-                parseInt(hex.substring(3,5),16).toPrecision()/255.0,
-                parseInt(hex.substring(5,7),16).toPrecision()/255.0,
-                1.0
+        if (/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) {
+            ret = [
+                parseInt(hex.substring(1, 3), 16).toPrecision() / 255.0,
+                parseInt(hex.substring(3, 5), 16).toPrecision() / 255.0,
+                parseInt(hex.substring(5, 7), 16).toPrecision() / 255.0,
+                1.0,
             ];
-        }
-        else
-            ret=[
-                hex[0].toPrecision()/255.0,
-                hex[1].toPrecision()/255.0,
-                hex[2].toPrecision()/255.0,
-                1.0
+        } else
+            ret = [
+                hex[0].toPrecision() / 255.0,
+                hex[1].toPrecision() / 255.0,
+                hex[2].toPrecision() / 255.0,
+                1.0,
             ];
         return ret;
     }
 
     updateCustomMaterial() {
-        this.customMaterial.setAmbient(...this.hexToRgbA(this.customMaterialValues['Ambient']));
-        this.customMaterial.setDiffuse(...this.hexToRgbA(this.customMaterialValues['Diffuse']));
-        this.customMaterial.setSpecular(...this.hexToRgbA(this.customMaterialValues['Specular']));
+        this.customMaterial.setAmbient(
+            ...this.hexToRgbA(this.customMaterialValues["Ambient"]),
+        );
+        this.customMaterial.setDiffuse(
+            ...this.hexToRgbA(this.customMaterialValues["Diffuse"]),
+        );
+        this.customMaterial.setSpecular(
+            ...this.hexToRgbA(this.customMaterialValues["Specular"]),
+        );
 
-        this.customMaterial.setShininess(this.customMaterialValues['Shininess']);
-
-    };
-
-    updateObjectComplexity(){
-        // Apenas atualiza complexidade se o objeto tem o método updateBuffers()
-        // MyTangram e MyUnitCube não têm este método
-        if (this.objects[this.selectedObject].updateBuffers) {
-            this.objects[this.selectedObject].updateBuffers(this.objectComplexity);
-        }
+        this.customMaterial.setShininess(
+            this.customMaterialValues["Shininess"],
+        );
     }
 
+    updateObjectComplexity() {
+        this.objects[this.selectedObject].updateBuffers(this.objectComplexity);
+    }
 
     initMaterials() {
         // Red Ambient (no diffuse, no specular)
@@ -143,19 +176,31 @@ export class MyScene extends CGFscene {
         // initially midrange values on ambient, diffuse and specular, on R, G and B respectively
 
         this.customMaterialValues = {
-            'Ambient': '#0000ff',
-            'Diffuse': '#ff0000',
-            'Specular': '#000000',
-            'Shininess': 10
-        }
+            Ambient: "#0000ff",
+            Diffuse: "#ff0000",
+            Specular: "#000000",
+            Shininess: 10,
+        };
         this.customMaterial = new CGFappearance(this);
 
         this.updateCustomMaterial();
 
-        this.materials = [this.material1, this.material2, this.material3, this.material4, this.customMaterial];
+        this.materials = [
+            this.material1,
+            this.material2,
+            this.material3,
+            this.material4,
+            this.customMaterial,
+        ];
 
         // Labels and ID's for object selection on MyInterface
-        this.materialIDs = {'Red Ambient': 0, 'Red Diffuse': 1, 'Red Specular': 2, 'Wood': 3, 'Custom': 4 };
+        this.materialIDs = {
+            "Red Ambient": 0,
+            "Red Diffuse": 1,
+            "Red Specular": 2,
+            Woodlike: 3,
+            Custom: 4,
+        };
     }
     display() {
         // ---- BEGIN Background, camera and axis setup
@@ -167,27 +212,25 @@ export class MyScene extends CGFscene {
         this.loadIdentity();
         // Apply transformations corresponding to the camera position relative to the origin
         this.applyViewMatrix();
-        
+
         this.lights[0].update();
         this.lights[1].update();
 
         // Draw axis
-        if (this.displayAxis)
-            this.axis.display();
+        if (this.displayAxis) this.axis.display();
 
         // ---- BEGIN Primitive drawing section
 
         this.materials[this.selectedMaterial].apply();
 
         this.pushMatrix();
-        this.scale(this.scaleFactor,this.scaleFactor,this.scaleFactor);
-        
+        this.scale(this.scaleFactor, this.scaleFactor, this.scaleFactor);
+
         if (this.displayNormals)
             this.objects[this.selectedObject].enableNormalViz();
-        else
-            this.objects[this.selectedObject].disableNormalViz();
-        
-        this.objects[this.selectedObject].display();
+        else this.objects[this.selectedObject].disableNormalViz();
+
+        !this.objects[this.selectedObject].display();
         this.popMatrix();
         // ---- END Primitive drawing section
     }
