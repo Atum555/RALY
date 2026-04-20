@@ -1,5 +1,13 @@
-import { CGFscene, CGFcamera, CGFaxis } from "../lib/CGF.js";
+import {
+    CGFscene,
+    CGFcamera,
+    CGFaxis,
+    CGFappearance,
+    CGFtexture,
+} from "../lib/CGF.js";
 import { MyDiamond } from "./MyDiamond.js";
+import { MyQuad } from "./MyQuad.js";
+import { SkySphere } from "./SkySphere.js";
 
 export class MyScene extends CGFscene {
     constructor() {
@@ -19,23 +27,35 @@ export class MyScene extends CGFscene {
         this.gl.enable(this.gl.DEPTH_TEST);
         this.gl.enable(this.gl.CULL_FACE);
         this.gl.depthFunc(this.gl.LEQUAL);
+        this.enableTextures(true);
 
         // Initialize scene objects
         this.axis = new CGFaxis(this);
         this.diamond = new MyDiamond(this);
-        this.objects = [
-            this.diamond
-        ];
+        this.sphere = new SkySphere(this);
+        this.quad = new MyQuad(this);
+        this.objects = [this.diamond, this.sphere, this.quad];
 
         // Labels and ID's for object selection on MyInterface
         this.objectIDs = {
-            Diamond: 0
+            Diamond: 0,
+            Sphere: 1,
+            Quad: 2,
         };
         //Other variables connected to MyInterface
-        this.selectedObject = 0;
+        this.selectedObject = 2;
         // Objects connected to MyInterface
         this.scaleFactor = 1;
         this.displayAxis = true;
+        this.displayNormals = false;
+
+        this.quadMaterial = new CGFappearance(this);
+        this.quadMaterial.setAmbient(0.1, 0.1, 0.1, 1);
+        this.quadMaterial.setDiffuse(0.9, 0.9, 0.9, 1);
+        this.quadMaterial.setSpecular(0.1, 0.1, 0.1, 1);
+        this.quadMaterial.setShininess(10.0);
+        this.quadMaterial.loadTexture("textures/texture.jpg");
+        this.quadMaterial.setTextureWrap("REPEAT", "REPEAT");
     }
 
     initLights() {
@@ -46,7 +66,13 @@ export class MyScene extends CGFscene {
     }
 
     initCameras() {
-        this.camera = new CGFcamera(0.4, 0.1, 500, vec3.fromValues(15, 15, 15), vec3.fromValues(0, 0, 0));
+        this.camera = new CGFcamera(
+            0.4,
+            0.1,
+            500,
+            vec3.fromValues(0, 0, 15),
+            vec3.fromValues(0, 0, 0),
+        );
     }
 
     setDefaultAppearance() {
@@ -93,8 +119,27 @@ export class MyScene extends CGFscene {
 
         this.multMatrix(sca);
 
+        this.quadMaterial.apply();
+        this.gl.texParameteri(
+            this.gl.TEXTURE_2D,
+            this.gl.TEXTURE_MAG_FILTER,
+            this.gl.NEAREST,
+        );
         // ---- BEGIN Primitive drawing section
+
+        this.pushMatrix();
+        this.translate(0,-10,0);
+        this.rotate(-Math.PI / 2, 1, 0, 0);
+        this.sphere.display();
+        this.popMatrix();
+        
+        // used for displaying objects in testing
         this.objects[this.selectedObject].display();
+
+
+        if (this.displayNormals)
+            this.objects[this.selectedObject].enableNormalViz();
+        else this.objects[this.selectedObject].disableNormalViz();
 
         // ---- END Primitive drawing section
     }

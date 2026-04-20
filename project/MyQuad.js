@@ -1,16 +1,13 @@
 import {CGFobject} from '../lib/CGF.js';
-
 /**
  * MyQuad
  * @constructor
- * @param scene - Reference to MyScene object
+ * @param {MyScene} scene - Reference to MyScene object
+ * @param {Array} coords - Array of texture coordinates (optional)
  */
 export class MyQuad extends CGFobject {
-	constructor(scene, x, y, coords) {
+	constructor(scene, coords) {
 		super(scene);
-		this.x = x;
-		this.y = y;
-
 		this.initBuffers();
 		if (coords != undefined)
 			this.updateTexCoords(coords);
@@ -18,10 +15,10 @@ export class MyQuad extends CGFobject {
 	
 	initBuffers() {
 		this.vertices = [
-			-0.5*this.x, -0.5*this.y, 0,	//0
-			0.5*this.x, -0.5*this.y, 0,	//1
-			-0.5*this.x, 0.5*this.y, 0,	//2
-			0.5*this.x, 0.5*this.y, 0		//3
+			-0.5, -0.5, 0,	//0
+			0.5, -0.5, 0,	//1
+			-0.5, 0.5, 0,	//2
+			0.5, 0.5, 0		//3
 		];
 
 		//Counter-clockwise reference of vertices
