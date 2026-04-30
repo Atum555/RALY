@@ -1,5 +1,6 @@
 import { CGFscene, CGFcamera, CGFaxis } from "../lib/CGF.js";
 import { MyDiamond } from "./MyDiamond.js";
+import { ObstacleScene } from "./obstacles/ObstacleScene.js";
 
 export class MyScene extends CGFscene {
     constructor() {
@@ -19,23 +20,28 @@ export class MyScene extends CGFscene {
         this.gl.enable(this.gl.DEPTH_TEST);
         this.gl.enable(this.gl.CULL_FACE);
         this.gl.depthFunc(this.gl.LEQUAL);
+        this.enableTextures(true);
 
         // Initialize scene objects
         this.axis = new CGFaxis(this);
         this.diamond = new MyDiamond(this);
+        this.obstacleScene = new ObstacleScene(this);
         this.objects = [
-            this.diamond
+            this.diamond,
+            this.obstacleScene
         ];
 
         // Labels and ID's for object selection on MyInterface
         this.objectIDs = {
-            Diamond: 0
+            Diamond: 0,
+            ObstacleScene: 1,
         };
         //Other variables connected to MyInterface
-        this.selectedObject = 0;
+        this.selectedObject = 1;
         // Objects connected to MyInterface
         this.scaleFactor = 1;
         this.displayAxis = true;
+        this.displayNormals = false;
     }
 
     initLights() {
@@ -94,6 +100,10 @@ export class MyScene extends CGFscene {
         this.multMatrix(sca);
 
         // ---- BEGIN Primitive drawing section
+        if (this.displayNormals)
+            this.objects[this.selectedObject].enableNormalViz();
+        else this.objects[this.selectedObject].disableNormalViz();
+
         this.objects[this.selectedObject].display();
 
         // ---- END Primitive drawing section
