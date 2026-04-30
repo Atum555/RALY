@@ -1,7 +1,8 @@
 import { CGFobject, CGFappearance, CGFshader } from "../../lib/CGF.js";
 import { MyPlane } from "./MyPlane.js";
+import { SkySphere } from "./SkySphere.js";
 
-export class CloudsPlane extends CGFobject {
+export class Clouds extends CGFobject {
     constructor(scene, yPosition = 5, scrollSpeed = 0.3, scale = 50) {
         super(scene);
         this.yPosition = yPosition;
@@ -11,6 +12,7 @@ export class CloudsPlane extends CGFobject {
         this.cloudDensity = 0.38;
         this.cloudSoftness = 0.18;
         this.quad = new MyPlane(this.scene, 50);
+        this.sphere = new SkySphere(this.scene);
         this.initMaterial();
         this.initShaders();
     }
@@ -25,11 +27,17 @@ export class CloudsPlane extends CGFobject {
     }
 
     initShaders() {
-        this.shader = new CGFshader(
+        this.flatShader = new CGFshader(
             this.scene.gl,
             "sky/shaders/flatClouds.vert",
             "sky/shaders/flatClouds.frag",
         );
+        this.shpereShader = new CGFshader(
+            this.scene.gl,
+            "sky/shaders/sphereClouds.vert",
+            "sky/shaders/sphereClouds.frag",
+        );
+        this.shaders = [this.flatShader, this.shpereShader];
     }
 
     update(deltaTime) {
@@ -38,13 +46,10 @@ export class CloudsPlane extends CGFobject {
 
     display() {
         this.scene.pushMatrix();
-        this.scene.translate(0, this.yPosition, 0);
         this.cloudMaterial.apply();
-        this.scene.rotate(Math.PI / 2, 1, 0, 0);
-        this.scene.scale(this.scale, this.scale, this.scale);
-        this.scene.setActiveShader(this.shader);
+        this.scene.setActiveShader(this.shaders[this.scene.cloudMode]);
 
-        this.shader.setUniformsValues({
+        this.shaders[this.scene.cloudMode].setUniformsValues({
             timeFactor: this.timeFactor,
             cloudScale: 4.0,
             cloudscale: this.scene.cloudScale,
@@ -60,7 +65,18 @@ export class CloudsPlane extends CGFobject {
                 this.scene.cloudColors["SkyColour2"],
             ),
         });
-        this.quad.display();
+
+        if (this.scene.cloudMode == 0) {
+            this.scene.translate(0, this.yPosition, 0);
+            this.scene.rotate(Math.PI / 2, 1, 0, 0);
+            this.scene.scale(this.scale, this.scale, this.scale);
+            this.quad.display();
+        } else {
+            this.scene.translate(0, this.yPosition - 10 - 5, 0);
+            this.scene.rotate(-Math.PI / 2, 1, 0, 0);
+            this.scene.scale(0.99, 0.99, 0.99);
+            this.sphere.display();
+        }
         this.scene.setActiveShader(this.scene.defaultShader);
         this.scene.popMatrix();
         this.scene.quadMaterial.apply();

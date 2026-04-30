@@ -8,7 +8,7 @@ import {
 import { MyDiamond } from "./MyDiamond.js";
 import { MyQuad } from "./MyQuad.js";
 import { SkySphere } from "./sky/SkySphere.js";
-import { CloudsPlane } from "./sky/CloudsPlane.js";
+import { Clouds } from "./sky/Clouds.js";
 
 export class MyScene extends CGFscene {
     constructor() {
@@ -38,7 +38,7 @@ export class MyScene extends CGFscene {
         this.objects = [this.diamond, this.sphere, this.quad];
 
         // Initialize cloud layer
-        this.cloudLayer = new CloudsPlane(this, 5, 0.3, 50);
+        this.cloudLayer = new Clouds(this, 5, 0.3, 50);
 
         // Labels and ID's for object selection on MyInterface
         this.objectIDs = {

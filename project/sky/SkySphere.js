@@ -9,8 +9,8 @@ export class SkySphere extends CGFobject {
     constructor(scene) {
         super(scene);
 
-        this.slices = 10;
-        this.stacks = 10;
+        this.slices = 30;
+        this.stacks = 30;
         this.radius = 20;
         this.initBuffers();
     }
