@@ -1,4 +1,5 @@
 import { CGFobject } from "../../lib/CGF.js";
+import { Sphere } from "./Sphere.js";
 
 /**
  * Rock
@@ -8,13 +9,18 @@ import { CGFobject } from "../../lib/CGF.js";
 export class Rock extends CGFobject {
     constructor(scene) {
         super(scene);
-        this.initBuffers();
+        this.sphere = new Sphere(scene, 2, 1.5);
     }
 
-    initBuffers() {
-        this.vertices = [];
-        this.indices = [];
-        this.primitiveType = this.scene.gl.TRIANGLES;
-        this.initGLBuffers();
+    display() {
+        this.sphere.display();
+    }
+
+    enableNormalViz() {
+        this.sphere.enableNormalViz();
+    }
+
+    disableNormalViz() {
+        this.sphere.disableNormalViz();
     }
 }
