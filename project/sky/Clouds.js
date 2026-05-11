@@ -50,6 +50,7 @@ export class Clouds extends CGFobject {
         this.scene.setActiveShader(this.shaders[this.scene.cloudMode]);
 
         this.shaders[this.scene.cloudMode].setUniformsValues({
+            uSampler2: 1,
             timeFactor: this.timeFactor,
             cloudScale: 4.0,
             cloudscale: this.scene.cloudScale,

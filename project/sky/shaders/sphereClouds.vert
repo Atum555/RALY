@@ -1,5 +1,6 @@
 attribute vec3 aVertexPosition;
 attribute vec3 aVertexNormal;
+attribute vec2 aTextureCoord;
 
 uniform mat4 uMVMatrix;
 uniform mat4 uPMatrix;
@@ -20,7 +21,7 @@ void main() {
 
     vTextureCoord = vec2(
         azimuth   / (2.0 * PI) + 0.5,
-        elevation / (PI * 0.5)    // 0 at horizon, 1 at zenith
+        elevation / (PI / 2.0) + 1.0
     );
 
     vTimeFactor = timeFactor;

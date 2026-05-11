@@ -56,7 +56,7 @@ export class SkySphere extends CGFobject {
 
                 // vertex tex coord (s, t) range between [0, 1]
                 s = j / this.slices;
-                t = i / this.stacks;
+                t = i / (this.stacks / 2);
                 this.texCoords.push(s);
                 this.texCoords.push(t);
             }
