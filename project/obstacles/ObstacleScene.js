@@ -11,10 +11,9 @@ export class ObstacleScene extends CGFobject {
     constructor(scene) {
         super(scene);
         this.haybale = new HayBale(scene);
-        this.rock = new Rock(scene);
+        this.rock = new Rock(scene,1,1.5);
 
         this.initMaterials();
-        this.initShaders();
     }
 
     initMaterials() {
@@ -27,18 +26,12 @@ export class ObstacleScene extends CGFobject {
         this.haybaleMaterial.setTextureWrap("REPEAT", "REPEAT");
 
         this.rockMaterial = new CGFappearance(this.scene);
-        this.rockMaterial.setAmbient(0.3, 0.3, 0.3, 1);
-        this.rockMaterial.setDiffuse(0.8, 0.8, 0.8, 1);
+        this.rockMaterial.setAmbient(0.5, 0.5, 0.5, 1);
+        this.rockMaterial.setDiffuse(0.5, 0.5, 0.5, 1);
         this.rockMaterial.setSpecular(0.1, 0.1, 0.1, 1);
+        this.rockMaterial.loadTexture("obstacles/textures/rock.jpg");
+        this.rockMaterial.setTextureWrap("REPEAT", "REPEAT");
         this.rockMaterial.setShininess(10.0);
-    }
-
-    initShaders() {
-        this.rockShader = new CGFshader(
-            this.scene.gl,
-            "obstacles/shaders/rock.vert",
-            "obstacles/shaders/rock.frag",
-        );
     }
 
     display() {
@@ -51,7 +44,7 @@ export class ObstacleScene extends CGFobject {
         //this.haybaleMaterial.apply();
         //this.haybale.display();
         this.rockMaterial.apply();
-        this.scene.setActiveShader(this.rockShader);
+
         this.rock.display();
         this.scene.setActiveShader(this.scene.defaultShader);
     }
