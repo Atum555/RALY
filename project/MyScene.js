@@ -48,6 +48,7 @@ export class MyScene extends CGFscene {
         this.lights[0].setPosition(15, 2, 5, 1);
         this.lights[0].setDiffuse(1.0, 1.0, 1.0, 1.0);
         this.lights[0].enable();
+        this.lights[0].setVisible(true);
         this.lights[0].update();
     }
 

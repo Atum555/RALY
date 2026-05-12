@@ -1,147 +1,90 @@
 import { CGFobject } from "../../lib/CGF.js";
 
+/**
+ * MyCylinder
+ * @constructor
+ * @param scene - Reference to MyScene object
+ */
 export class HayBale extends CGFobject {
-    constructor(scene) {
+    constructor(scene, slices, stacks) {
         super(scene);
+
+        this.slices = slices;
+        this.stacks = stacks;
+
         this.initBuffers();
     }
 
     initBuffers() {
-        this.vertices = [
-            // Front face
-            -0.5, -0.5,  0.5,
-             0.5, -0.5,  0.5,
-             0.5,  0.5,  0.5,
-            -0.5,  0.5,  0.5,
+        this.vertices = [];
+        this.indices = [];
+        this.normals = [];
+        this.texCoords = [];
 
-            // Back face
-            -0.5, -0.5, -0.5,
-            -0.5,  0.5, -0.5,
-             0.5,  0.5, -0.5,
-             0.5, -0.5, -0.5,
+        var ang = 0;
+        var alphaAng = (2 * Math.PI) / this.slices;
+        var z = 0;
+        var stackZ = 3 / this.stacks;
+        var n = 4;
 
-            // Left face
-            -0.5, -0.5, -0.5,
-            -0.5, -0.5,  0.5,
-            -0.5,  0.5,  0.5,
-            -0.5,  0.5, -0.5,
+        for (var j = 0; j <= this.stacks; j++) {
+            ang = 0;
+            // extra iteration for texture
+            for (var i = 0; i <= this.slices; i++) {
+                var cosA = Math.cos(ang);
+                var sinA = Math.sin(ang);
 
-            // Right face
-             0.5, -0.5, -0.5,
-             0.5,  0.5, -0.5,
-             0.5,  0.5,  0.5,
-             0.5, -0.5,  0.5,
+                // Lamé Curve :)
+                var x = Math.pow(Math.abs(cosA), 2 / n) * Math.sign(cosA);
+                var y = Math.pow(Math.abs(sinA), 2 / n) * Math.sign(sinA);
 
-            // Top face
-            -0.5,  0.5, -0.5,
-            -0.5,  0.5,  0.5,
-             0.5,  0.5,  0.5,
-             0.5,  0.5, -0.5,
+                this.vertices.push(x, -y, z);
+                this.normals.push(x, -y, 0);
 
-            // Bottom face
-            -0.5, -0.5, -0.5,
-             0.5, -0.5, -0.5,
-             0.5, -0.5,  0.5,
-            -0.5, -0.5,  0.5
-        ];
+                this.texCoords.push(i / this.slices, j / this.stacks);
 
-        this.indices = [
-            0, 1, 2,
-            0, 2, 3,
+                ang += alphaAng;
+            }
 
-            4, 5, 6,
-            4, 6, 7,
+            // Indices
+            if (j < this.stacks) {
+                for (var i = 0; i < this.slices; i++) {
+                    var current = j * (this.slices + 1) + i;
+                    var next = current + 1;
+                    var bottom = (j + 1) * (this.slices + 1) + i;
+                    var bottomNext = bottom + 1;
 
-            8, 9, 10,
-            8, 10, 11,
+                    this.indices.push(current, bottom, next);
+                    this.indices.push(next, bottom, bottomNext);
+                }
+            }
+            z += stackZ;
+        }
+        console.log(this.texCoords);
+        // Faces
+        this.vertices.push(0, 0, 0);
+        this.normals.push(0, 0, -1);
+        this.vertices.push(0, 0, z - stackZ);
+        this.normals.push(0, 0, 1);
 
-            12, 13, 14,
-            12, 14, 15,
+        this.texCoords.push(0.5, 0.5);
+        this.texCoords.push(0.5, 0.5);
 
-            16, 17, 18,
-            16, 18, 19,
-
-            20, 21, 22,
-            20, 22, 23
-        ];
-
-        this.normals = [
-            // Front
-             0,  0,  1,
-             0,  0,  1,
-             0,  0,  1,
-             0,  0,  1,
-
-            // Back
-             0,  0, -1,
-             0,  0, -1,
-             0,  0, -1,
-             0,  0, -1,
-
-            // Left
-            -1,  0,  0,
-            -1,  0,  0,
-            -1,  0,  0,
-            -1,  0,  0,
-
-            // Right
-             1,  0,  0,
-             1,  0,  0,
-             1,  0,  0,
-             1,  0,  0,
-
-            // Top
-             0,  1,  0,
-             0,  1,  0,
-             0,  1,  0,
-             0,  1,  0,
-
-            // Bottom
-             0, -1,  0,
-             0, -1,  0,
-             0, -1,  0,
-             0, -1,  0
-        ];
-
-        this.texCoords = [
-            // Front
-            0.25, 0.66,
-            0.50, 0.66,
-            0.50, 0.33,
-            0.25, 0.33,
-
-            // Back
-            1, 0.66,
-            1, 0.33,
-            0.75, 0.33,
-            0.75, 0.66,
-
-            // Left
-            0, 0.66,
-            0.25, 0.66,
-            0.25, 0.33,
-            0, 0.33,
-
-            // Right
-            0.75, 0.66,
-            0.75, 0.33,
-            0.5, 0.33,
-            0.5, 0.66,
-
-            // Top
-            0.25, 0,
-            0.25, 0.33333,
-            0.50, 0.33333,
-            0.50, 0,
-
-            // Bottom
-            0.25, 1,
-            0.5, 1,
-            0.5, 0.66,
-            0.25, 0.66
-        ];
-
+        for (var i = 0; i < this.slices; i++) {
+            this.indices.push(
+                this.vertices.length / 3 - 2,
+                i,
+                (i + 1) % this.slices,
+            );
+            this.indices.push(
+                this.vertices.length / 3 - 1,
+                this.vertices.length / 3 - (3 + i),
+                this.vertices.length / 3 - (3 + ((i + 1) % this.slices)),
+            );
+        }
         this.primitiveType = this.scene.gl.TRIANGLES;
+
         this.initGLBuffers();
     }
+
 }

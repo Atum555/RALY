@@ -10,8 +10,8 @@ export class Rock extends CGFobject {
     constructor(scene, radius, scale) {
         super(scene);
 
-        this.slices = 20;
-        this.stacks = 20;
+        this.slices = 10;
+        this.stacks = 10;
         this.radius = radius;
         this.scale = scale;
         this.uNoiseScale = 5.0;
