@@ -9,6 +9,7 @@ import { MyDiamond } from "./MyDiamond.js";
 import { MyQuad } from "./MyQuad.js";
 import { SkySphere } from "./sky/SkySphere.js";
 import { Clouds } from "./sky/Clouds.js";
+import { ObstacleScene } from "./obstacles/ObstacleScene.js";
 
 export class MyScene extends CGFscene {
     constructor() {
@@ -35,7 +36,8 @@ export class MyScene extends CGFscene {
         this.diamond = new MyDiamond(this);
         this.sphere = new SkySphere(this);
         this.quad = new MyQuad(this);
-        this.objects = [this.diamond, this.sphere, this.quad];
+        this.obstacleScene = new ObstacleScene(this);
+        this.objects = [this.diamond, this.sphere, this.quad, this.obstacleScene];
 
         // Initialize cloud layer
         this.cloudLayer = new Clouds(this, 5, 0.3, 50);
@@ -45,6 +47,7 @@ export class MyScene extends CGFscene {
             Diamond: 0,
             Sphere: 1,
             Quad: 2,
+            ObstacleScene: 3,
         };
         //Other variables connected to MyInterface
         this.selectedObject = 2;
@@ -203,13 +206,15 @@ export class MyScene extends CGFscene {
         this.translate(0,-1,0);
         this.scale(40,40,40);
         this.rotate(-Math.PI / 2, 1, 0, 0);
-        this.objects[this.selectedObject].display();
+        this.quad.display();
         this.popMatrix();
 
         // Display clouds
         if (this.displayClouds) {
             this.cloudLayer.display();
         }
+
+        this.objects[this.selectedObject].display();
 
         if (this.displayNormals)
             this.objects[this.selectedObject].enableNormalViz();
