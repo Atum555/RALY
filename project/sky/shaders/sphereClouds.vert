@@ -20,8 +20,8 @@ void main() {
     float elevation = asin(aVertexPosition.y / radius);
 
     vTextureCoord = vec2(
-        azimuth   / (2.0 * PI) + 0.5,
-        elevation / (PI / 2.0) + 1.0
+        elevation / (PI / 2.0) + 1.0,
+        azimuth   / (2.0 * PI) + 0.5
     );
 
     vTimeFactor = timeFactor;

@@ -73,7 +73,7 @@ export class Clouds extends CGFobject {
             this.scene.scale(this.scale, this.scale, this.scale);
             this.quad.display();
         } else {
-            this.scene.translate(0, this.yPosition - 10 - 5, 0);
+            this.scene.translate(0, this.yPosition - 4 - 5, 0);
             this.scene.rotate(-Math.PI / 2, 1, 0, 0);
             this.scene.scale(0.99, 0.99, 0.99);
             this.sphere.display();

@@ -57,7 +57,7 @@ export class MyScene extends CGFscene {
         // Cloud layer controls
         this.cloudYPosition = 5;
         this.cloudScrollSpeed = 0.1;
-        this.cloudMode = 0;
+        this.cloudMode = 1;
 
         // Cloud shader parameters
         this.cloudScale = 1.1;
@@ -79,7 +79,7 @@ export class MyScene extends CGFscene {
     }
 
     initLights() {
-        this.lights[0].setPosition(10, 5, 4, 1);
+        this.lights[0].setPosition(15, 6, 6, 1);
         this.lights[0].setDiffuse(1.0, 1.0, 1.0, 1.0);
         this.lights[0].enable();
         this.lights[0].setVisible(true);
@@ -193,13 +193,18 @@ export class MyScene extends CGFscene {
         // ---- BEGIN Primitive drawing section
 
         this.pushMatrix();
-        this.translate(0, -10, 0);
+        this.translate(0, -4, 0);
         this.rotate(-Math.PI / 2, 1, 0, 0);
         this.sphere.display();
         this.popMatrix();
 
+        this.pushMatrix();
         // used for displaying objects in testing
+        this.translate(0,-1,0);
+        this.scale(40,40,40);
+        this.rotate(-Math.PI / 2, 1, 0, 0);
         this.objects[this.selectedObject].display();
+        this.popMatrix();
 
         // Display clouds
         if (this.displayClouds) {
