@@ -11,7 +11,7 @@ export class Clouds extends CGFobject {
         this.timeFactor = 0;
         this.cloudDensity = 0.38;
         this.cloudSoftness = 0.18;
-        this.daySpeed = 0.05;
+        this.daySpeed = 0.005;
         this.timeOfDay = 2.5;
         this.cycleActive = true;
         this.quad = new MyPlane(this.scene, 50);
