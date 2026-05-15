@@ -72,8 +72,10 @@ export class MyScene extends CGFscene {
         this.cloudColors = {
             SkyColour1: "#3366cc",
             SkyColour2: "#6db3ff",
+            nightColour1: "#050b1a",
+            nightColour2: "#0a1329",
         };
-
+        this.enableDayNightCycle = true;
         // Time tracking for animation
         this.lastTime = Date.now();
         this.deltaTime = 0;
@@ -120,7 +122,7 @@ export class MyScene extends CGFscene {
         this.cloudLayer.scrollSpeed = this.cloudScrollSpeed;
         this.cloudLayer.cloudDensity = this.cloudDensity;
         this.cloudLayer.cloudSoftness = this.cloudSoftness;
-
+        this.cloudLayer.cycleActive = this.enableDayNightCycle;
         // Update cloud animation
         if (this.displayClouds) {
             this.cloudLayer.update(this.deltaTime);

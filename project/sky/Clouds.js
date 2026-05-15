@@ -11,6 +11,9 @@ export class Clouds extends CGFobject {
         this.timeFactor = 0;
         this.cloudDensity = 0.38;
         this.cloudSoftness = 0.18;
+        this.daySpeed = 0.05;
+        this.timeOfDay = 0;
+        this.cycleActive = true;
         this.quad = new MyPlane(this.scene, 50);
         this.sphere = new SkySphere(this.scene);
         this.initMaterial();
@@ -42,6 +45,28 @@ export class Clouds extends CGFobject {
 
     update(deltaTime) {
         this.timeFactor += this.scrollSpeed * deltaTime * 0.001;
+        if (this.cycleActive) this.updateDayCycle();
+    }
+
+    updateDayCycle() {
+        this.timeOfDay += this.daySpeed;
+
+        var angle = (this.timeOfDay / (Math.PI * 2)) * Math.PI;
+        var sunY = Math.sin(angle);
+
+        this.dayFactor = Math.max(0, Math.min(1, (sunY - -0.1) / (0.2 - -0.1)));
+        this.dayFactor = this.dayFactor * this.dayFactor; // more intense curve
+
+        this.scene.skyTint = 0.2 + 0.3 * this.dayFactor;
+
+        var lightIntensity = 0.4 + 0.9 * this.dayFactor; // 1.0 day, 0.1 night
+        this.scene.lights[0].setDiffuse(
+            lightIntensity,
+            lightIntensity,
+            lightIntensity,
+            1.0,
+        );
+        this.scene.lights[0].update();
     }
 
     display() {
@@ -65,6 +90,14 @@ export class Clouds extends CGFobject {
             skycolour2: this.scene.hexToRGB(
                 this.scene.cloudColors["SkyColour2"],
             ),
+            nightcolour1: this.scene.hexToRGB(
+                this.scene.cloudColors["nightColour1"],
+            ),
+            nightcolour2: this.scene.hexToRGB(
+                this.scene.cloudColors["nightColour2"],
+            ),
+            sunangle: this.timeOfDay,
+            dayfactor: this.dayFactor,
         });
 
         if (this.scene.cloudMode == 0) {

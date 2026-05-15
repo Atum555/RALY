@@ -40,11 +40,11 @@ export class ObstacleScene extends CGFobject {
             this.scene.gl.TEXTURE_MAG_FILTER,
             this.scene.gl.NEAREST,
         );
-        this.haybaleMaterial.apply();
-        this.haybale.display();
-        //this.rockMaterial.apply();
+        //this.haybaleMaterial.apply();
+        //this.haybale.display();
+        this.rockMaterial.apply();
 
-        //this.rock.display();
+        this.rock.display();
     }
 
     enableNormalViz() {

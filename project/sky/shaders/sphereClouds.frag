@@ -14,6 +14,12 @@ uniform float cloudalpha;
 uniform float skytint;
 uniform vec3 skycolour1;
 uniform vec3 skycolour2;
+uniform vec3 nightcolour1;
+uniform vec3 nightcolour2;
+
+uniform float sunangle;
+uniform float dayfactor;
+const float PI = 3.14159265358979;
 
 const mat2 m = mat2(1.6, 1.2, -1.2, 1.6);
 
@@ -93,9 +99,11 @@ void main() {
 
     c += c1;
 
-    // p.y is 0.5 at horizon, 1.0 at zenith — remap to [0,1] for gradient
+
     float elevation = clamp((p.y - 0.5) * 2.0, 0.0, 1.0);
-    vec3 skycolour  = mix(skycolour2, skycolour1, elevation);
+    vec3 currentcolour1  = mix(skycolour2, skycolour1, elevation);
+    vec3 currentcolour2  = mix(nightcolour2, nightcolour1, elevation);
+    vec3 skycolour = mix(currentcolour2, currentcolour1, dayfactor);
 
     vec3 cloudcolour = vec3(1.1, 1.1, 0.9) * clamp(clouddark + cloudlight * c, 0.0, 1.0);
 
@@ -106,6 +114,32 @@ void main() {
         clamp(skytint * skycolour + cloudcolour, 0.0, 1.0),
         clamp(f + c, 0.0, 1.0)
     );
+
+
+    float angle = mod(sunangle, 4.0 * PI); 
+    float position = angle / PI;
+
+    float coverage = clamp(f + c, 0.0, 0.6);
+
+    if (angle > 0.0 && angle < 2.0 * PI) {
+        vec2 sunCoord = vec2(position, 0.45); 
+        
+        vec2 delta = p - sunCoord;
+        delta.x /= 4.0; 
+        float d = length(delta);
+        float disc = 1.0 - smoothstep(0.0, 0.03, d);
+        float glow = 1.0 - smoothstep(0.03, 0.05, d);
+        result = mix(result, vec3(0.996, 0.877, 0.535), (disc + glow * 0.3) * (1.0 - coverage));
+    } 
+    else if (angle > 2.0 * PI && angle < 4.0 * PI){
+        vec2 moonCoord = vec2(position - 2.0, 0.45);
+        
+        vec2 delta = p - moonCoord;
+        delta.x /= 4.0;
+        float d = length(delta);
+        float disc = 1.0 - smoothstep(0.0, 0.022, d);
+        result = mix(result, vec3(0.9, 0.92, 1.0), disc * (1.0 - coverage));
+    }
 
     gl_FragColor = vec4(result, 1.0);
 }

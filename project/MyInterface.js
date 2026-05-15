@@ -20,6 +20,7 @@ export class MyInterface extends CGFinterface {
         var skyControls = this.gui.addFolder("Sky");
         //skyControls.add(this.scene, "selectedScene", this.scene.sceneIDs).name("Selected Scene(sky)");
         var sunControls = skyControls.addFolder("Sun");
+        sunControls.add(this.scene, "enableDayNightCycle").name("Day/Night Cycle");
         sunControls.add(this.scene.lights[0], 'enabled').name("Enabled");
         sunControls.add(this.scene.lights[0].position, '0', -20.0, 20.0).name("X Position");
         sunControls.add(this.scene.lights[0].position, '1', -20.0, 20.0).name("Y Position");
@@ -43,7 +44,8 @@ export class MyInterface extends CGFinterface {
         cloudColors.add(this.scene, "skyTint", 0.0, 1.0).step(0.05).name("Sky Tint");
         cloudColors.addColor(this.scene.cloudColors, "SkyColour1").name("Sky Color 1");
         cloudColors.addColor(this.scene.cloudColors, "SkyColour2").name("Sky Color 2");
-        
+        cloudColors.addColor(this.scene.cloudColors, "nightColour1").name("Night Color 1");
+        cloudColors.addColor(this.scene.cloudColors, "nightColour2").name("Night Color 2");
         return true;
     }
 }
