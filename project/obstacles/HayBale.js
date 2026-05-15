@@ -60,7 +60,6 @@ export class HayBale extends CGFobject {
             }
             z += stackZ;
         }
-        console.log(this.texCoords);
         // Faces
         this.vertices.push(0, 0, 0);
         this.normals.push(0, 0, -1);

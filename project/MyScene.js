@@ -75,20 +75,30 @@ export class MyScene extends CGFscene {
             nightColour1: "#050b1a",
             nightColour2: "#0a1329",
         };
-        this.enableDayNightCycle = true;
+        this.enableDayNightCycle = false;
         // Time tracking for animation
         this.lastTime = Date.now();
         this.deltaTime = 0;
 
         this.setUpdatePeriod(50);
+        this.cloudLayer.updateDayCycle();
     }
 
     initLights() {
         this.lights[0].setPosition(15, 6, 6, 1);
-        this.lights[0].setDiffuse(1.0, 1.0, 1.0, 1.0);
+        this.lights[0].setDiffuse(1.0, 0.9, 0.7, 1.0);
+        this.lights[0].setSpecular(1.0, 0.9, 0.7, 1.0);
         this.lights[0].enable();
         this.lights[0].setVisible(true);
         this.lights[0].update();
+
+
+        this.lights[1].setPosition(15, 6, 6, 1);
+        this.lights[1].setDiffuse(0.2, 0.3, 0.5, 1.0);
+        this.lights[1].setSpecular(0.2, 0.3, 0.5, 1.0);
+        this.lights[1].enable();
+        this.lights[1].setVisible(true);
+        this.lights[1].update();
     }
 
     initCameras() {

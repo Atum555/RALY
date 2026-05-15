@@ -115,7 +115,7 @@ void main() {
         clamp(f + c, 0.0, 1.0)
     );
 
-
+    // Sun and Moon
     float angle = mod(sunangle, 4.0 * PI); 
     float position = angle / PI;
 

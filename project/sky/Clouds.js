@@ -12,7 +12,7 @@ export class Clouds extends CGFobject {
         this.cloudDensity = 0.38;
         this.cloudSoftness = 0.18;
         this.daySpeed = 0.05;
-        this.timeOfDay = 0;
+        this.timeOfDay = 2.5;
         this.cycleActive = true;
         this.quad = new MyPlane(this.scene, 50);
         this.sphere = new SkySphere(this.scene);
@@ -59,14 +59,29 @@ export class Clouds extends CGFobject {
 
         this.scene.skyTint = 0.2 + 0.3 * this.dayFactor;
 
-        var lightIntensity = 0.4 + 0.9 * this.dayFactor; // 1.0 day, 0.1 night
-        this.scene.lights[0].setDiffuse(
-            lightIntensity,
-            lightIntensity,
-            lightIntensity,
-            1.0,
-        );
-        this.scene.lights[0].update();
+        var radius = 20.0;
+        var x = -2;
+        var y = Math.sin(angle) * radius;
+        var z = -Math.cos(angle) * radius;
+        var sun = this.scene.lights[0];
+        var moon = this.scene.lights[1];
+
+        sun.setPosition(x, y - 3.5, -z, 1.0);
+        moon.setPosition(x, -y + 3.5, z, 1.0);
+
+        var buffer = 3.0;
+        if(y > -buffer )
+            sun.enable();
+        else
+            sun.disable();
+        if(y < buffer)
+            moon.enable();
+        else
+            moon.disable();
+         
+
+        sun.update();
+        moon.update();
     }
 
     display() {
