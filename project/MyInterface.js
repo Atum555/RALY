@@ -5,11 +5,35 @@ export class MyInterface extends CGFinterface {
         super();
     }
 
+    initKeys() {
+        this.scene.gui = this;
+        this.processKeyboard = function () {};
+        this.activeKeys = {};
+    }
+
+    processKeyDown(event) {
+        this.activeKeys[event.code] = true;
+
+        if (event.code === "KeyP") {
+            console.log("P pressed: pick up hay bale");
+        }
+
+        if (event.code === "KeyL") {
+            console.log("L pressed: drop hay bale");
+        }
+    }
+
+    processKeyUp(event) {
+        this.activeKeys[event.code] = false;
+    }
+
+    isKeyPressed(keyCode) {
+        return this.activeKeys[keyCode] || false;
+    }
+
     init(application) {
         super.init(application);
 
-        // init GUI. For more information on the methods, check:
-        // https://github.com/dataarts/dat.gui/blob/master/API.md
         this.gui = new dat.GUI();
 
         this.gui.add(this.scene, "scaleFactor", 0.1, 5).name("Scale Factor");
@@ -39,13 +63,14 @@ export class MyInterface extends CGFinterface {
         cloudAppearance.add(this.scene, "cloudAlpha", 0.0, 20.0).step(0.5).name("Alpha");
         cloudAppearance.add(this.scene, "cloudScale", 0.5, 3.0).step(0.1).name("Scale");
 
-        
         var cloudColors = cloudControls.addFolder("Colors");
         cloudColors.add(this.scene, "skyTint", 0.0, 1.0).step(0.05).name("Sky Tint");
         cloudColors.addColor(this.scene.cloudColors, "SkyColour1").name("Sky Color 1");
         cloudColors.addColor(this.scene.cloudColors, "SkyColour2").name("Sky Color 2");
         cloudColors.addColor(this.scene.cloudColors, "nightColour1").name("Night Color 1");
         cloudColors.addColor(this.scene.cloudColors, "nightColour2").name("Night Color 2");
+
+        this.initKeys();
         return true;
     }
 }

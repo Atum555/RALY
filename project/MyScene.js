@@ -6,10 +6,14 @@ import {
     CGFtexture,
 } from "../lib/CGF.js";
 import { MyDiamond } from "./MyDiamond.js";
+import { MyBarn } from "./MyBarn.js";
 import { MyQuad } from "./MyQuad.js";
 import { SkySphere } from "./sky/SkySphere.js";
 import { Clouds } from "./sky/Clouds.js";
 import { ObstacleScene } from "./obstacles/ObstacleScene.js";
+import { MyTerrain } from "./MyTerrain.js";
+import { MyFlowerPatch } from "./MyFlowerPatch.js";
+import { MyWagon } from "./MyWagon.js";
 
 export class MyScene extends CGFscene {
     constructor() {
@@ -23,7 +27,6 @@ export class MyScene extends CGFscene {
         this.initLights();
         this.initMaterials();
 
-        // Background color
         this.gl.clearColor(1.0, 1.0, 1.0, 1.0);
         this.gl.clearDepth(100.0);
         this.gl.enable(this.gl.DEPTH_TEST);
@@ -31,38 +34,36 @@ export class MyScene extends CGFscene {
         this.gl.depthFunc(this.gl.LEQUAL);
         this.enableTextures(true);
 
-        // Initialize scene objects
         this.axis = new CGFaxis(this);
         this.diamond = new MyDiamond(this);
         this.sphere = new SkySphere(this);
         this.quad = new MyQuad(this);
+        this.barn = new MyBarn(this);
+        this.terrain = new MyTerrain(this);
+        this.wagon = new MyWagon(this);
+        this.flowerPatch1 = new MyFlowerPatch(this, 15, 10, 10);
+        this.flowerPatch2 = new MyFlowerPatch(this, 20, 15, 15);
         this.obstacleScene = new ObstacleScene(this);
         this.objects = [this.diamond, this.sphere, this.quad, this.obstacleScene];
 
-        // Initialize cloud layer
         this.cloudLayer = new Clouds(this, 5, 0.3, 50);
 
-        // Labels and ID's for object selection on MyInterface
         this.objectIDs = {
             Diamond: 0,
             Sphere: 1,
             Quad: 2,
             ObstacleScene: 3,
         };
-        //Other variables connected to MyInterface
         this.selectedObject = 2;
-        // Objects connected to MyInterface
         this.scaleFactor = 1;
         this.displayAxis = true;
         this.displayNormals = false;
         this.displayClouds = true;
 
-        // Cloud layer controls
         this.cloudYPosition = 5;
         this.cloudScrollSpeed = 0.1;
         this.cloudMode = 1;
 
-        // Cloud shader parameters
         this.cloudScale = 1.1;
         this.cloudDark = 0.5;
         this.cloudLight = 0.3;
@@ -76,12 +77,45 @@ export class MyScene extends CGFscene {
             nightColour2: "#0a1329",
         };
         this.enableDayNightCycle = false;
-        // Time tracking for animation
         this.lastTime = Date.now();
         this.deltaTime = 0;
 
         this.setUpdatePeriod(50);
         this.cloudLayer.updateDayCycle();
+    }
+
+    checkWagonControls() {
+        if (!this.gui || !this.wagon) {
+            return;
+        }
+
+        const deltaSeconds = this.deltaTime / 1000.0;
+        const accelerationStep = this.wagon.accelerationRate * deltaSeconds;
+        const brakingStep = this.wagon.brakingRate * deltaSeconds;
+        const steeringStep = this.wagon.steeringRate * deltaSeconds;
+
+        if (this.gui.isKeyPressed("KeyW")) {
+            this.wagon.accelerate(accelerationStep);
+        }
+
+        if (this.gui.isKeyPressed("KeyS")) {
+            this.wagon.accelerate(-brakingStep);
+        }
+
+        const leftPressed = this.gui.isKeyPressed("KeyA");
+        const rightPressed = this.gui.isKeyPressed("KeyD");
+
+        if (leftPressed && !rightPressed) {
+            this.wagon.steer(-steeringStep);
+        } else if (rightPressed && !leftPressed) {
+            this.wagon.steer(steeringStep);
+        } else if (!leftPressed && !rightPressed) {
+            if (this.wagon.steeringAngle > 0) {
+                this.wagon.steer(-steeringStep);
+            } else if (this.wagon.steeringAngle < 0) {
+                this.wagon.steer(steeringStep);
+            }
+        }
     }
 
     initLights() {
@@ -91,7 +125,6 @@ export class MyScene extends CGFscene {
         this.lights[0].enable();
         this.lights[0].setVisible(true);
         this.lights[0].update();
-
 
         this.lights[1].setPosition(15, 6, 6, 1);
         this.lights[1].setDiffuse(0.2, 0.3, 0.5, 1.0);
@@ -122,25 +155,24 @@ export class MyScene extends CGFscene {
     }
 
     update() {
-        // Calculate delta time
         const currentTime = Date.now();
         this.deltaTime = currentTime - this.lastTime;
         this.lastTime = currentTime;
 
-        // Sync cloud layer with UI controls
         this.cloudLayer.yPosition = this.cloudYPosition;
         this.cloudLayer.scrollSpeed = this.cloudScrollSpeed;
         this.cloudLayer.cloudDensity = this.cloudDensity;
         this.cloudLayer.cloudSoftness = this.cloudSoftness;
         this.cloudLayer.cycleActive = this.enableDayNightCycle;
-        // Update cloud animation
         if (this.displayClouds) {
             this.cloudLayer.update(this.deltaTime);
         }
+
+        this.checkWagonControls();
+        this.wagon.update(this.deltaTime / 1000.0);
     }
 
     hexToRGB(hex) {
-        // Convert hex color string to RGB array (0-1 range)
         if (/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(hex)) {
             if (hex.length === 4) {
                 hex = "#" + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
@@ -151,7 +183,7 @@ export class MyScene extends CGFscene {
                 parseInt(hex.substring(5, 7), 16) / 255.0,
             ];
         }
-        return [0.5, 0.5, 0.5]; // fallback
+        return [0.5, 0.5, 0.5];
     }
 
     setDefaultAppearance() {
@@ -162,76 +194,60 @@ export class MyScene extends CGFscene {
     }
 
     display() {
-        // ---- BEGIN Background, camera and axis setup
-        // Clear image and depth buffer every time we update the scene
         this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
-        // Initialize Model-View matrix as identity (no transformation)
         this.updateProjectionMatrix();
         this.loadIdentity();
-        // Apply transformations corresponding to the camera position relative to the origin
         this.applyViewMatrix();
 
         this.lights[0].update();
-        // Draw axis
         if (this.displayAxis) this.axis.display();
 
         this.setDefaultAppearance();
 
-        var sca = [
-            this.scaleFactor,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            this.scaleFactor,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            this.scaleFactor,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            1.0,
-        ];
-
-        this.multMatrix(sca);
-
         this.quadMaterial.apply();
-        this.gl.texParameteri(
-            this.gl.TEXTURE_2D,
-            this.gl.TEXTURE_MAG_FILTER,
-            this.gl.NEAREST,
-        );
-        // ---- BEGIN Primitive drawing section
 
         this.pushMatrix();
-        this.translate(0, -4, 0);
         this.rotate(-Math.PI / 2, 1, 0, 0);
-        this.sphere.display();
+        this.scale(50, 50, 1);
+        this.terrain.display();
         this.popMatrix();
 
         this.pushMatrix();
-        // used for displaying objects in testing
-        this.translate(0,-1,0);
-        this.scale(40,40,40);
-        this.rotate(-Math.PI / 2, 1, 0, 0);
-        this.quad.display();
+        this.translate(0, 0, 0);
+        this.wagon.display();
         this.popMatrix();
 
-        // Display clouds
+        this.pushMatrix();
+        this.translate(10, 0, 10);
+        this.flowerPatch1.display();
+        this.popMatrix();
+
+        this.pushMatrix();
+        this.translate(-10, 0, -10);
+        this.flowerPatch2.display();
+        this.popMatrix();
+
+        this.pushMatrix();
+        this.translate(15, 0, -15);
+        this.barn.display();
+        this.popMatrix();
+
+        this.pushMatrix();
+        this.translate(-18, 0, 18);
+        this.scale(this.scaleFactor, this.scaleFactor, this.scaleFactor);
+        this.objects[this.selectedObject].display();
+        this.popMatrix();
+
+        if (this.displayNormals) {
+            this.objects[this.selectedObject].enableNormalViz();
+        } else {
+            this.objects[this.selectedObject].disableNormalViz();
+        }
+
         if (this.displayClouds) {
             this.cloudLayer.display();
         }
 
-        this.objects[this.selectedObject].display();
-
-        if (this.displayNormals)
-            this.objects[this.selectedObject].enableNormalViz();
-        else this.objects[this.selectedObject].disableNormalViz();
-
-        // ---- END Primitive drawing section
     }
 }
