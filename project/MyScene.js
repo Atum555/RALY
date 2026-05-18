@@ -1,7 +1,8 @@
 import { CGFscene, CGFcamera, CGFaxis, CGFappearance } from "../lib/CGF.js";
 import { SkySphere } from "./sky/SkySphere.js";
 import { Clouds } from "./sky/Clouds.js";
-import { ObstacleScene } from "./obstacles/ObstacleScene.js";
+import { HayBale } from "./obstacles/HayBale.js";
+import { Rock } from "./obstacles/Rock.js";
 
 export class MyScene extends CGFscene {
     constructor() {
@@ -26,15 +27,17 @@ export class MyScene extends CGFscene {
         // Initialize scene objects
         this.axis = new CGFaxis(this);
         this.sphere = new SkySphere(this);
-        this.obstacleScene = new ObstacleScene(this);
-        this.objects = [this.obstacleScene];
+        this.haybale = new HayBale(this, 50, 10);
+        this.rock = new Rock(this, 1, 1.5);
+        this.objects = [this.haybale, this.rock];
 
         // Initialize cloud layer
         this.cloudLayer = new Clouds(this, 5, 0.3, 50);
 
         // Labels and ID's for object selection on MyInterface
         this.objectIDs = {
-            ObstacleScene: 0,
+            HayBale: 0,
+            Rock: 1,
         };
         //Other variables connected to MyInterface
         this.selectedObject = 0;

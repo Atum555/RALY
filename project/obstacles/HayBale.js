@@ -1,4 +1,4 @@
-import { CGFobject } from "../../lib/CGF.js";
+import { CGFobject, CGFappearance } from "../../lib/CGF.js";
 
 /**
  * MyCylinder
@@ -13,6 +13,27 @@ export class HayBale extends CGFobject {
         this.stacks = stacks;
 
         this.initBuffers();
+        this.initMaterials();
+    }
+
+    initMaterials() {
+        this.material = new CGFappearance(this.scene);
+        this.material.setAmbient(0.3, 0.3, 0.3, 1);
+        this.material.setDiffuse(0.8, 0.8, 0.8, 1);
+        this.material.setSpecular(0.1, 0.1, 0.1, 1);
+        this.material.setShininess(10.0);
+        this.material.loadTexture("obstacles/textures/hay2.jpg");
+        this.material.setTextureWrap("REPEAT", "REPEAT");
+    }
+
+    display() {
+        this.scene.gl.texParameteri(
+            this.scene.gl.TEXTURE_2D,
+            this.scene.gl.TEXTURE_MAG_FILTER,
+            this.scene.gl.NEAREST,
+        );
+        this.material.apply();
+        super.display();
     }
 
     initBuffers() {

@@ -1,4 +1,4 @@
-import { CGFobject } from "../../lib/CGF.js";
+import { CGFobject, CGFappearance } from "../../lib/CGF.js";
 import { fbm } from "./noiseUtils.js";
 
 /**
@@ -17,6 +17,27 @@ export class Rock extends CGFobject {
         this.uNoiseScale = 5.0;
         this.uNoiseStrength = 6.0;
         this.initBuffers();
+        this.initMaterials();
+    }
+
+    initMaterials() {
+        this.material = new CGFappearance(this.scene);
+        this.material.setAmbient(0.5, 0.5, 0.5, 1);
+        this.material.setDiffuse(0.7, 0.7, 0.7, 1);
+        this.material.setSpecular(0.2, 0.2, 0.2, 1);
+        this.material.setShininess(10.0);
+        this.material.loadTexture("obstacles/textures/rock.jpg");
+        this.material.setTextureWrap("REPEAT", "REPEAT");
+    }
+
+    display() {
+        this.scene.gl.texParameteri(
+            this.scene.gl.TEXTURE_2D,
+            this.scene.gl.TEXTURE_MAG_FILTER,
+            this.scene.gl.NEAREST,
+        );
+        this.material.apply();
+        super.display();
     }
 
     initBuffers() {
