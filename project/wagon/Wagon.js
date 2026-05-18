@@ -6,12 +6,14 @@ import {
 } from "../../lib/CGF.js";
 import { Beam } from "./Beam.js";
 import { Direction } from "./Direction.js";
+import { WagonBody } from "./WagonBody.js";
 
 export class Wagon extends CGFobject {
     constructor(scene) {
         super(scene);
         this.beamLength = 3;
         this.beam = new Beam(this.scene,this.beamLength,0);
+        this.body = new WagonBody(this.scene);
         this.direction = new Direction(this.scene,this.beamLength,0);
         this.initMaterials();
     }
@@ -28,19 +30,16 @@ export class Wagon extends CGFobject {
 
     display() {
         //this.beam.display();
-        this.scene.pushMatrix();
-        this.scene.translate(0,1,0);
-        this.direction.display();
-        this.scene.translate(0,0,-this.beamLength / 2);
-        this.beam.display();
-        this.scene.popMatrix();
+        this.body.display();
     }
 
     enableNormalViz() {
         this.beam.enableNormalViz();
+        this.body.enableNormalViz();
     }
 
     disableNormalViz() {
         this.beam.disableNormalViz();
+        this.body.disableNormalViz();
     }
 }
