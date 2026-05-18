@@ -1,21 +1,18 @@
 import { CGFobject, CGFappearance, CGFshader } from "../../lib/CGF.js";
-import { MyPlane } from "./MyPlane.js";
 import { SkySphere } from "./SkySphere.js";
 import { hexToRGB } from "../utils.js";
 
 export class Clouds extends CGFobject {
-    constructor(scene, yPosition = 5, scrollSpeed = 0.3, scale = 50) {
+    constructor(scene, yPosition = 5, scrollSpeed = 0.3) {
         super(scene);
         this.yPosition = yPosition;
         this.scrollSpeed = scrollSpeed;
-        this.scale = scale;
         this.timeFactor = 0;
         this.cloudDensity = 0.38;
         this.cloudSoftness = 0.18;
         this.daySpeed = 0.005;
         this.timeOfDay = 2.5;
         this.cycleActive = true;
-        this.quad = new MyPlane(this.scene, 50);
         this.sphere = new SkySphere(this.scene);
         this.initMaterial();
         this.initShaders();
@@ -31,17 +28,11 @@ export class Clouds extends CGFobject {
     }
 
     initShaders() {
-        this.flatShader = new CGFshader(
-            this.scene.gl,
-            "sky/shaders/flatClouds.vert",
-            "sky/shaders/flatClouds.frag",
-        );
-        this.shpereShader = new CGFshader(
+        this.sphereShader = new CGFshader(
             this.scene.gl,
             "sky/shaders/sphereClouds.vert",
             "sky/shaders/sphereClouds.frag",
         );
-        this.shaders = [this.flatShader, this.shpereShader];
     }
 
     update(deltaTime) {
@@ -88,9 +79,9 @@ export class Clouds extends CGFobject {
     display() {
         this.scene.pushMatrix();
         this.cloudMaterial.apply();
-        this.scene.setActiveShader(this.shaders[this.scene.sky_clouds_mode]);
+        this.scene.setActiveShader(this.sphereShader);
 
-        this.shaders[this.scene.sky_clouds_mode].setUniformsValues({
+        this.sphereShader.setUniformsValues({
             uSampler2: 1,
             timeFactor: this.timeFactor,
             cloudScale: 4.0,
@@ -108,17 +99,10 @@ export class Clouds extends CGFobject {
             dayfactor: this.dayFactor,
         });
 
-        if (this.scene.sky_clouds_mode == 0) {
-            this.scene.translate(0, this.yPosition, 0);
-            this.scene.rotate(Math.PI / 2, 1, 0, 0);
-            this.scene.scale(this.scale, this.scale, this.scale);
-            this.quad.display();
-        } else {
-            this.scene.translate(0, this.yPosition - 4 - 5, 0);
-            this.scene.rotate(-Math.PI / 2, 1, 0, 0);
-            this.scene.scale(0.99, 0.99, 0.99);
-            this.sphere.display();
-        }
+        this.scene.translate(0, this.yPosition - 4 - 5, 0);
+        this.scene.rotate(-Math.PI / 2, 1, 0, 0);
+        this.sphere.display();
+
         this.scene.setActiveShader(this.scene.defaultShader);
         this.scene.popMatrix();
         this.scene.defaultMaterial.apply();

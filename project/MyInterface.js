@@ -30,7 +30,6 @@ export class MyInterface extends CGFinterface {
 
         var cloudControls = skyControls.addFolder("Clouds");
         cloudControls.add(this.scene, "sky_clouds_display").name("Display Clouds");
-        cloudControls.add(this.scene, "sky_clouds_mode", { "Flat Quad": 0, "Sphere Mapped": 1 }).name("Cloud Mode");
         cloudControls.add(this.scene, "sky_clouds_yPosition", -20.0, 20.0).step(0.5).name("Y Position");
         cloudControls.add(this.scene, "sky_clouds_scrollSpeed", 0.0, 2.0).step(0.05).name("Scroll Speed");
 

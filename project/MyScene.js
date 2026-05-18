@@ -1,5 +1,4 @@
 import { CGFscene, CGFcamera, CGFaxis, CGFappearance } from "../lib/CGF.js";
-import { SkySphere } from "./sky/SkySphere.js";
 import { Clouds } from "./sky/Clouds.js";
 import { HayBale } from "./obstacles/HayBale.js";
 import { Rock } from "./obstacles/Rock.js";
@@ -89,7 +88,6 @@ export class MyScene extends CGFscene {
 
         // Sky > Clouds
         this.sky_clouds_display = true;
-        this.sky_clouds_mode = 1;
         this.sky_clouds_yPosition = 5;
         this.sky_clouds_scrollSpeed = 0.1;
 
@@ -120,13 +118,13 @@ export class MyScene extends CGFscene {
 
     initObjects() {
         this.axis = new CGFaxis(this);
-        this.skySphere = new SkySphere(this);
+        this.cloudLayer = new Clouds(this, this.sky_clouds_yPosition, this.sky_clouds_scrollSpeed);
+        this.cloudLayer.updateDayCycle();
+
         this.haybale = new HayBale(this, this.obstacles_haybale_slices, this.obstacles_haybale_stacks);
         this.rock = new Rock(this, this.obstacles_rock_radius, this.obstacles_rock_scale);
         this.objects = [this.haybale, this.rock];
 
-        this.cloudLayer = new Clouds(this, this.sky_clouds_yPosition, this.sky_clouds_scrollSpeed, 50);
-        this.cloudLayer.updateDayCycle();
     }
 
     // =====================================================
@@ -179,12 +177,6 @@ export class MyScene extends CGFscene {
         this.multMatrix(sca);
 
         // ---- BEGIN Primitive drawing section
-
-        this.pushMatrix();
-        this.translate(0, -4, 0);
-        this.rotate(-Math.PI / 2, 1, 0, 0);
-        this.skySphere.display();
-        this.popMatrix();
 
         // Display clouds
         if (this.sky_clouds_display) {
