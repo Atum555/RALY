@@ -3,9 +3,7 @@ import {
     CGFcamera,
     CGFaxis,
     CGFappearance,
-    CGFtexture,
 } from "../lib/CGF.js";
-import { MyQuad } from "./MyQuad.js";
 import { SkySphere } from "./sky/SkySphere.js";
 import { Clouds } from "./sky/Clouds.js";
 import { ObstacleScene } from "./obstacles/ObstacleScene.js";
@@ -33,9 +31,8 @@ export class MyScene extends CGFscene {
         // Initialize scene objects
         this.axis = new CGFaxis(this);
         this.sphere = new SkySphere(this);
-        this.quad = new MyQuad(this);
         this.obstacleScene = new ObstacleScene(this);
-        this.objects = [this.sphere, this.quad, this.obstacleScene];
+        this.objects = [this.sphere, this.obstacleScene];
 
         // Initialize cloud layer
         this.cloudLayer = new Clouds(this, 5, 0.3, 50);
@@ -43,11 +40,10 @@ export class MyScene extends CGFscene {
         // Labels and ID's for object selection on MyInterface
         this.objectIDs = {
             Sphere: 0,
-            Quad: 1,
-            ObstacleScene: 2,
+            ObstacleScene: 1,
         };
         //Other variables connected to MyInterface
-        this.selectedObject = 1;
+        this.selectedObject = 0;
         // Objects connected to MyInterface
         this.scaleFactor = 1;
         this.displayAxis = true;
@@ -109,13 +105,11 @@ export class MyScene extends CGFscene {
     }
 
     initMaterials() {
-        this.quadMaterial = new CGFappearance(this);
-        this.quadMaterial.setAmbient(0.1, 0.1, 0.1, 1);
-        this.quadMaterial.setDiffuse(0.9, 0.9, 0.9, 1);
-        this.quadMaterial.setSpecular(0.1, 0.1, 0.1, 1);
-        this.quadMaterial.setShininess(10.0);
-        this.quadMaterial.loadTexture("textures/texture.jpg");
-        this.quadMaterial.setTextureWrap("REPEAT", "REPEAT");
+        this.defaultMaterial = new CGFappearance(this);
+        this.defaultMaterial.setAmbient(0.1, 0.1, 0.1, 1);
+        this.defaultMaterial.setDiffuse(0.9, 0.9, 0.9, 1);
+        this.defaultMaterial.setSpecular(0.1, 0.1, 0.1, 1);
+        this.defaultMaterial.setShininess(10.0);
     }
 
     update() {
@@ -196,26 +190,12 @@ export class MyScene extends CGFscene {
 
         this.multMatrix(sca);
 
-        this.quadMaterial.apply();
-        this.gl.texParameteri(
-            this.gl.TEXTURE_2D,
-            this.gl.TEXTURE_MAG_FILTER,
-            this.gl.NEAREST,
-        );
         // ---- BEGIN Primitive drawing section
 
         this.pushMatrix();
         this.translate(0, -4, 0);
         this.rotate(-Math.PI / 2, 1, 0, 0);
         this.sphere.display();
-        this.popMatrix();
-
-        this.pushMatrix();
-        // used for displaying objects in testing
-        this.translate(0,-1,0);
-        this.scale(40,40,40);
-        this.rotate(-Math.PI / 2, 1, 0, 0);
-        this.quad.display();
         this.popMatrix();
 
         // Display clouds

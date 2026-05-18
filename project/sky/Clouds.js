@@ -128,6 +128,6 @@ export class Clouds extends CGFobject {
         }
         this.scene.setActiveShader(this.scene.defaultShader);
         this.scene.popMatrix();
-        this.scene.quadMaterial.apply();
+        this.scene.defaultMaterial.apply();
     }
 }
