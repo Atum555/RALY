@@ -36,23 +36,23 @@ float noise(in vec2 p) {
     vec2 o = (to_corner0.x > to_corner0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
     vec2 to_corner1 = to_corner0 - o + un_skew_factor;
     vec2 to_corner2 = to_corner0 - 1.0 + 2.0 * un_skew_factor;
-    vec3 fall_off = max(0.5 - vec3(dot(to_corner0,to_corner0), dot(to_corner1,to_corner1), dot(to_corner2,to_corner2)), 0.0);
-    vec3 n = fall_off*fall_off*fall_off*fall_off * vec3(dot(to_corner0, hash(i)), dot(to_corner1, hash(i+o)), dot(to_corner2, hash(i+1.0)));
+    vec3 fall_off = max(0.5 - vec3(dot(to_corner0, to_corner0), dot(to_corner1, to_corner1), dot(to_corner2, to_corner2)), 0.0);
+    vec3 n = fall_off * fall_off * fall_off * fall_off * vec3(dot(to_corner0, hash(i)), dot(to_corner1, hash(i + o)), dot(to_corner2, hash(i + 1.0)));
     return dot(n, vec3(70.0));
 }
 
 float fbm(vec2 n) {
     float total = 0.0, amplitude = 0.1;
-    for (int i = 0; i < 7; i++) {
-        total     += noise(n) * amplitude;
-        n          = m * n;
+    for(int i = 0; i < 7; i++) {
+        total += noise(n) * amplitude;
+        n = m * n;
         amplitude *= 0.4;
     }
     return total;
 }
 
 void main() {
-    vec2 p  = v_texture_coord;
+    vec2 p = v_texture_coord;
     vec2 uv = p * cloud_scale * 0.8;
 
     float time = v_time_factor * speed;
@@ -62,18 +62,18 @@ void main() {
     float r = 0.0;
     vec2 uvr = uv * cloud_scale - q + time;
     float weight = 0.8;
-    for (int i = 0; i < 8; i++) {
-        r      += abs(weight * noise(uvr));
-        uvr     = m * uvr + time;
+    for(int i = 0; i < 8; i++) {
+        r += abs(weight * noise(uvr));
+        uvr = m * uvr + time;
         weight *= 0.7;
     }
 
     float f = 0.0;
     vec2 uvf = uv * cloud_scale - q + time;
     weight = 0.7;
-    for (int i = 0; i < 8; i++) {
-        f      += weight * noise(uvf);
-        uvf     = m * uvf + time;
+    for(int i = 0; i < 8; i++) {
+        f += weight * noise(uvf);
+        uvf = m * uvf + time;
         weight *= 0.6;
     }
 
@@ -82,38 +82,33 @@ void main() {
     float c = 0.0;
     vec2 uvc = uv * cloud_scale * 2.0 - q + v_time_factor * speed * 2.0;
     weight = 0.4;
-    for (int i = 0; i < 7; i++) {
-        c      += weight * noise(uvc);
-        uvc     = m * uvc + v_time_factor * speed * 2.0;
+    for(int i = 0; i < 7; i++) {
+        c += weight * noise(uvc);
+        uvc = m * uvc + v_time_factor * speed * 2.0;
         weight *= 0.6;
     }
 
     float c1 = 0.0;
     vec2 uvc1 = uv * cloud_scale * 3.0 - q + v_time_factor * speed * 3.0;
     weight = 0.4;
-    for (int i = 0; i < 7; i++) {
-        c1      += abs(weight * noise(uvc1));
-        uvc1     = m * uvc1 + v_time_factor * speed * 3.0;
-        weight  *= 0.6;
+    for(int i = 0; i < 7; i++) {
+        c1 += abs(weight * noise(uvc1));
+        uvc1 = m * uvc1 + v_time_factor * speed * 3.0;
+        weight *= 0.6;
     }
 
     c += c1;
 
-
     float elevation = clamp((p.y - 0.5) * 2.0, 0.0, 1.0);
-    vec3 current_colour1  = mix(sky_colour2, sky_colour1, elevation);
-    vec3 current_colour2  = mix(night_colour2, night_colour1, elevation);
+    vec3 current_colour1 = mix(sky_colour2, sky_colour1, elevation);
+    vec3 current_colour2 = mix(night_colour2, night_colour1, elevation);
     vec3 sky_colour = mix(current_colour2, current_colour1, day_factor);
 
     vec3 cloud_colour = vec3(1.1, 1.1, 0.9) * clamp(cloud_dark + cloud_light * c, 0.0, 1.0);
 
     f = cloud_cover + cloud_alpha * f * r;
 
-    vec3 result = mix(
-        sky_colour,
-        clamp(sky_tint * sky_colour + cloud_colour, 0.0, 1.0),
-        clamp(f + c, 0.0, 1.0)
-    );
+    vec3 result = mix(sky_colour, clamp(sky_tint * sky_colour + cloud_colour, 0.0, 1.0), clamp(f + c, 0.0, 1.0));
 
     // Sun and Moon
     float angle = mod(sun_angle, 4.0 * PI);
@@ -121,7 +116,7 @@ void main() {
 
     float coverage = clamp(f + c, 0.0, 0.6);
 
-    if (angle > 0.0 && angle < 2.0 * PI) {
+    if(angle > 0.0 && angle < 2.0 * PI) {
         vec2 sun_coord = vec2(position, 0.45);
 
         vec2 delta = p - sun_coord;
@@ -130,8 +125,7 @@ void main() {
         float disc = 1.0 - smoothstep(0.0, 0.03, d);
         float glow = 1.0 - smoothstep(0.03, 0.05, d);
         result = mix(result, vec3(0.996, 0.877, 0.535), (disc + glow * 0.3) * (1.0 - coverage));
-    }
-    else if (angle > 2.0 * PI && angle < 4.0 * PI){
+    } else if(angle > 2.0 * PI && angle < 4.0 * PI) {
         vec2 moon_coord = vec2(position - 2.0, 0.45);
 
         vec2 delta = p - moon_coord;

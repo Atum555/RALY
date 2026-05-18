@@ -2,6 +2,10 @@ import { CGFobject, CGFappearance, CGFshader } from "../../lib/CGF.js";
 import { hexToRGB } from "../utils.js";
 
 export class SkySphere extends CGFobject {
+    // =====================================================
+    // Init
+    // =====================================================
+
     constructor(scene, yPosition = 5, scrollSpeed = 0.3) {
         super(scene);
         this.yPosition = yPosition;
@@ -105,6 +109,10 @@ export class SkySphere extends CGFobject {
         );
     }
 
+    // =====================================================
+    // Update
+    // =====================================================
+
     update(deltaTime) {
         this.timeFactor += this.scrollSpeed * deltaTime * 0.001;
         if (this.cycleActive) this.updateDayCycle();
@@ -133,18 +141,18 @@ export class SkySphere extends CGFobject {
         moon.setPosition(x, -y + 3.5, z, 1.0);
 
         var buffer = 3.0;
-        if (y > -buffer)
-            sun.enable();
-        else
-            sun.disable();
-        if (y < buffer)
-            moon.enable();
-        else
-            moon.disable();
+        if (y > -buffer) sun.enable();
+        else sun.disable();
+        if (y < buffer) moon.enable();
+        else moon.disable();
 
         sun.update();
         moon.update();
     }
+
+    // =====================================================
+    // Display
+    // =====================================================
 
     display() {
         this.scene.pushMatrix();
