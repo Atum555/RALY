@@ -6,6 +6,11 @@ import { Rock } from "./obstacles/Rock.js";
 import { hexToRGB } from "./utils.js";
 
 export class MyScene extends CGFscene {
+    static Lights = Object.freeze({
+        SUN: 0,
+        MOON: 1,
+    });
+
     // =====================================================
     // Init
     // =====================================================
@@ -40,21 +45,23 @@ export class MyScene extends CGFscene {
     }
 
     initLights() {
-        const LIGHT_0_COLOR = hexToRGB("#ffe6b3ff");
-        this.lights[0].setPosition(15, 6, 6, 1);
-        this.lights[0].setDiffuse(...LIGHT_0_COLOR);
-        this.lights[0].setSpecular(...LIGHT_0_COLOR);
-        this.lights[0].enable();
-        this.lights[0].setVisible(true);
-        this.lights[0].update();
+        const sun = this.lights[MyScene.Lights.SUN];
+        const SUN_COLOR = hexToRGB("#ffe6b3ff");
+        sun.setPosition(15, 6, 6, 1);
+        sun.setDiffuse(...SUN_COLOR);
+        sun.setSpecular(...SUN_COLOR);
+        sun.enable();
+        sun.setVisible(true);
+        sun.update();
 
-        const LIGHT_1_COLOR = hexToRGB("#334D80FF");
-        this.lights[1].setPosition(15, 6, 6, 1);
-        this.lights[1].setDiffuse(...LIGHT_1_COLOR);
-        this.lights[1].setSpecular(...LIGHT_1_COLOR);
-        this.lights[1].enable();
-        this.lights[1].setVisible(true);
-        this.lights[1].update();
+        const moon = this.lights[MyScene.Lights.MOON];
+        const MOON_COLOR = hexToRGB("#334D80FF");
+        moon.setPosition(15, 6, 6, 1);
+        moon.setDiffuse(...MOON_COLOR);
+        moon.setSpecular(...MOON_COLOR);
+        moon.enable();
+        moon.setVisible(true);
+        moon.update();
     }
 
     initMaterials() {
@@ -155,7 +162,7 @@ export class MyScene extends CGFscene {
         // Apply transformations corresponding to the camera position relative to the origin
         this.applyViewMatrix();
 
-        this.lights[0].update();
+        this.lights[MyScene.Lights.SUN].update();
         // Draw axis
         if (this.displayAxis) this.axis.display();
 

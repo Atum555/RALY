@@ -64,8 +64,9 @@ export class Clouds extends CGFobject {
         var x = -2;
         var y = Math.sin(angle) * radius;
         var z = -Math.cos(angle) * radius;
-        var sun = this.scene.lights[0];
-        var moon = this.scene.lights[1];
+        const { Lights } = this.scene.constructor;
+        const sun = this.scene.lights[Lights.SUN];
+        const moon = this.scene.lights[Lights.MOON];
 
         sun.setPosition(x, y - 3.5, -z, 1.0);
         moon.setPosition(x, -y + 3.5, z, 1.0);
@@ -79,7 +80,6 @@ export class Clouds extends CGFobject {
             moon.enable();
         else
             moon.disable();
-         
 
         sun.update();
         moon.update();

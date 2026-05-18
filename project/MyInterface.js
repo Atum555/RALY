@@ -1,4 +1,5 @@
 import { CGFinterface, dat } from "../lib/CGF.js";
+import { MyScene } from "./MyScene.js";
 
 export class MyInterface extends CGFinterface {
     constructor() {
@@ -21,10 +22,11 @@ export class MyInterface extends CGFinterface {
         //skyControls.add(this.scene, "selectedScene", this.scene.sceneIDs).name("Selected Scene(sky)");
         var sunControls = skyControls.addFolder("Sun");
         sunControls.add(this.scene, "sky_sun_dayNightCycle").name("Day/Night Cycle");
-        sunControls.add(this.scene.lights[0], "enabled").name("Enabled");
-        sunControls.add(this.scene.lights[0].position, "0", -20.0, 20.0).name("X Position");
-        sunControls.add(this.scene.lights[0].position, "1", -20.0, 20.0).name("Y Position");
-        sunControls.add(this.scene.lights[0].position, "2", -20.0, 20.0).name("Z Position");
+        const sun = this.scene.lights[MyScene.Lights.SUN];
+        sunControls.add(sun, "enabled").name("Enabled");
+        sunControls.add(sun.position, "0", -20.0, 20.0).name("X Position");
+        sunControls.add(sun.position, "1", -20.0, 20.0).name("Y Position");
+        sunControls.add(sun.position, "2", -20.0, 20.0).name("Z Position");
 
         var cloudControls = skyControls.addFolder("Clouds");
         cloudControls.add(this.scene, "sky_clouds_display").name("Display Clouds");
