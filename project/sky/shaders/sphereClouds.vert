@@ -6,7 +6,7 @@ uniform mat4 uMVMatrix;
 uniform mat4 uPMatrix;
 uniform mat4 uNMatrix;
 uniform float time_factor;
-const float radius = 20.0;
+uniform float radius;
 
 varying vec2 v_texture_coord;
 varying float v_time_factor;

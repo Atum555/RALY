@@ -6,7 +6,7 @@ export class SkySphere extends CGFobject {
     // Init
     // =====================================================
 
-    constructor(scene, yPosition = 5, scrollSpeed = 0.3, slices = 30, stacks = 30, radius = 20) {
+    constructor(scene, yPosition, scrollSpeed, slices, stacks, radius) {
         super(scene);
         this.yPosition = yPosition;
         this.scrollSpeed = scrollSpeed;
@@ -162,6 +162,7 @@ export class SkySphere extends CGFobject {
         this.sphereShader.setUniformsValues({
             uSampler2: 1,
             time_factor: this.timeFactor,
+            radius: this.radius,
             cloud_scale: this.scene.sky_clouds_appearance_scale,
             cloud_dark: this.scene.sky_clouds_appearance_dark,
             cloud_light: this.scene.sky_clouds_appearance_light,

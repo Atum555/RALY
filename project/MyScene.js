@@ -84,7 +84,7 @@ export class MyScene extends CGFscene {
         // Sky
         this.sky_slices = 30;
         this.sky_stacks = 30;
-        this.sky_radius = 20;
+        this.sky_radius = 500;
 
         // Sky > Sun
         this.sky_sun_day_night_cycle = false;

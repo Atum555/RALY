@@ -6,6 +6,7 @@ varying vec2 v_texture_coord;
 varying float v_time_factor;
 
 uniform float cloud_scale;
+uniform float radius;
 const float speed = 0.03;
 uniform float cloud_dark;
 uniform float cloud_light;
@@ -53,7 +54,7 @@ float fbm(vec2 n) {
 
 void main() {
     vec2 p = v_texture_coord;
-    vec2 uv = p * cloud_scale * 0.8;
+    vec2 uv = p * cloud_scale * 0.8 * (radius / 50.0);
 
     float time = v_time_factor * speed;
 
