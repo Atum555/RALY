@@ -5,7 +5,6 @@ import {
     CGFappearance,
     CGFtexture,
 } from "../lib/CGF.js";
-import { MyDiamond } from "./MyDiamond.js";
 import { MyQuad } from "./MyQuad.js";
 import { SkySphere } from "./sky/SkySphere.js";
 import { Clouds } from "./sky/Clouds.js";
@@ -33,24 +32,22 @@ export class MyScene extends CGFscene {
 
         // Initialize scene objects
         this.axis = new CGFaxis(this);
-        this.diamond = new MyDiamond(this);
         this.sphere = new SkySphere(this);
         this.quad = new MyQuad(this);
         this.obstacleScene = new ObstacleScene(this);
-        this.objects = [this.diamond, this.sphere, this.quad, this.obstacleScene];
+        this.objects = [this.sphere, this.quad, this.obstacleScene];
 
         // Initialize cloud layer
         this.cloudLayer = new Clouds(this, 5, 0.3, 50);
 
         // Labels and ID's for object selection on MyInterface
         this.objectIDs = {
-            Diamond: 0,
-            Sphere: 1,
-            Quad: 2,
-            ObstacleScene: 3,
+            Sphere: 0,
+            Quad: 1,
+            ObstacleScene: 2,
         };
         //Other variables connected to MyInterface
-        this.selectedObject = 2;
+        this.selectedObject = 1;
         // Objects connected to MyInterface
         this.scaleFactor = 1;
         this.displayAxis = true;
