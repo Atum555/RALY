@@ -153,20 +153,19 @@ export class SkySphere extends CGFobject {
 
         this.sphereShader.setUniformsValues({
             uSampler2: 1,
-            timeFactor: this.timeFactor,
-            cloudScale: 4.0,
-            cloudscale: this.scene.sky_clouds_appearance_scale,
-            clouddark: this.scene.sky_clouds_appearance_dark,
-            cloudlight: this.scene.sky_clouds_appearance_light,
-            cloudcover: this.scene.sky_clouds_appearance_cover,
-            cloudalpha: this.scene.sky_clouds_appearance_alpha,
-            skytint: this.scene.sky_clouds_colors_skyTint,
-            skycolour1: hexToRGB(this.scene.sky_clouds_colors["SkyColour1"]).slice(0, 3),
-            skycolour2: hexToRGB(this.scene.sky_clouds_colors["SkyColour2"]).slice(0, 3),
-            nightcolour1: hexToRGB(this.scene.sky_clouds_colors["nightColour1"]).slice(0, 3),
-            nightcolour2: hexToRGB(this.scene.sky_clouds_colors["nightColour2"]).slice(0, 3),
-            sunangle: this.timeOfDay,
-            dayfactor: this.dayFactor,
+            time_factor: this.timeFactor,
+            cloud_scale: this.scene.sky_clouds_appearance_scale,
+            cloud_dark: this.scene.sky_clouds_appearance_dark,
+            cloud_light: this.scene.sky_clouds_appearance_light,
+            cloud_cover: this.scene.sky_clouds_appearance_cover,
+            cloud_alpha: this.scene.sky_clouds_appearance_alpha,
+            sky_tint: this.scene.sky_clouds_colors_skyTint,
+            sky_colour1: hexToRGB(this.scene.sky_clouds_colors["SkyColour1"]).slice(0, 3),
+            sky_colour2: hexToRGB(this.scene.sky_clouds_colors["SkyColour2"]).slice(0, 3),
+            night_colour1: hexToRGB(this.scene.sky_clouds_colors["nightColour1"]).slice(0, 3),
+            night_colour2: hexToRGB(this.scene.sky_clouds_colors["nightColour2"]).slice(0, 3),
+            sun_angle: this.timeOfDay,
+            day_factor: this.dayFactor,
         });
 
         this.scene.translate(0, this.yPosition - 4 - 5, 0);
