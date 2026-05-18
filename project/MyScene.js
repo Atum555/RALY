@@ -1,5 +1,5 @@
 import { CGFscene, CGFcamera, CGFaxis, CGFappearance } from "../lib/CGF.js";
-import { Clouds } from "./sky/Clouds.js";
+import { SkySphere } from "./sky/SkySphere.js";
 import { HayBale } from "./obstacles/HayBale.js";
 import { Rock } from "./obstacles/Rock.js";
 import { hexToRGB } from "./utils.js";
@@ -118,8 +118,8 @@ export class MyScene extends CGFscene {
 
     initObjects() {
         this.axis = new CGFaxis(this);
-        this.cloudLayer = new Clouds(this, this.sky_clouds_yPosition, this.sky_clouds_scrollSpeed);
-        this.cloudLayer.updateDayCycle();
+        this.skySphere = new SkySphere(this, this.sky_clouds_yPosition, this.sky_clouds_scrollSpeed);
+        this.skySphere.updateDayCycle();
 
         this.haybale = new HayBale(this, this.obstacles_haybale_slices, this.obstacles_haybale_stacks);
         this.rock = new Rock(this, this.obstacles_rock_radius, this.obstacles_rock_scale);
@@ -138,14 +138,14 @@ export class MyScene extends CGFscene {
         this.lastTime = currentTime;
 
         // Sync cloud layer with UI controls
-        this.cloudLayer.yPosition = this.sky_clouds_yPosition;
-        this.cloudLayer.scrollSpeed = this.sky_clouds_scrollSpeed;
-        this.cloudLayer.cloudDensity = this.cloudDensity;
-        this.cloudLayer.cloudSoftness = this.cloudSoftness;
-        this.cloudLayer.cycleActive = this.sky_sun_dayNightCycle;
+        this.skySphere.yPosition = this.sky_clouds_yPosition;
+        this.skySphere.scrollSpeed = this.sky_clouds_scrollSpeed;
+        this.skySphere.cloudDensity = this.cloudDensity;
+        this.skySphere.cloudSoftness = this.cloudSoftness;
+        this.skySphere.cycleActive = this.sky_sun_dayNightCycle;
         // Update cloud animation
         if (this.sky_clouds_display) {
-            this.cloudLayer.update(this.deltaTime);
+            this.skySphere.update(this.deltaTime);
         }
     }
 
@@ -180,7 +180,7 @@ export class MyScene extends CGFscene {
 
         // Display clouds
         if (this.sky_clouds_display) {
-            this.cloudLayer.display();
+            this.skySphere.display();
         }
 
         this.objects[this.selectedObject].display();

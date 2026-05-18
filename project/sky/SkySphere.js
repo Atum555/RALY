@@ -1,18 +1,25 @@
-import { CGFobject } from "../../lib/CGF.js";
+import { CGFobject, CGFappearance, CGFshader } from "../../lib/CGF.js";
+import { hexToRGB } from "../utils.js";
 
-/**
- * SkySphere
- * @constructor
- * @param scene - Reference to MyScene object
- */
 export class SkySphere extends CGFobject {
-    constructor(scene) {
+    constructor(scene, yPosition = 5, scrollSpeed = 0.3) {
         super(scene);
+        this.yPosition = yPosition;
+        this.scrollSpeed = scrollSpeed;
+        this.timeFactor = 0;
+        this.cloudDensity = 0.38;
+        this.cloudSoftness = 0.18;
+        this.daySpeed = 0.005;
+        this.timeOfDay = 2.5;
+        this.cycleActive = true;
 
         this.slices = 30;
         this.stacks = 30;
         this.radius = 20;
+
         this.initBuffers();
+        this.initMaterial();
+        this.initShaders();
     }
 
     initBuffers() {
@@ -31,22 +38,19 @@ export class SkySphere extends CGFobject {
         var sliceAngle, stackAngle;
 
         for (var i = 0; i <= this.stacks / 2; ++i) {
-            stackAngle = Math.PI / 2 - i * stackStep; // starting from pi/2 to -pi/2
-            xy = this.radius * Math.cos(stackAngle); // r * cos(u)
-            z = this.radius * Math.sin(stackAngle); // r * sin(u)
+            stackAngle = Math.PI / 2 - i * stackStep;
+            xy = this.radius * Math.cos(stackAngle);
+            z = this.radius * Math.sin(stackAngle);
 
-            // Vertex + Normals
             for (var j = 0; j <= this.slices; ++j) {
-                sliceAngle = j * sliceStep; // starting from 0 to 2pi
+                sliceAngle = j * sliceStep;
 
-                // vertex position (x, y, z)
-                x = xy * Math.cos(sliceAngle); // r * cos(u) * cos(v)
-                y = xy * Math.sin(sliceAngle); // r * cos(u) * sin(v)
+                x = xy * Math.cos(sliceAngle);
+                y = xy * Math.sin(sliceAngle);
                 this.vertices.push(x);
                 this.vertices.push(y);
                 this.vertices.push(z);
 
-                // normalized vertex normal (nx, ny, nz)
                 nx = x * lengthInv;
                 ny = y * lengthInv;
                 nz = z * lengthInv;
@@ -54,7 +58,6 @@ export class SkySphere extends CGFobject {
                 this.normals.push(-ny);
                 this.normals.push(-nz);
 
-                // vertex tex coord (s, t) range between [0, 1]
                 s = j / this.slices;
                 t = i / (this.stacks / 2);
                 this.texCoords.push(s);
@@ -63,19 +66,16 @@ export class SkySphere extends CGFobject {
         }
         var k1, k2;
         for (var i = 0; i < this.stacks / 2; ++i) {
-            k1 = i * (this.slices + 1); // Beginning of current stack
-            k2 = k1 + this.slices + 1; // Beginning of next stack
+            k1 = i * (this.slices + 1);
+            k2 = k1 + this.slices + 1;
 
             for (var j = 0; j < this.slices; ++j, ++k1, ++k2) {
-                // 2 triangles per sector excluding first and last stacks
-                // k1 => k2 => k1+1
                 if (i != 0) {
                     this.indices.push(k1 + 1);
                     this.indices.push(k2);
                     this.indices.push(k1);
                 }
 
-                // k1+1 => k2 => k2+1
                 if (i != this.stacks - 1) {
                     this.indices.push(k2 + 1);
                     this.indices.push(k2);
@@ -84,11 +84,97 @@ export class SkySphere extends CGFobject {
             }
         }
 
-        // The defined indices (and corresponding vertices)
-        // will be read in groups of three to draw triangles
         this.primitiveType = this.scene.gl.TRIANGLES;
-
         this.initGLBuffers();
     }
 
+    initMaterial() {
+        this.cloudMaterial = new CGFappearance(this.scene);
+        this.cloudMaterial.setAmbient(1, 1, 1, 1);
+        this.cloudMaterial.setDiffuse(0, 0, 0, 1);
+        this.cloudMaterial.setSpecular(0, 0, 0, 0);
+        this.cloudMaterial.setShininess(0);
+        this.cloudMaterial.setEmission(1, 1, 1, 1);
+    }
+
+    initShaders() {
+        this.sphereShader = new CGFshader(
+            this.scene.gl,
+            "sky/shaders/sphereClouds.vert",
+            "sky/shaders/sphereClouds.frag",
+        );
+    }
+
+    update(deltaTime) {
+        this.timeFactor += this.scrollSpeed * deltaTime * 0.001;
+        if (this.cycleActive) this.updateDayCycle();
+    }
+
+    updateDayCycle() {
+        this.timeOfDay += this.daySpeed;
+
+        var angle = (this.timeOfDay / (Math.PI * 2)) * Math.PI;
+        var sunY = Math.sin(angle);
+
+        this.dayFactor = Math.max(0, Math.min(1, (sunY - -0.1) / (0.2 - -0.1)));
+        this.dayFactor = this.dayFactor * this.dayFactor;
+
+        this.scene.sky_clouds_colors_skyTint = 0.2 + 0.3 * this.dayFactor;
+
+        var radius = 20.0;
+        var x = -2;
+        var y = Math.sin(angle) * radius;
+        var z = -Math.cos(angle) * radius;
+        const { Lights } = this.scene.constructor;
+        const sun = this.scene.lights[Lights.SUN];
+        const moon = this.scene.lights[Lights.MOON];
+
+        sun.setPosition(x, y - 3.5, -z, 1.0);
+        moon.setPosition(x, -y + 3.5, z, 1.0);
+
+        var buffer = 3.0;
+        if (y > -buffer)
+            sun.enable();
+        else
+            sun.disable();
+        if (y < buffer)
+            moon.enable();
+        else
+            moon.disable();
+
+        sun.update();
+        moon.update();
+    }
+
+    display() {
+        this.scene.pushMatrix();
+        this.cloudMaterial.apply();
+        this.scene.setActiveShader(this.sphereShader);
+
+        this.sphereShader.setUniformsValues({
+            uSampler2: 1,
+            timeFactor: this.timeFactor,
+            cloudScale: 4.0,
+            cloudscale: this.scene.sky_clouds_appearance_scale,
+            clouddark: this.scene.sky_clouds_appearance_dark,
+            cloudlight: this.scene.sky_clouds_appearance_light,
+            cloudcover: this.scene.sky_clouds_appearance_cover,
+            cloudalpha: this.scene.sky_clouds_appearance_alpha,
+            skytint: this.scene.sky_clouds_colors_skyTint,
+            skycolour1: hexToRGB(this.scene.sky_clouds_colors["SkyColour1"]).slice(0, 3),
+            skycolour2: hexToRGB(this.scene.sky_clouds_colors["SkyColour2"]).slice(0, 3),
+            nightcolour1: hexToRGB(this.scene.sky_clouds_colors["nightColour1"]).slice(0, 3),
+            nightcolour2: hexToRGB(this.scene.sky_clouds_colors["nightColour2"]).slice(0, 3),
+            sunangle: this.timeOfDay,
+            dayfactor: this.dayFactor,
+        });
+
+        this.scene.translate(0, this.yPosition - 4 - 5, 0);
+        this.scene.rotate(-Math.PI / 2, 1, 0, 0);
+        super.display();
+
+        this.scene.setActiveShader(this.scene.defaultShader);
+        this.scene.popMatrix();
+        this.scene.defaultMaterial.apply();
+    }
 }
