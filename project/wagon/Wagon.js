@@ -7,14 +7,15 @@ import {
 import { Beam } from "./Beam.js";
 import { Direction } from "./Direction.js";
 import { WagonBody } from "./WagonBody.js";
+import { UnderBody } from "./UnderBody.js";
 
 export class Wagon extends CGFobject {
     constructor(scene) {
         super(scene);
-        this.beamLength = 3;
-        this.beam = new Beam(this.scene,this.beamLength,0);
+        this.beamLength = 6;
+        this.beam = new Beam(this.scene,this.beamLength,0.5);
         this.body = new WagonBody(this.scene);
-        this.direction = new Direction(this.scene,this.beamLength,0);
+        this.UnderBody = new UnderBody(this.scene, 0.0);
         this.initMaterials();
     }
 
@@ -30,7 +31,11 @@ export class Wagon extends CGFobject {
 
     display() {
         //this.beam.display();
+        this.scene.pushMatrix();
+        this.scene.translate(0,2.4,0);
         this.body.display();
+        this.scene.popMatrix();
+        this.UnderBody.display();
     }
 
     enableNormalViz() {

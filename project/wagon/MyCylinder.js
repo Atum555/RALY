@@ -1,4 +1,4 @@
-import { CGFobject } from "../lib/CGF.js";
+import { CGFobject } from "../../lib/CGF.js";
 
 /**
  * MyCylinder
@@ -31,8 +31,9 @@ export class MyCylinder extends CGFobject {
                 var cosA = Math.cos(ang);
                 var sinA = Math.sin(ang);
 
-                var x = Math.cos(angle);
-                var y = Math.sin(angle);
+                // Calculate the "push out" factor (Superellipse formula)
+                var x = Math.cos(ang);
+                var y = Math.sin(ang);
 
                 this.vertices.push(x, -y, z);
                 // Normals

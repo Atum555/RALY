@@ -6,50 +6,50 @@ import { CGFobject } from "../../lib/CGF.js";
  * @param scene - Reference to MyScene object
  */
 export class Beam extends CGFobject {
-    constructor(scene,length,segments) {
+    constructor(scene,length,thickness) {
         super(scene);
         this.length = length;
-        this.segments = segments;
+        this.thickness = thickness;
         this.initBuffers();
     }
 
     initBuffers() {
         this.vertices = [
             // Front face
-            -0.125, -0.125,  (this.length / 2),
-             0.125, -0.125,  (this.length / 2),
-             0.125,  0.125,  (this.length / 2),
-            -0.125,  0.125,  (this.length / 2),
+            -this.thickness, -this.thickness,  (this.length / 2),
+             this.thickness, -this.thickness,  (this.length / 2),
+             this.thickness,  this.thickness,  (this.length / 2),
+            -this.thickness,  this.thickness,  (this.length / 2),
 
             // Back face
-            -0.125, -0.125, -(this.length / 2),
-            -0.125,  0.125, -(this.length / 2),
-             0.125,  0.125, -(this.length / 2),
-             0.125, -0.125, -(this.length / 2),
+            -this.thickness, -this.thickness, -(this.length / 2),
+            -this.thickness,  this.thickness, -(this.length / 2),
+             this.thickness,  this.thickness, -(this.length / 2),
+             this.thickness, -this.thickness, -(this.length / 2),
 
             // Left face
-            -0.125,  0.125,  (this.length / 2),
-            -0.125, -0.125, -(this.length / 2),
-            -0.125, -0.125,  (this.length / 2),
-            -0.125,  0.125, -(this.length / 2),
+            -this.thickness,  this.thickness,  (this.length / 2),
+            -this.thickness, -this.thickness, -(this.length / 2),
+            -this.thickness, -this.thickness,  (this.length / 2),
+            -this.thickness,  this.thickness, -(this.length / 2),
 
             // Right face
-             0.125, -0.125, -(this.length / 2),
-             0.125,  0.125, -(this.length / 2),
-             0.125,  0.125,  (this.length / 2),
-             0.125, -0.125,  (this.length / 2),
+             this.thickness, -this.thickness, -(this.length / 2),
+             this.thickness,  this.thickness, -(this.length / 2),
+             this.thickness,  this.thickness,  (this.length / 2),
+             this.thickness, -this.thickness,  (this.length / 2),
 
             // Top face
-            -0.125,  0.125, -(this.length / 2),
-            -0.125,  0.125,  (this.length / 2),
-             0.125,  0.125,  (this.length / 2),
-             0.125,  0.125, -(this.length / 2),
+            -this.thickness,  this.thickness, -(this.length / 2),
+            -this.thickness,  this.thickness,  (this.length / 2),
+             this.thickness,  this.thickness,  (this.length / 2),
+             this.thickness,  this.thickness, -(this.length / 2),
 
             // Bottom face
-            -0.125, -0.125, -(this.length / 2),
-             0.125, -0.125, -(this.length / 2),
-             0.125, -0.125,  (this.length / 2),
-            -0.125, -0.125,  (this.length / 2)
+            -this.thickness, -this.thickness, -(this.length / 2),
+             this.thickness, -this.thickness, -(this.length / 2),
+             this.thickness, -this.thickness,  (this.length / 2),
+            -this.thickness, -this.thickness,  (this.length / 2)
         ];
 
         this.indices = [
