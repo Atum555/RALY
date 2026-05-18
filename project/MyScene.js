@@ -10,6 +10,7 @@ import { MyQuad } from "./MyQuad.js";
 import { SkySphere } from "./sky/SkySphere.js";
 import { Clouds } from "./sky/Clouds.js";
 import { ObstacleScene } from "./obstacles/ObstacleScene.js";
+import { Wagon } from "./wagon/Wagon.js";
 
 export class MyScene extends CGFscene {
     constructor() {
@@ -37,7 +38,8 @@ export class MyScene extends CGFscene {
         this.sphere = new SkySphere(this);
         this.quad = new MyQuad(this);
         this.obstacleScene = new ObstacleScene(this);
-        this.objects = [this.diamond, this.sphere, this.quad, this.obstacleScene];
+        this.wagon = new Wagon(this);
+        this.objects = [this.diamond, this.sphere, this.quad, this.obstacleScene, this.wagon];
 
         // Initialize cloud layer
         this.cloudLayer = new Clouds(this, 5, 0.3, 50);
@@ -48,9 +50,10 @@ export class MyScene extends CGFscene {
             Sphere: 1,
             Quad: 2,
             ObstacleScene: 3,
+            Wagon: 4,
         };
         //Other variables connected to MyInterface
-        this.selectedObject = 2;
+        this.selectedObject = 4;
         // Objects connected to MyInterface
         this.scaleFactor = 1;
         this.displayAxis = true;
