@@ -10,9 +10,7 @@ export class MyScene extends CGFscene {
         MOON: 1,
     });
 
-    // =====================================================
-    // Init
-    // =====================================================
+    // == Init =============================================
 
     constructor() {
         super();
@@ -29,8 +27,8 @@ export class MyScene extends CGFscene {
         this.enableTextures(true);
 
         this.setUpdatePeriod(50);
-        this.lastTime = Date.now();
-        this.deltaTime = 0;
+        this.last_time = Date.now();
+        this.delta_time = 0;
 
         this.initCameras();
         this.initLights();
@@ -64,32 +62,37 @@ export class MyScene extends CGFscene {
     }
 
     initMaterials() {
-        this.defaultMaterial = new CGFappearance(this);
-        this.defaultMaterial.setAmbient(0.1, 0.1, 0.1, 1);
-        this.defaultMaterial.setDiffuse(0.9, 0.9, 0.9, 1);
-        this.defaultMaterial.setSpecular(0.1, 0.1, 0.1, 1);
-        this.defaultMaterial.setShininess(10.0);
+        this.default_material = new CGFappearance(this);
+        this.default_material.setAmbient(0.1, 0.1, 0.1, 1);
+        this.default_material.setDiffuse(0.9, 0.9, 0.9, 1);
+        this.default_material.setSpecular(0.1, 0.1, 0.1, 1);
+        this.default_material.setShininess(10.0);
     }
 
     initUIValues() {
         // Top-level
-        this.scaleFactor = 1;
-        this.displayAxis = true;
-        this.displayNormals = false;
+        this.scale_factor = 1;
+        this.display_axis = true;
+        this.display_normals = false;
 
-        this.objectIDs = {
+        this.object_ids = {
             HayBale: 0,
             Rock: 1,
         };
-        this.selectedObject = 0;
+        this.selected_object = 0;
+
+        // Sky
+        this.sky_slices = 30;
+        this.sky_stacks = 30;
+        this.sky_radius = 20;
 
         // Sky > Sun
-        this.sky_sun_dayNightCycle = false;
+        this.sky_sun_day_night_cycle = false;
 
         // Sky > Clouds
         this.sky_clouds_display = true;
-        this.sky_clouds_yPosition = 5;
-        this.sky_clouds_scrollSpeed = 0.1;
+        this.sky_clouds_y_position = 5;
+        this.sky_clouds_scroll_speed = 0.1;
 
         // Sky > Clouds > Appearance
         this.sky_clouds_appearance_scale = 1.1;
@@ -99,12 +102,12 @@ export class MyScene extends CGFscene {
         this.sky_clouds_appearance_alpha = 8.0;
 
         // Sky > Clouds > Colors
-        this.sky_clouds_colors_skyTint = 0.5;
+        this.sky_clouds_colors_sky_tint = 0.5;
         this.sky_clouds_colors = {
-            SkyColour1: "#3366cc",
-            SkyColour2: "#6db3ff",
-            nightColour1: "#050b1a",
-            nightColour2: "#0a1329",
+            sky_colour_1: "#3366cc",
+            sky_colour_2: "#6db3ff",
+            night_colour_1: "#050b1a",
+            night_colour_2: "#0a1329",
         };
 
         // Obstacles > Hay Bale
@@ -118,34 +121,38 @@ export class MyScene extends CGFscene {
 
     initObjects() {
         this.axis = new CGFaxis(this);
-        this.skySphere = new SkySphere(this, this.sky_clouds_yPosition, this.sky_clouds_scrollSpeed);
-        this.skySphere.updateDayCycle();
+        this.sky_sphere = new SkySphere(
+            this,
+            this.sky_clouds_y_position,
+            this.sky_clouds_scroll_speed,
+            this.sky_slices,
+            this.sky_stacks,
+            this.sky_radius,
+        );
+        this.sky_sphere.updateDayCycle();
 
         this.haybale = new HayBale(this, this.obstacles_haybale_slices, this.obstacles_haybale_stacks);
         this.rock = new Rock(this, this.obstacles_rock_radius, this.obstacles_rock_scale);
         this.objects = [this.haybale, this.rock];
-
     }
 
-    // =====================================================
-    // Update
-    // =====================================================
+    // == Update ===========================================
 
     update() {
         // Calculate delta time
-        const currentTime = Date.now();
-        this.deltaTime = currentTime - this.lastTime;
-        this.lastTime = currentTime;
+        const current_time = Date.now();
+        this.delta_time = current_time - this.last_time;
+        this.last_time = current_time;
 
         // Sync cloud layer with UI controls
-        this.skySphere.yPosition = this.sky_clouds_yPosition;
-        this.skySphere.scrollSpeed = this.sky_clouds_scrollSpeed;
-        this.skySphere.cloudDensity = this.cloudDensity;
-        this.skySphere.cloudSoftness = this.cloudSoftness;
-        this.skySphere.cycleActive = this.sky_sun_dayNightCycle;
+        this.sky_sphere.yPosition = this.sky_clouds_y_position;
+        this.sky_sphere.scrollSpeed = this.sky_clouds_scroll_speed;
+        this.sky_sphere.cloudDensity = this.cloud_density;
+        this.sky_sphere.cloudSoftness = this.cloud_softness;
+        this.sky_sphere.cycleActive = this.sky_sun_day_night_cycle;
         // Update cloud animation
         if (this.sky_clouds_display) {
-            this.skySphere.update(this.deltaTime);
+            this.sky_sphere.update(this.delta_time);
         }
     }
 
@@ -162,15 +169,15 @@ export class MyScene extends CGFscene {
 
         this.lights[MyScene.Lights.SUN].update();
         // Draw axis
-        if (this.displayAxis) this.axis.display();
+        if (this.display_axis) this.axis.display();
 
         this.setDefaultAppearance();
 
         // prettier-ignore
-        var sca = [
-            this.scaleFactor, 0.0, 0.0, 0.0, 0.0,
-            this.scaleFactor, 0.0, 0.0, 0.0, 0.0,
-            this.scaleFactor, 0.0, 0.0, 0.0, 0.0,
+        const sca = [
+            this.scale_factor, 0.0, 0.0, 0.0, 0.0,
+            this.scale_factor, 0.0, 0.0, 0.0, 0.0,
+            this.scale_factor, 0.0, 0.0, 0.0, 0.0,
             1.0,
         ];
 
@@ -180,20 +187,18 @@ export class MyScene extends CGFscene {
 
         // Display clouds
         if (this.sky_clouds_display) {
-            this.skySphere.display();
+            this.sky_sphere.display();
         }
 
-        this.objects[this.selectedObject].display();
+        this.objects[this.selected_object].display();
 
-        if (this.displayNormals) this.objects[this.selectedObject].enableNormalViz();
-        else this.objects[this.selectedObject].disableNormalViz();
+        if (this.display_normals) this.objects[this.selected_object].enableNormalViz();
+        else this.objects[this.selected_object].disableNormalViz();
 
         // ---- END Primitive drawing section
     }
 
-    // =====================================================
-    // Utils
-    // =====================================================
+    // == Utils ============================================
 
     setDefaultAppearance() {
         this.setAmbient(0.2, 0.4, 0.8, 1.0);

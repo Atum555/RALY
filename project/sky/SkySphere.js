@@ -6,7 +6,7 @@ export class SkySphere extends CGFobject {
     // Init
     // =====================================================
 
-    constructor(scene, yPosition = 5, scrollSpeed = 0.3) {
+    constructor(scene, yPosition = 5, scrollSpeed = 0.3, slices = 30, stacks = 30, radius = 20) {
         super(scene);
         this.yPosition = yPosition;
         this.scrollSpeed = scrollSpeed;
@@ -17,9 +17,9 @@ export class SkySphere extends CGFobject {
         this.timeOfDay = 2.5;
         this.cycleActive = true;
 
-        this.slices = 30;
-        this.stacks = 30;
-        this.radius = 20;
+        this.slices = slices;
+        this.stacks = stacks;
+        this.radius = radius;
 
         this.initBuffers();
         this.initMaterial();
@@ -127,7 +127,7 @@ export class SkySphere extends CGFobject {
         this.dayFactor = Math.max(0, Math.min(1, (sunY - -0.1) / (0.2 - -0.1)));
         this.dayFactor = this.dayFactor * this.dayFactor;
 
-        this.scene.sky_clouds_colors_skyTint = 0.2 + 0.3 * this.dayFactor;
+        this.scene.sky_clouds_colors_sky_tint = 0.2 + 0.3 * this.dayFactor;
 
         var radius = 20.0;
         var x = -2;
@@ -167,11 +167,11 @@ export class SkySphere extends CGFobject {
             cloud_light: this.scene.sky_clouds_appearance_light,
             cloud_cover: this.scene.sky_clouds_appearance_cover,
             cloud_alpha: this.scene.sky_clouds_appearance_alpha,
-            sky_tint: this.scene.sky_clouds_colors_skyTint,
-            sky_colour1: hexToRGB(this.scene.sky_clouds_colors["SkyColour1"]).slice(0, 3),
-            sky_colour2: hexToRGB(this.scene.sky_clouds_colors["SkyColour2"]).slice(0, 3),
-            night_colour1: hexToRGB(this.scene.sky_clouds_colors["nightColour1"]).slice(0, 3),
-            night_colour2: hexToRGB(this.scene.sky_clouds_colors["nightColour2"]).slice(0, 3),
+            sky_tint: this.scene.sky_clouds_colors_sky_tint,
+            sky_colour1: hexToRGB(this.scene.sky_clouds_colors["sky_colour_1"]).slice(0, 3),
+            sky_colour2: hexToRGB(this.scene.sky_clouds_colors["sky_colour_2"]).slice(0, 3),
+            night_colour1: hexToRGB(this.scene.sky_clouds_colors["night_colour_1"]).slice(0, 3),
+            night_colour2: hexToRGB(this.scene.sky_clouds_colors["night_colour_2"]).slice(0, 3),
             sun_angle: this.timeOfDay,
             day_factor: this.dayFactor,
         });
@@ -182,6 +182,6 @@ export class SkySphere extends CGFobject {
 
         this.scene.setActiveShader(this.scene.defaultShader);
         this.scene.popMatrix();
-        this.scene.defaultMaterial.apply();
+        this.scene.default_material.apply();
     }
 }
