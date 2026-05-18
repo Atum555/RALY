@@ -132,18 +132,16 @@ export class MyScene extends CGFscene {
     }
 
     hexToRGB(hex) {
-        // Convert hex color string to RGB array (0-1 range)
-        if (/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(hex)) {
-            if (hex.length === 4) {
-                hex = "#" + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
-            }
-            return [
-                parseInt(hex.substring(1, 3), 16) / 255.0,
-                parseInt(hex.substring(3, 5), 16) / 255.0,
-                parseInt(hex.substring(5, 7), 16) / 255.0,
-            ];
-        }
-        return [0.5, 0.5, 0.5]; // fallback
+        const match = hex.match(/^#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})$/);
+        if (!match) throw new Error(`Invalid hex color: ${hex}`);
+        const h = match[1].length === 3
+            ? match[1].split("").map((c) => c + c).join("")
+            : match[1];
+        return [
+            parseInt(h.substring(0, 2), 16) / 255,
+            parseInt(h.substring(2, 4), 16) / 255,
+            parseInt(h.substring(4, 6), 16) / 255,
+        ];
     }
 
     setDefaultAppearance() {
