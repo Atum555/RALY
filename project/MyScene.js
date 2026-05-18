@@ -120,7 +120,7 @@ export class MyScene extends CGFscene {
 
     initObjects() {
         this.axis = new CGFaxis(this);
-        this.sphere = new SkySphere(this);
+        this.skySphere = new SkySphere(this);
         this.haybale = new HayBale(this, this.obstacles_haybale_slices, this.obstacles_haybale_stacks);
         this.rock = new Rock(this, this.obstacles_rock_radius, this.obstacles_rock_scale);
         this.objects = [this.haybale, this.rock];
@@ -183,7 +183,7 @@ export class MyScene extends CGFscene {
         this.pushMatrix();
         this.translate(0, -4, 0);
         this.rotate(-Math.PI / 2, 1, 0, 0);
-        this.sphere.display();
+        this.skySphere.display();
         this.popMatrix();
 
         // Display clouds
