@@ -1,5 +1,5 @@
 import { CGFobject } from "../../lib/CGF.js";
-import { fbm } from "./NoiseUtils.js";
+import { fbm } from "./noiseUtils.js";
 
 /**
  * Sphere
