@@ -3,6 +3,7 @@ import { SkySphere } from "./sky/SkySphere.js";
 import { Clouds } from "./sky/Clouds.js";
 import { HayBale } from "./obstacles/HayBale.js";
 import { Rock } from "./obstacles/Rock.js";
+import { hexToRGB } from "./utils.js";
 
 export class MyScene extends CGFscene {
     // =====================================================
@@ -39,16 +40,18 @@ export class MyScene extends CGFscene {
     }
 
     initLights() {
+        const LIGHT_0_COLOR = hexToRGB("#ffe6b3ff");
         this.lights[0].setPosition(15, 6, 6, 1);
-        this.lights[0].setDiffuse(1.0, 0.9, 0.7, 1.0);
-        this.lights[0].setSpecular(1.0, 0.9, 0.7, 1.0);
+        this.lights[0].setDiffuse(...LIGHT_0_COLOR);
+        this.lights[0].setSpecular(...LIGHT_0_COLOR);
         this.lights[0].enable();
         this.lights[0].setVisible(true);
         this.lights[0].update();
 
+        const LIGHT_1_COLOR = hexToRGB("#334D80FF");
         this.lights[1].setPosition(15, 6, 6, 1);
-        this.lights[1].setDiffuse(0.2, 0.3, 0.5, 1.0);
-        this.lights[1].setSpecular(0.2, 0.3, 0.5, 1.0);
+        this.lights[1].setDiffuse(...LIGHT_1_COLOR);
+        this.lights[1].setSpecular(...LIGHT_1_COLOR);
         this.lights[1].enable();
         this.lights[1].setVisible(true);
         this.lights[1].update();
@@ -198,22 +201,5 @@ export class MyScene extends CGFscene {
         this.setDiffuse(0.2, 0.4, 0.8, 1.0);
         this.setSpecular(0.2, 0.4, 0.8, 1.0);
         this.setShininess(10.0);
-    }
-
-    hexToRGB(hex) {
-        const match = hex.match(/^#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})$/);
-        if (!match) throw new Error(`Invalid hex color: ${hex}`);
-        const h =
-            match[1].length === 3
-                ? match[1]
-                      .split("")
-                      .map(c => c + c)
-                      .join("")
-                : match[1];
-        return [
-            parseInt(h.substring(0, 2), 16) / 255,
-            parseInt(h.substring(2, 4), 16) / 255,
-            parseInt(h.substring(4, 6), 16) / 255,
-        ];
     }
 }

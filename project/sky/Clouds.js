@@ -1,6 +1,7 @@
 import { CGFobject, CGFappearance, CGFshader } from "../../lib/CGF.js";
 import { MyPlane } from "./MyPlane.js";
 import { SkySphere } from "./SkySphere.js";
+import { hexToRGB } from "../utils.js";
 
 export class Clouds extends CGFobject {
     constructor(scene, yPosition = 5, scrollSpeed = 0.3, scale = 50) {
@@ -99,18 +100,10 @@ export class Clouds extends CGFobject {
             cloudcover: this.scene.sky_clouds_appearance_cover,
             cloudalpha: this.scene.sky_clouds_appearance_alpha,
             skytint: this.scene.sky_clouds_colors_skyTint,
-            skycolour1: this.scene.hexToRGB(
-                this.scene.sky_clouds_colors["SkyColour1"],
-            ),
-            skycolour2: this.scene.hexToRGB(
-                this.scene.sky_clouds_colors["SkyColour2"],
-            ),
-            nightcolour1: this.scene.hexToRGB(
-                this.scene.sky_clouds_colors["nightColour1"],
-            ),
-            nightcolour2: this.scene.hexToRGB(
-                this.scene.sky_clouds_colors["nightColour2"],
-            ),
+            skycolour1: hexToRGB(this.scene.sky_clouds_colors["SkyColour1"]).slice(0, 3),
+            skycolour2: hexToRGB(this.scene.sky_clouds_colors["SkyColour2"]).slice(0, 3),
+            nightcolour1: hexToRGB(this.scene.sky_clouds_colors["nightColour1"]).slice(0, 3),
+            nightcolour2: hexToRGB(this.scene.sky_clouds_colors["nightColour2"]).slice(0, 3),
             sunangle: this.timeOfDay,
             dayfactor: this.dayFactor,
         });
