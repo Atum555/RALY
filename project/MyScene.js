@@ -32,15 +32,14 @@ export class MyScene extends CGFscene {
         this.axis = new CGFaxis(this);
         this.sphere = new SkySphere(this);
         this.obstacleScene = new ObstacleScene(this);
-        this.objects = [this.sphere, this.obstacleScene];
+        this.objects = [this.obstacleScene];
 
         // Initialize cloud layer
         this.cloudLayer = new Clouds(this, 5, 0.3, 50);
 
         // Labels and ID's for object selection on MyInterface
         this.objectIDs = {
-            Sphere: 0,
-            ObstacleScene: 1,
+            ObstacleScene: 0,
         };
         //Other variables connected to MyInterface
         this.selectedObject = 0;
