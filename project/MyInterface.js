@@ -20,53 +20,53 @@ export class MyInterface extends CGFinterface {
         var skyControls = this.gui.addFolder("Sky");
         //skyControls.add(this.scene, "selectedScene", this.scene.sceneIDs).name("Selected Scene(sky)");
         var sunControls = skyControls.addFolder("Sun");
-        sunControls.add(this.scene, "enableDayNightCycle").name("Day/Night Cycle");
+        sunControls.add(this.scene, "sky_sun_dayNightCycle").name("Day/Night Cycle");
         sunControls.add(this.scene.lights[0], "enabled").name("Enabled");
         sunControls.add(this.scene.lights[0].position, "0", -20.0, 20.0).name("X Position");
         sunControls.add(this.scene.lights[0].position, "1", -20.0, 20.0).name("Y Position");
         sunControls.add(this.scene.lights[0].position, "2", -20.0, 20.0).name("Z Position");
 
         var cloudControls = skyControls.addFolder("Clouds");
-        cloudControls.add(this.scene, "displayClouds").name("Display Clouds");
-        cloudControls.add(this.scene, "cloudMode", { "Flat Quad": 0, "Sphere Mapped": 1 }).name("Cloud Mode");
-        cloudControls.add(this.scene, "cloudYPosition", -20.0, 20.0).step(0.5).name("Y Position");
-        cloudControls.add(this.scene, "cloudScrollSpeed", 0.0, 2.0).step(0.05).name("Scroll Speed");
+        cloudControls.add(this.scene, "sky_clouds_display").name("Display Clouds");
+        cloudControls.add(this.scene, "sky_clouds_mode", { "Flat Quad": 0, "Sphere Mapped": 1 }).name("Cloud Mode");
+        cloudControls.add(this.scene, "sky_clouds_yPosition", -20.0, 20.0).step(0.5).name("Y Position");
+        cloudControls.add(this.scene, "sky_clouds_scrollSpeed", 0.0, 2.0).step(0.05).name("Scroll Speed");
 
         var cloudAppearance = cloudControls.addFolder("Appearance");
-        cloudAppearance.add(this.scene, "cloudDark", 0.0, 1.0).step(0.05).name("Dark");
-        cloudAppearance.add(this.scene, "cloudLight", 0.0, 1.0).step(0.05).name("Light");
-        cloudAppearance.add(this.scene, "cloudCover", 0.0, 1.0).step(0.05).name("Cover");
-        cloudAppearance.add(this.scene, "cloudAlpha", 0.0, 20.0).step(0.5).name("Alpha");
-        cloudAppearance.add(this.scene, "cloudScale", 0.5, 3.0).step(0.1).name("Scale");
+        cloudAppearance.add(this.scene, "sky_clouds_appearance_dark", 0.0, 1.0).step(0.05).name("Dark");
+        cloudAppearance.add(this.scene, "sky_clouds_appearance_light", 0.0, 1.0).step(0.05).name("Light");
+        cloudAppearance.add(this.scene, "sky_clouds_appearance_cover", 0.0, 1.0).step(0.05).name("Cover");
+        cloudAppearance.add(this.scene, "sky_clouds_appearance_alpha", 0.0, 20.0).step(0.5).name("Alpha");
+        cloudAppearance.add(this.scene, "sky_clouds_appearance_scale", 0.5, 3.0).step(0.1).name("Scale");
 
         var cloudColors = cloudControls.addFolder("Colors");
-        cloudColors.add(this.scene, "skyTint", 0.0, 1.0).step(0.05).name("Sky Tint");
-        cloudColors.addColor(this.scene.cloudColors, "SkyColour1").name("Sky Color 1");
-        cloudColors.addColor(this.scene.cloudColors, "SkyColour2").name("Sky Color 2");
-        cloudColors.addColor(this.scene.cloudColors, "nightColour1").name("Night Color 1");
-        cloudColors.addColor(this.scene.cloudColors, "nightColour2").name("Night Color 2");
+        cloudColors.add(this.scene, "sky_clouds_colors_skyTint", 0.0, 1.0).step(0.05).name("Sky Tint");
+        cloudColors.addColor(this.scene.sky_clouds_colors, "SkyColour1").name("Sky Color 1");
+        cloudColors.addColor(this.scene.sky_clouds_colors, "SkyColour2").name("Sky Color 2");
+        cloudColors.addColor(this.scene.sky_clouds_colors, "nightColour1").name("Night Color 1");
+        cloudColors.addColor(this.scene.sky_clouds_colors, "nightColour2").name("Night Color 2");
 
         var obstacleControls = this.gui.addFolder("Obstacles");
 
         var haybaleControls = obstacleControls.addFolder("Hay Bale");
-        haybaleControls.add(this.scene, "haybaleSlices", 3, 100).step(1).name("Slices").onChange((v) => {
+        haybaleControls.add(this.scene, "obstacles_haybale_slices", 3, 100).step(1).name("Slices").onChange((v) => {
             this.scene.haybale.slices = v;
             this.scene.haybale.initBuffers();
             this.scene.haybale.initNormalVizBuffers();
         });
-        haybaleControls.add(this.scene, "haybaleStacks", 1, 50).step(1).name("Stacks").onChange((v) => {
+        haybaleControls.add(this.scene, "obstacles_haybale_stacks", 1, 50).step(1).name("Stacks").onChange((v) => {
             this.scene.haybale.stacks = v;
             this.scene.haybale.initBuffers();
             this.scene.haybale.initNormalVizBuffers();
         });
 
         var rockControls = obstacleControls.addFolder("Rock");
-        rockControls.add(this.scene, "rockRadius", 0.1, 5).step(0.1).name("Radius").onChange((v) => {
+        rockControls.add(this.scene, "obstacles_rock_radius", 0.1, 5).step(0.1).name("Radius").onChange((v) => {
             this.scene.rock.radius = v;
             this.scene.rock.initBuffers();
             this.scene.rock.initNormalVizBuffers();
         });
-        rockControls.add(this.scene, "rockScale", 1, 3).step(0.1).name("Scale").onChange((v) => {
+        rockControls.add(this.scene, "obstacles_rock_scale", 1, 3).step(0.1).name("Scale").onChange((v) => {
             this.scene.rock.scale = v;
             this.scene.rock.initBuffers();
             this.scene.rock.initNormalVizBuffers();

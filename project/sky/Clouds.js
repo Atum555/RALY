@@ -57,7 +57,7 @@ export class Clouds extends CGFobject {
         this.dayFactor = Math.max(0, Math.min(1, (sunY - -0.1) / (0.2 - -0.1)));
         this.dayFactor = this.dayFactor * this.dayFactor; // more intense curve
 
-        this.scene.skyTint = 0.2 + 0.3 * this.dayFactor;
+        this.scene.sky_clouds_colors_skyTint = 0.2 + 0.3 * this.dayFactor;
 
         var radius = 20.0;
         var x = -2;
@@ -87,35 +87,35 @@ export class Clouds extends CGFobject {
     display() {
         this.scene.pushMatrix();
         this.cloudMaterial.apply();
-        this.scene.setActiveShader(this.shaders[this.scene.cloudMode]);
+        this.scene.setActiveShader(this.shaders[this.scene.sky_clouds_mode]);
 
-        this.shaders[this.scene.cloudMode].setUniformsValues({
+        this.shaders[this.scene.sky_clouds_mode].setUniformsValues({
             uSampler2: 1,
             timeFactor: this.timeFactor,
             cloudScale: 4.0,
-            cloudscale: this.scene.cloudScale,
-            clouddark: this.scene.cloudDark,
-            cloudlight: this.scene.cloudLight,
-            cloudcover: this.scene.cloudCover,
-            cloudalpha: this.scene.cloudAlpha,
-            skytint: this.scene.skyTint,
+            cloudscale: this.scene.sky_clouds_appearance_scale,
+            clouddark: this.scene.sky_clouds_appearance_dark,
+            cloudlight: this.scene.sky_clouds_appearance_light,
+            cloudcover: this.scene.sky_clouds_appearance_cover,
+            cloudalpha: this.scene.sky_clouds_appearance_alpha,
+            skytint: this.scene.sky_clouds_colors_skyTint,
             skycolour1: this.scene.hexToRGB(
-                this.scene.cloudColors["SkyColour1"],
+                this.scene.sky_clouds_colors["SkyColour1"],
             ),
             skycolour2: this.scene.hexToRGB(
-                this.scene.cloudColors["SkyColour2"],
+                this.scene.sky_clouds_colors["SkyColour2"],
             ),
             nightcolour1: this.scene.hexToRGB(
-                this.scene.cloudColors["nightColour1"],
+                this.scene.sky_clouds_colors["nightColour1"],
             ),
             nightcolour2: this.scene.hexToRGB(
-                this.scene.cloudColors["nightColour2"],
+                this.scene.sky_clouds_colors["nightColour2"],
             ),
             sunangle: this.timeOfDay,
             dayfactor: this.dayFactor,
         });
 
-        if (this.scene.cloudMode == 0) {
+        if (this.scene.sky_clouds_mode == 0) {
             this.scene.translate(0, this.yPosition, 0);
             this.scene.rotate(Math.PI / 2, 1, 0, 0);
             this.scene.scale(this.scale, this.scale, this.scale);

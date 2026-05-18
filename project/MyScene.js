@@ -12,11 +12,11 @@ export class MyScene extends CGFscene {
     init(application) {
         super.init(application);
 
+        // ----- Scene initialization -----
         this.initCameras();
         this.initLights();
         this.initMaterials();
 
-        // Background color
         this.gl.clearColor(1.0, 1.0, 1.0, 1.0);
         this.gl.clearDepth(100.0);
         this.gl.enable(this.gl.DEPTH_TEST);
@@ -24,57 +24,64 @@ export class MyScene extends CGFscene {
         this.gl.depthFunc(this.gl.LEQUAL);
         this.enableTextures(true);
 
-        // Initialize scene objects
-        this.axis = new CGFaxis(this);
-        this.sphere = new SkySphere(this);
-        this.haybaleSlices = 50;
-        this.haybaleStacks = 10;
-        this.rockRadius = 1;
-        this.rockScale = 1.5;
-        this.haybale = new HayBale(this, this.haybaleSlices, this.haybaleStacks);
-        this.rock = new Rock(this, this.rockRadius, this.rockScale);
-        this.objects = [this.haybale, this.rock];
+        this.setUpdatePeriod(50);
 
-        // Initialize cloud layer
-        this.cloudLayer = new Clouds(this, 5, 0.3, 50);
+        // ----- UI values -----
+        // Top-level
+        this.scaleFactor = 1;
+        this.displayAxis = true;
+        this.displayNormals = false;
 
-        // Labels and ID's for object selection on MyInterface
         this.objectIDs = {
             HayBale: 0,
             Rock: 1,
         };
-        //Other variables connected to MyInterface
         this.selectedObject = 0;
-        // Objects connected to MyInterface
-        this.scaleFactor = 1;
-        this.displayAxis = true;
-        this.displayNormals = false;
-        this.displayClouds = true;
 
-        // Cloud layer controls
-        this.cloudYPosition = 5;
-        this.cloudScrollSpeed = 0.1;
-        this.cloudMode = 1;
+        // Sky > Sun
+        this.sky_sun_dayNightCycle = false;
 
-        // Cloud shader parameters
-        this.cloudScale = 1.1;
-        this.cloudDark = 0.5;
-        this.cloudLight = 0.3;
-        this.cloudCover = 0.2;
-        this.cloudAlpha = 8.0;
-        this.skyTint = 0.5;
-        this.cloudColors = {
+        // Sky > Clouds
+        this.sky_clouds_display = true;
+        this.sky_clouds_mode = 1;
+        this.sky_clouds_yPosition = 5;
+        this.sky_clouds_scrollSpeed = 0.1;
+
+        // Sky > Clouds > Appearance
+        this.sky_clouds_appearance_scale = 1.1;
+        this.sky_clouds_appearance_dark = 0.5;
+        this.sky_clouds_appearance_light = 0.3;
+        this.sky_clouds_appearance_cover = 0.2;
+        this.sky_clouds_appearance_alpha = 8.0;
+
+        // Sky > Clouds > Colors
+        this.sky_clouds_colors_skyTint = 0.5;
+        this.sky_clouds_colors = {
             SkyColour1: "#3366cc",
             SkyColour2: "#6db3ff",
             nightColour1: "#050b1a",
             nightColour2: "#0a1329",
         };
-        this.enableDayNightCycle = false;
-        // Time tracking for animation
+
+        // Obstacles > Hay Bale
+        this.obstacles_haybale_slices = 50;
+        this.obstacles_haybale_stacks = 10;
+
+        // Obstacles > Rock
+        this.obstacles_rock_radius = 1;
+        this.obstacles_rock_scale = 1.5;
+
         this.lastTime = Date.now();
         this.deltaTime = 0;
 
-        this.setUpdatePeriod(50);
+        // ----- Scene objects -----
+        this.axis = new CGFaxis(this);
+        this.sphere = new SkySphere(this);
+        this.haybale = new HayBale(this, this.obstacles_haybale_slices, this.obstacles_haybale_stacks);
+        this.rock = new Rock(this, this.obstacles_rock_radius, this.obstacles_rock_scale);
+        this.objects = [this.haybale, this.rock];
+
+        this.cloudLayer = new Clouds(this, this.sky_clouds_yPosition, this.sky_clouds_scrollSpeed, 50);
         this.cloudLayer.updateDayCycle();
     }
 
@@ -113,13 +120,13 @@ export class MyScene extends CGFscene {
         this.lastTime = currentTime;
 
         // Sync cloud layer with UI controls
-        this.cloudLayer.yPosition = this.cloudYPosition;
-        this.cloudLayer.scrollSpeed = this.cloudScrollSpeed;
+        this.cloudLayer.yPosition = this.sky_clouds_yPosition;
+        this.cloudLayer.scrollSpeed = this.sky_clouds_scrollSpeed;
         this.cloudLayer.cloudDensity = this.cloudDensity;
         this.cloudLayer.cloudSoftness = this.cloudSoftness;
-        this.cloudLayer.cycleActive = this.enableDayNightCycle;
+        this.cloudLayer.cycleActive = this.sky_sun_dayNightCycle;
         // Update cloud animation
-        if (this.displayClouds) {
+        if (this.sky_clouds_display) {
             this.cloudLayer.update(this.deltaTime);
         }
     }
@@ -182,7 +189,7 @@ export class MyScene extends CGFscene {
         this.popMatrix();
 
         // Display clouds
-        if (this.displayClouds) {
+        if (this.sky_clouds_display) {
             this.cloudLayer.display();
         }
 
