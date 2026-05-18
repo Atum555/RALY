@@ -16,11 +16,6 @@ export class MyScene extends CGFscene {
     init(application) {
         super.init(application);
 
-        // ----- Scene initialization -----
-        this.initCameras();
-        this.initLights();
-        this.initMaterials();
-
         this.gl.clearColor(1.0, 1.0, 1.0, 1.0);
         this.gl.clearDepth(100.0);
         this.gl.enable(this.gl.DEPTH_TEST);
@@ -29,8 +24,45 @@ export class MyScene extends CGFscene {
         this.enableTextures(true);
 
         this.setUpdatePeriod(50);
+        this.lastTime = Date.now();
+        this.deltaTime = 0;
 
-        // ----- UI values -----
+        this.initCameras();
+        this.initLights();
+        this.initMaterials();
+        this.initUIValues();
+        this.initObjects();
+    }
+
+    initCameras() {
+        this.camera = new CGFcamera(0.4, 0.1, 500, vec3.fromValues(0, 0, 15), vec3.fromValues(0, 0, 0));
+    }
+
+    initLights() {
+        this.lights[0].setPosition(15, 6, 6, 1);
+        this.lights[0].setDiffuse(1.0, 0.9, 0.7, 1.0);
+        this.lights[0].setSpecular(1.0, 0.9, 0.7, 1.0);
+        this.lights[0].enable();
+        this.lights[0].setVisible(true);
+        this.lights[0].update();
+
+        this.lights[1].setPosition(15, 6, 6, 1);
+        this.lights[1].setDiffuse(0.2, 0.3, 0.5, 1.0);
+        this.lights[1].setSpecular(0.2, 0.3, 0.5, 1.0);
+        this.lights[1].enable();
+        this.lights[1].setVisible(true);
+        this.lights[1].update();
+    }
+
+    initMaterials() {
+        this.defaultMaterial = new CGFappearance(this);
+        this.defaultMaterial.setAmbient(0.1, 0.1, 0.1, 1);
+        this.defaultMaterial.setDiffuse(0.9, 0.9, 0.9, 1);
+        this.defaultMaterial.setSpecular(0.1, 0.1, 0.1, 1);
+        this.defaultMaterial.setShininess(10.0);
+    }
+
+    initUIValues() {
         // Top-level
         this.scaleFactor = 1;
         this.displayAxis = true;
@@ -74,11 +106,9 @@ export class MyScene extends CGFscene {
         // Obstacles > Rock
         this.obstacles_rock_radius = 1;
         this.obstacles_rock_scale = 1.5;
+    }
 
-        this.lastTime = Date.now();
-        this.deltaTime = 0;
-
-        // ----- Scene objects -----
+    initObjects() {
         this.axis = new CGFaxis(this);
         this.sphere = new SkySphere(this);
         this.haybale = new HayBale(this, this.obstacles_haybale_slices, this.obstacles_haybale_stacks);
@@ -87,34 +117,6 @@ export class MyScene extends CGFscene {
 
         this.cloudLayer = new Clouds(this, this.sky_clouds_yPosition, this.sky_clouds_scrollSpeed, 50);
         this.cloudLayer.updateDayCycle();
-    }
-
-    initCameras() {
-        this.camera = new CGFcamera(0.4, 0.1, 500, vec3.fromValues(0, 0, 15), vec3.fromValues(0, 0, 0));
-    }
-
-    initLights() {
-        this.lights[0].setPosition(15, 6, 6, 1);
-        this.lights[0].setDiffuse(1.0, 0.9, 0.7, 1.0);
-        this.lights[0].setSpecular(1.0, 0.9, 0.7, 1.0);
-        this.lights[0].enable();
-        this.lights[0].setVisible(true);
-        this.lights[0].update();
-
-        this.lights[1].setPosition(15, 6, 6, 1);
-        this.lights[1].setDiffuse(0.2, 0.3, 0.5, 1.0);
-        this.lights[1].setSpecular(0.2, 0.3, 0.5, 1.0);
-        this.lights[1].enable();
-        this.lights[1].setVisible(true);
-        this.lights[1].update();
-    }
-
-    initMaterials() {
-        this.defaultMaterial = new CGFappearance(this);
-        this.defaultMaterial.setAmbient(0.1, 0.1, 0.1, 1);
-        this.defaultMaterial.setDiffuse(0.9, 0.9, 0.9, 1);
-        this.defaultMaterial.setSpecular(0.1, 0.1, 0.1, 1);
-        this.defaultMaterial.setShininess(10.0);
     }
 
     // =====================================================
