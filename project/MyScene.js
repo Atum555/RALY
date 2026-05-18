@@ -1,9 +1,4 @@
-import {
-    CGFscene,
-    CGFcamera,
-    CGFaxis,
-    CGFappearance,
-} from "../lib/CGF.js";
+import { CGFscene, CGFcamera, CGFaxis, CGFappearance } from "../lib/CGF.js";
 import { SkySphere } from "./sky/SkySphere.js";
 import { Clouds } from "./sky/Clouds.js";
 import { ObstacleScene } from "./obstacles/ObstacleScene.js";
@@ -84,7 +79,6 @@ export class MyScene extends CGFscene {
         this.lights[0].setVisible(true);
         this.lights[0].update();
 
-
         this.lights[1].setPosition(15, 6, 6, 1);
         this.lights[1].setDiffuse(0.2, 0.3, 0.5, 1.0);
         this.lights[1].setSpecular(0.2, 0.3, 0.5, 1.0);
@@ -94,13 +88,7 @@ export class MyScene extends CGFscene {
     }
 
     initCameras() {
-        this.camera = new CGFcamera(
-            0.4,
-            0.1,
-            500,
-            vec3.fromValues(0, 0, 15),
-            vec3.fromValues(0, 0, 0),
-        );
+        this.camera = new CGFcamera(0.4, 0.1, 500, vec3.fromValues(0, 0, 15), vec3.fromValues(0, 0, 0));
     }
 
     initMaterials() {
@@ -168,22 +156,11 @@ export class MyScene extends CGFscene {
 
         this.setDefaultAppearance();
 
+        // prettier-ignore
         var sca = [
-            this.scaleFactor,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            this.scaleFactor,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            this.scaleFactor,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
+            this.scaleFactor, 0.0, 0.0, 0.0, 0.0,
+            this.scaleFactor, 0.0, 0.0, 0.0, 0.0,
+            this.scaleFactor, 0.0, 0.0, 0.0, 0.0,
             1.0,
         ];
 
@@ -204,8 +181,7 @@ export class MyScene extends CGFscene {
 
         this.objects[this.selectedObject].display();
 
-        if (this.displayNormals)
-            this.objects[this.selectedObject].enableNormalViz();
+        if (this.displayNormals) this.objects[this.selectedObject].enableNormalViz();
         else this.objects[this.selectedObject].disableNormalViz();
 
         // ---- END Primitive drawing section
