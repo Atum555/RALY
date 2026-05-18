@@ -45,6 +45,33 @@ export class MyInterface extends CGFinterface {
         cloudColors.addColor(this.scene.cloudColors, "SkyColour2").name("Sky Color 2");
         cloudColors.addColor(this.scene.cloudColors, "nightColour1").name("Night Color 1");
         cloudColors.addColor(this.scene.cloudColors, "nightColour2").name("Night Color 2");
+
+        var obstacleControls = this.gui.addFolder("Obstacles");
+
+        var haybaleControls = obstacleControls.addFolder("Hay Bale");
+        haybaleControls.add(this.scene, "haybaleSlices", 3, 100).step(1).name("Slices").onChange((v) => {
+            this.scene.haybale.slices = v;
+            this.scene.haybale.initBuffers();
+            this.scene.haybale.initNormalVizBuffers();
+        });
+        haybaleControls.add(this.scene, "haybaleStacks", 1, 50).step(1).name("Stacks").onChange((v) => {
+            this.scene.haybale.stacks = v;
+            this.scene.haybale.initBuffers();
+            this.scene.haybale.initNormalVizBuffers();
+        });
+
+        var rockControls = obstacleControls.addFolder("Rock");
+        rockControls.add(this.scene, "rockRadius", 0.1, 5).step(0.1).name("Radius").onChange((v) => {
+            this.scene.rock.radius = v;
+            this.scene.rock.initBuffers();
+            this.scene.rock.initNormalVizBuffers();
+        });
+        rockControls.add(this.scene, "rockScale", 1, 3).step(0.1).name("Scale").onChange((v) => {
+            this.scene.rock.scale = v;
+            this.scene.rock.initBuffers();
+            this.scene.rock.initNormalVizBuffers();
+        });
+
         return true;
     }
 }

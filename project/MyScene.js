@@ -27,8 +27,12 @@ export class MyScene extends CGFscene {
         // Initialize scene objects
         this.axis = new CGFaxis(this);
         this.sphere = new SkySphere(this);
-        this.haybale = new HayBale(this, 50, 10);
-        this.rock = new Rock(this, 1, 1.5);
+        this.haybaleSlices = 50;
+        this.haybaleStacks = 10;
+        this.rockRadius = 1;
+        this.rockScale = 1.5;
+        this.haybale = new HayBale(this, this.haybaleSlices, this.haybaleStacks);
+        this.rock = new Rock(this, this.rockRadius, this.rockScale);
         this.objects = [this.haybale, this.rock];
 
         // Initialize cloud layer
