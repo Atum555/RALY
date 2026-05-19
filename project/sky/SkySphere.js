@@ -37,9 +37,9 @@ export class SkySphere extends CGFobject {
         const inverseRadius = 1 / this.radius;
         let texU, texV;
 
+        const halfStacks = Math.floor(this.stacks / 2);
         const sliceAngleStep = (2 * Math.PI) / this.slices;
-        const stackAngleStep = Math.PI / this.stacks;
-        const halfStacks = this.stacks / 2;
+        const stackAngleStep = Math.PI / 2 / halfStacks;
         let sliceAngle, stackAngle;
 
         for (let stackIndex = 0; stackIndex <= halfStacks; ++stackIndex) {
@@ -81,11 +81,9 @@ export class SkySphere extends CGFobject {
                     this.indices.push(currentRingStart);
                 }
 
-                if (stackIndex != this.stacks - 1) {
-                    this.indices.push(nextRingStart + 1);
-                    this.indices.push(nextRingStart);
-                    this.indices.push(currentRingStart + 1);
-                }
+                this.indices.push(nextRingStart + 1);
+                this.indices.push(nextRingStart);
+                this.indices.push(currentRingStart + 1);
             }
         }
 
