@@ -38,7 +38,7 @@ export class MyScene extends CGFscene {
     }
 
     initCameras() {
-        this.camera = new CGFcamera(0.4, 0.01, 5000, vec3.fromValues(0, 0, 15), vec3.fromValues(0, 0, 0));
+        this.camera = new CGFcamera(1.5, 0.01, 5000, vec3.fromValues(0, 0, 15), vec3.fromValues(0, 0, 0));
     }
 
     initLights() {
@@ -133,7 +133,9 @@ export class MyScene extends CGFscene {
 
         this.haybale = new HayBale(this, this.obstacles_haybale_slices, this.obstacles_haybale_stacks);
         this.rock = new Rock(this, this.obstacles_rock_radius, this.obstacles_rock_scale);
-        this.objects = [this.haybale, this.rock];
+
+        this.selectable_objects = [this.haybale, this.rock];
+        this.all_objects = [this.haybale, this.rock, this.sky_sphere];
     }
 
     // == Update ===========================================
@@ -157,45 +159,37 @@ export class MyScene extends CGFscene {
     }
 
     display() {
-        // ---- BEGIN Background, camera and axis setup
-        // Clear image and depth buffer every time we update the scene
+        // Frame setup
         this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
-        // Initialize Model-View matrix as identity (no transformation)
         this.updateProjectionMatrix();
         this.loadIdentity();
-        // Apply transformations corresponding to the camera position relative to the origin
         this.applyViewMatrix();
 
-        this.lights[MyScene.Lights.SUN].update();
-        // Draw axis
-        if (this.display_axis) this.axis.display();
-
+        // World transform
         this.setDefaultAppearance();
-
         // prettier-ignore
-        const sca = [
-            this.scale_factor, 0.0, 0.0, 0.0, 0.0,
-            this.scale_factor, 0.0, 0.0, 0.0, 0.0,
-            this.scale_factor, 0.0, 0.0, 0.0, 0.0,
-            1.0,
+        const scale_matrix = [
+            this.scale_factor, 0.0,               0.0,               0.0,
+            0.0,               this.scale_factor, 0.0,               0.0,
+            0.0,               0.0,               this.scale_factor, 0.0,
+            0.0,               0.0,               0.0,               1.0,
         ];
+        this.multMatrix(scale_matrix);
 
-        this.multMatrix(sca);
-
-        // ---- BEGIN Primitive drawing section
-
-        // Display clouds
-        if (this.sky_clouds_display) {
-            this.sky_sphere.display();
+        // Normal visualization toggle
+        for (const obj of this.all_objects) {
+            if (this.display_normals) obj.enableNormalViz();
+            else obj.disableNormalViz();
         }
 
-        this.objects[this.selected_object].display();
+        // Lights and axis
+        if (this.display_axis) this.axis.display();
+        if (this.sky_clouds_display) this.sky_sphere.display();
+        this.lights[MyScene.Lights.SUN].update();
 
-        if (this.display_normals) this.objects[this.selected_object].enableNormalViz();
-        else this.objects[this.selected_object].disableNormalViz();
-
-        // ---- END Primitive drawing section
+        // Scene objects
+        this.selectable_objects[this.selected_object].display();
     }
 
     // == Utils ============================================
