@@ -23,17 +23,17 @@ export class MyInterface extends CGFinterface {
         // == Sky ==============================================
 
         const sky_controls = this.gui.addFolder("Sky");
-        const sky_radius = sky_controls.add(this.scene, "sky_radius", 1, 100).step(1).name("Radius");
+        const sky_radius = sky_controls.add(this.scene, "sky_radius", 100, 1000).step(10).name("Radius");
         sky_radius.onChange(value => {
             this.scene.sky_sphere.radius = value;
             this.scene.sky_sphere.initBuffers();
         });
-        const sky_slices = sky_controls.add(this.scene, "sky_slices", 3, 100).step(1).name("Slices");
+        const sky_slices = sky_controls.add(this.scene, "sky_slices", 4, 100).step(1).name("Slices");
         sky_slices.onChange(value => {
             this.scene.sky_sphere.slices = value;
             this.scene.sky_sphere.initBuffers();
         });
-        const sky_stacks = sky_controls.add(this.scene, "sky_stacks", 2, 100).step(1).name("Stacks");
+        const sky_stacks = sky_controls.add(this.scene, "sky_stacks", 4, 100).step(1).name("Stacks");
         sky_stacks.onChange(value => {
             this.scene.sky_sphere.stacks = value;
             this.scene.sky_sphere.initBuffers();

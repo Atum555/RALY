@@ -9,7 +9,6 @@ const mat2 noise_rotation = mat2(1.6, 1.2, -1.2, 1.6);
 varying vec3 v_direction;
 
 uniform float time_factor;
-uniform float radius;
 
 uniform bool cloud_display;
 uniform float cloud_scale;
@@ -71,7 +70,7 @@ CloudResult clouds(vec3 sky_colour) {
     // distant clouds toward the sky colour so the blue wins through.
     float haze = 1.0 - smoothstep(0.02, 0.25, v_direction.y);
 
-    vec2 uv = plane_uv * cloud_scale * 0.5 * (radius / 50.0);
+    vec2 uv = plane_uv * cloud_scale * 5.0;
     float drift = time_factor * cloud_drift_speed;
 
     float domain_warp = fbm(uv * cloud_scale * 0.5);

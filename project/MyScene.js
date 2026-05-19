@@ -82,9 +82,9 @@ export class MyScene extends CGFscene {
         this.selected_object = 0;
 
         // Sky
+        this.sky_radius = 500;
         this.sky_slices = 100;
         this.sky_stacks = 100;
-        this.sky_radius = 500;
 
         // Sky > Colors
         this.sky_colors_day_tint = 0.5;
