@@ -21,41 +21,42 @@ export class UI extends CGFinterface {
 
         // == Sky ==============================================
 
+        const sky = this.scene.sky_sphere;
         const sky_controls = this.gui.addFolder("Sky");
-        const sky_radius = sky_controls.add(this.scene, "sky_radius", 100, 1000).step(10).name("Radius");
-        sky_radius.onChange(value => {
-            this.scene.sky_sphere.radius = value;
-            this.scene.sky_sphere.initBuffers();
-        });
-        const sky_slices = sky_controls.add(this.scene, "sky_slices", 4, 100).step(1).name("Slices");
-        sky_slices.onChange(value => {
-            this.scene.sky_sphere.slices = value;
-            this.scene.sky_sphere.initBuffers();
-        });
-        const sky_stacks = sky_controls.add(this.scene, "sky_stacks", 4, 100).step(1).name("Stacks");
-        sky_stacks.onChange(value => {
-            this.scene.sky_sphere.stacks = value;
-            this.scene.sky_sphere.initBuffers();
-        });
-        sky_controls.add(this.scene, "sky_day_night_cycle").name("Day/Night Cycle");
-        sky_controls.add(this.scene, "sky_sun_moon_display").name("Sun / Moon");
+        sky_controls
+            .add(sky, "sky_radius", 100, 1000)
+            .step(10)
+            .name("Radius")
+            .onChange(() => sky.initBuffers());
+        sky_controls
+            .add(sky, "sky_slices", 4, 100)
+            .step(1)
+            .name("Slices")
+            .onChange(() => sky.initBuffers());
+        sky_controls
+            .add(sky, "sky_stacks", 4, 100)
+            .step(1)
+            .name("Stacks")
+            .onChange(() => sky.initBuffers());
+        sky_controls.add(sky, "cycle_active").name("Day/Night Cycle");
+        sky_controls.add(sky, "sky_sun_moon_display").name("Sun / Moon");
 
         var sky_colors = sky_controls.addFolder("Colors");
-        sky_colors.addColor(this.scene.sky_colors, "sky_day_colour_1").name("Day Color 1");
-        sky_colors.addColor(this.scene.sky_colors, "sky_day_colour_2").name("Day Color 2");
-        sky_colors.addColor(this.scene.sky_colors, "sky_night_colour_1").name("Night Color 1");
-        sky_colors.addColor(this.scene.sky_colors, "sky_night_colour_2").name("Night Color 2");
+        sky_colors.addColor(sky.sky_colors, "sky_day_colour_1").name("Day Color 1");
+        sky_colors.addColor(sky.sky_colors, "sky_day_colour_2").name("Day Color 2");
+        sky_colors.addColor(sky.sky_colors, "sky_night_colour_1").name("Night Color 1");
+        sky_colors.addColor(sky.sky_colors, "sky_night_colour_2").name("Night Color 2");
 
         // -- Clouds -------------------------------------------
 
         const cloud_controls = sky_controls.addFolder("Clouds");
-        cloud_controls.add(this.scene, "sky_clouds_display").name("Display Clouds");
-        cloud_controls.add(this.scene, "sky_clouds_scale", 0.001, 1.0).step(0.01).name("Scale");
-        cloud_controls.add(this.scene, "sky_clouds_scroll_speed", 0.0, 2.0).step(0.05).name("Scroll Speed");
-        cloud_controls.add(this.scene, "sky_clouds_alpha", 0.0, 20.0).step(0.5).name("Alpha");
-        cloud_controls.add(this.scene, "sky_clouds_cover", 0.0, 1.0).step(0.05).name("Cover");
-        cloud_controls.add(this.scene, "sky_clouds_light", 0.0, 1.0).step(0.05).name("Light");
-        cloud_controls.add(this.scene, "sky_clouds_dark", 0.0, 1.0).step(0.05).name("Dark");
+        cloud_controls.add(sky, "sky_clouds_display").name("Display Clouds");
+        cloud_controls.add(sky, "sky_clouds_scale", 0.001, 1.0).step(0.01).name("Scale");
+        cloud_controls.add(sky, "scroll_speed", 0.0, 2.0).step(0.05).name("Scroll Speed");
+        cloud_controls.add(sky, "sky_clouds_alpha", 0.0, 20.0).step(0.5).name("Alpha");
+        cloud_controls.add(sky, "sky_clouds_cover", 0.0, 1.0).step(0.05).name("Cover");
+        cloud_controls.add(sky, "sky_clouds_light", 0.0, 1.0).step(0.05).name("Light");
+        cloud_controls.add(sky, "sky_clouds_dark", 0.0, 1.0).step(0.05).name("Dark");
 
         // == Obstacles ========================================
 
@@ -64,38 +65,46 @@ export class UI extends CGFinterface {
         // -- Hay Bale -----------------------------------------
 
         var haybale_controls = obstacle_controls.addFolder("Hay Bale");
-        const obstacles_haybale_slices = haybale_controls.add(this.scene, "obstacles_haybale_slices", 3, 100).step(1);
-        obstacles_haybale_slices.name("Slices");
-        obstacles_haybale_slices.onChange(v => {
-            this.scene.haybale.slices = v;
-            this.scene.haybale.initBuffers();
-            this.scene.haybale.initNormalVizBuffers();
-        });
-        const obstacles_haybale_stacks = haybale_controls.add(this.scene, "obstacles_haybale_stacks", 1, 50).step(1);
-        obstacles_haybale_stacks.name("Stacks");
-        obstacles_haybale_stacks.onChange(v => {
-            this.scene.haybale.stacks = v;
-            this.scene.haybale.initBuffers();
-            this.scene.haybale.initNormalVizBuffers();
-        });
+        const obstacles_haybale_slices = haybale_controls
+            .add(this.scene, "obstacles_haybale_slices", 3, 100)
+            .step(1)
+            .name("Slices")
+            .onChange(v => {
+                this.scene.haybale.slices = v;
+                this.scene.haybale.initBuffers();
+                this.scene.haybale.initNormalVizBuffers();
+            });
+        const obstacles_haybale_stacks = haybale_controls
+            .add(this.scene, "obstacles_haybale_stacks", 1, 50)
+            .step(1)
+            .name("Stacks")
+            .onChange(v => {
+                this.scene.haybale.stacks = v;
+                this.scene.haybale.initBuffers();
+                this.scene.haybale.initNormalVizBuffers();
+            });
 
         // -- Rock ---------------------------------------------
 
         var rock_controls = obstacle_controls.addFolder("Rock");
-        const obstacles_rock_radius = rock_controls.add(this.scene, "obstacles_rock_radius", 0.1, 5).step(0.1);
-        obstacles_rock_radius.name("Radius");
-        obstacles_rock_radius.onChange(v => {
-            this.scene.rock.radius = v;
-            this.scene.rock.initBuffers();
-            this.scene.rock.initNormalVizBuffers();
-        });
-        const obstacles_rock_scale = rock_controls.add(this.scene, "obstacles_rock_scale", 1, 3);
-        obstacles_rock_scale.step(0.1).name("Scale");
-        obstacles_rock_scale.onChange(v => {
-            this.scene.rock.scale = v;
-            this.scene.rock.initBuffers();
-            this.scene.rock.initNormalVizBuffers();
-        });
+        const obstacles_rock_radius = rock_controls
+            .add(this.scene, "obstacles_rock_radius", 0.1, 5)
+            .step(0.1)
+            .name("Radius")
+            .onChange(v => {
+                this.scene.rock.radius = v;
+                this.scene.rock.initBuffers();
+                this.scene.rock.initNormalVizBuffers();
+            });
+        const obstacles_rock_scale = rock_controls
+            .add(this.scene, "obstacles_rock_scale", 1, 3)
+            .step(0.1)
+            .name("Scale")
+            .onChange(v => {
+                this.scene.rock.scale = v;
+                this.scene.rock.initBuffers();
+                this.scene.rock.initNormalVizBuffers();
+            });
 
         return true;
     }

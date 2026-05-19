@@ -6,19 +6,33 @@ export class SkySphere extends CGFobject {
     // Init
     // =====================================================
 
-    constructor(scene, scrollSpeed, slices, stacks, radius) {
+    constructor(scene) {
         super(scene);
-        this.scrollSpeed = scrollSpeed;
-        this.timeFactor = 0;
-        this.cloudDensity = 0.38;
-        this.cloudSoftness = 0.18;
-        this.daySpeed = 0.005;
-        this.timeOfDay = 2.5;
-        this.cycleActive = true;
+        this.scroll_speed = 0.1;
+        this.time_factor = 0;
+        this.day_speed = 0.005;
+        this.time_of_day = 2.5;
+        this.cycle_active = false;
+        this.day_factor = 0;
 
-        this.slices = slices;
-        this.stacks = stacks;
-        this.radius = radius;
+        this.sky_radius = 500;
+        this.sky_slices = 100;
+        this.sky_stacks = 100;
+        this.sky_sun_moon_display = true;
+
+        this.sky_colors = {
+            sky_day_colour_1: "#3366cc",
+            sky_day_colour_2: "#6db3ff",
+            sky_night_colour_1: "#050b1a",
+            sky_night_colour_2: "#0a1329",
+        };
+
+        this.sky_clouds_display = true;
+        this.sky_clouds_scale = 0.3;
+        this.sky_clouds_alpha = 8.0;
+        this.sky_clouds_cover = 0.2;
+        this.sky_clouds_light = 0.3;
+        this.sky_clouds_dark = 0.5;
 
         this.initBuffers();
         this.initMaterial();
@@ -31,58 +45,62 @@ export class SkySphere extends CGFobject {
         this.normals = [];
         this.texCoords = [];
 
-        let posX, posY, posZ, ringRadius;
-        let normalX, normalY, normalZ;
-        const inverseRadius = 1 / this.radius;
-        let texU, texV;
+        let pos_x, pos_y, pos_z, ring_radius;
+        let normal_x, normal_y, normal_z;
+        const inverse_radius = 1 / this.sky_radius;
+        let tex_u, tex_v;
 
-        const halfStacks = Math.floor(this.stacks / 2);
-        const sliceAngleStep = (2 * Math.PI) / this.slices;
-        const stackAngleStep = Math.PI / 2 / halfStacks;
-        let sliceAngle, stackAngle;
+        const half_stacks = Math.floor(this.sky_stacks / 2);
+        const slice_angle_step = (2 * Math.PI) / this.sky_slices;
+        const stack_angle_step = Math.PI / 2 / half_stacks;
+        let slice_angle, stack_angle;
 
-        for (let stackIndex = 0; stackIndex <= halfStacks; ++stackIndex) {
-            stackAngle = Math.PI / 2 - stackIndex * stackAngleStep;
-            ringRadius = this.radius * Math.cos(stackAngle);
-            posY = this.radius * Math.sin(stackAngle);
+        for (let stack_index = 0; stack_index <= half_stacks; ++stack_index) {
+            stack_angle = Math.PI / 2 - stack_index * stack_angle_step;
+            ring_radius = this.sky_radius * Math.cos(stack_angle);
+            pos_y = this.sky_radius * Math.sin(stack_angle);
 
-            for (let sliceIndex = 0; sliceIndex <= this.slices; ++sliceIndex) {
-                sliceAngle = sliceIndex * sliceAngleStep;
+            for (let slice_index = 0; slice_index <= this.sky_slices; ++slice_index) {
+                slice_angle = slice_index * slice_angle_step;
 
-                posX = ringRadius * Math.cos(sliceAngle);
-                posZ = -ringRadius * Math.sin(sliceAngle);
-                this.vertices.push(posX);
-                this.vertices.push(posY);
-                this.vertices.push(posZ);
+                pos_x = ring_radius * Math.cos(slice_angle);
+                pos_z = -ring_radius * Math.sin(slice_angle);
+                this.vertices.push(pos_x);
+                this.vertices.push(pos_y);
+                this.vertices.push(pos_z);
 
-                normalX = posX * inverseRadius;
-                normalY = posY * inverseRadius;
-                normalZ = posZ * inverseRadius;
-                this.normals.push(-normalX);
-                this.normals.push(-normalY);
-                this.normals.push(-normalZ);
+                normal_x = pos_x * inverse_radius;
+                normal_y = pos_y * inverse_radius;
+                normal_z = pos_z * inverse_radius;
+                this.normals.push(-normal_x);
+                this.normals.push(-normal_y);
+                this.normals.push(-normal_z);
 
-                texU = sliceIndex / this.slices;
-                texV = stackIndex / halfStacks;
-                this.texCoords.push(texU);
-                this.texCoords.push(texV);
+                tex_u = slice_index / this.sky_slices;
+                tex_v = stack_index / half_stacks;
+                this.texCoords.push(tex_u);
+                this.texCoords.push(tex_v);
             }
         }
-        let currentRingStart, nextRingStart;
-        for (let stackIndex = 0; stackIndex < halfStacks; ++stackIndex) {
-            currentRingStart = stackIndex * (this.slices + 1);
-            nextRingStart = currentRingStart + this.slices + 1;
+        let current_ring_start, next_ring_start;
+        for (let stack_index = 0; stack_index < half_stacks; ++stack_index) {
+            current_ring_start = stack_index * (this.sky_slices + 1);
+            next_ring_start = current_ring_start + this.sky_slices + 1;
 
-            for (let sliceIndex = 0; sliceIndex < this.slices; ++sliceIndex, ++currentRingStart, ++nextRingStart) {
-                if (stackIndex != 0) {
-                    this.indices.push(currentRingStart + 1);
-                    this.indices.push(nextRingStart);
-                    this.indices.push(currentRingStart);
+            for (
+                let slice_index = 0;
+                slice_index < this.sky_slices;
+                ++slice_index, ++current_ring_start, ++next_ring_start
+            ) {
+                if (stack_index != 0) {
+                    this.indices.push(current_ring_start + 1);
+                    this.indices.push(next_ring_start);
+                    this.indices.push(current_ring_start);
                 }
 
-                this.indices.push(nextRingStart + 1);
-                this.indices.push(nextRingStart);
-                this.indices.push(currentRingStart + 1);
+                this.indices.push(next_ring_start + 1);
+                this.indices.push(next_ring_start);
+                this.indices.push(current_ring_start + 1);
             }
         }
 
@@ -91,16 +109,16 @@ export class SkySphere extends CGFobject {
     }
 
     initMaterial() {
-        this.cloudMaterial = new CGFappearance(this.scene);
-        this.cloudMaterial.setAmbient(1, 1, 1, 1);
-        this.cloudMaterial.setDiffuse(0, 0, 0, 1);
-        this.cloudMaterial.setSpecular(0, 0, 0, 0);
-        this.cloudMaterial.setShininess(0);
-        this.cloudMaterial.setEmission(1, 1, 1, 1);
+        this.cloud_material = new CGFappearance(this.scene);
+        this.cloud_material.setAmbient(1, 1, 1, 1);
+        this.cloud_material.setDiffuse(0, 0, 0, 1);
+        this.cloud_material.setSpecular(0, 0, 0, 0);
+        this.cloud_material.setShininess(0);
+        this.cloud_material.setEmission(1, 1, 1, 1);
     }
 
     initShaders() {
-        this.sphereShader = new CGFshader(
+        this.sphere_shader = new CGFshader(
             this.scene.gl,
             "sky/shaders/sphereClouds.vert",
             "sky/shaders/sphereClouds.frag",
@@ -111,19 +129,19 @@ export class SkySphere extends CGFobject {
     // Update
     // =====================================================
 
-    update(deltaTime) {
-        this.timeFactor += this.scrollSpeed * deltaTime * 0.001;
-        if (this.cycleActive) this.updateDayCycle();
+    update(delta_time) {
+        this.time_factor += this.scroll_speed * delta_time * 0.001;
+        if (this.cycle_active) this.updateDayCycle();
     }
 
     updateDayCycle() {
-        this.timeOfDay += this.daySpeed;
+        this.time_of_day += this.day_speed;
 
-        var angle = (this.timeOfDay / (Math.PI * 2)) * Math.PI;
-        var sunY = Math.sin(angle);
+        var angle = (this.time_of_day / (Math.PI * 2)) * Math.PI;
+        var sun_y = Math.sin(angle);
 
-        this.dayFactor = Math.max(0, Math.min(1, (sunY - -0.1) / (0.2 - -0.1)));
-        this.dayFactor = this.dayFactor * this.dayFactor;
+        this.day_factor = Math.max(0, Math.min(1, (sun_y - -0.1) / (0.2 - -0.1)));
+        this.day_factor = this.day_factor * this.day_factor;
 
         var radius = 20.0;
         var x = -2;
@@ -152,25 +170,25 @@ export class SkySphere extends CGFobject {
 
     display() {
         this.scene.pushMatrix();
-        this.cloudMaterial.apply();
-        this.scene.setActiveShader(this.sphereShader);
+        this.cloud_material.apply();
+        this.scene.setActiveShader(this.sphere_shader);
 
-        this.sphereShader.setUniformsValues({
-            radius: this.radius,
-            day_colour1: hexToRGB(this.scene.sky_colors["sky_day_colour_1"], false),
-            day_colour2: hexToRGB(this.scene.sky_colors["sky_day_colour_2"], false),
-            night_colour1: hexToRGB(this.scene.sky_colors["sky_night_colour_1"], false),
-            night_colour2: hexToRGB(this.scene.sky_colors["sky_night_colour_2"], false),
-            cloud_display: this.scene.sky_clouds_display,
-            sun_moon_display: this.scene.sky_sun_moon_display,
-            cloud_scale: this.scene.sky_clouds_scale,
-            time_factor: this.timeFactor,
-            cloud_alpha: this.scene.sky_clouds_alpha,
-            cloud_cover: this.scene.sky_clouds_cover,
-            cloud_light: this.scene.sky_clouds_light,
-            cloud_dark: this.scene.sky_clouds_dark,
-            sun_angle: this.timeOfDay,
-            day_factor: this.dayFactor,
+        this.sphere_shader.setUniformsValues({
+            radius: this.sky_radius,
+            day_colour1: hexToRGB(this.sky_colors["sky_day_colour_1"], false),
+            day_colour2: hexToRGB(this.sky_colors["sky_day_colour_2"], false),
+            night_colour1: hexToRGB(this.sky_colors["sky_night_colour_1"], false),
+            night_colour2: hexToRGB(this.sky_colors["sky_night_colour_2"], false),
+            cloud_display: this.sky_clouds_display,
+            sun_moon_display: this.sky_sun_moon_display,
+            cloud_scale: this.sky_clouds_scale,
+            time_factor: this.time_factor,
+            cloud_alpha: this.sky_clouds_alpha,
+            cloud_cover: this.sky_clouds_cover,
+            cloud_light: this.sky_clouds_light,
+            cloud_dark: this.sky_clouds_dark,
+            sun_angle: this.time_of_day,
+            day_factor: this.day_factor,
         });
         super.display();
 

@@ -81,30 +81,6 @@ export class Scene extends CGFscene {
         };
         this.selected_object = 0;
 
-        // Sky
-        this.sky_radius = 500;
-        this.sky_slices = 100;
-        this.sky_stacks = 100;
-        this.sky_day_night_cycle = false;
-        this.sky_sun_moon_display = true;
-
-        // Sky > Colors
-        this.sky_colors = {
-            sky_day_colour_1: "#3366cc",
-            sky_day_colour_2: "#6db3ff",
-            sky_night_colour_1: "#050b1a",
-            sky_night_colour_2: "#0a1329",
-        };
-
-        // Sky > Clouds
-        this.sky_clouds_display = true;
-        this.sky_clouds_scale = 0.3;
-        this.sky_clouds_scroll_speed = 0.1;
-        this.sky_clouds_alpha = 8.0;
-        this.sky_clouds_cover = 0.2;
-        this.sky_clouds_light = 0.3;
-        this.sky_clouds_dark = 0.5;
-
         // Obstacles > Hay Bale
         this.obstacles_haybale_slices = 50;
         this.obstacles_haybale_stacks = 10;
@@ -116,13 +92,7 @@ export class Scene extends CGFscene {
 
     initObjects() {
         this.axis = new CGFaxis(this);
-        this.sky_sphere = new SkySphere(
-            this,
-            this.sky_clouds_scroll_speed,
-            this.sky_slices,
-            this.sky_stacks,
-            this.sky_radius,
-        );
+        this.sky_sphere = new SkySphere(this);
         this.sky_sphere.updateDayCycle();
 
         this.haybale = new HayBale(this, this.obstacles_haybale_slices, this.obstacles_haybale_stacks);
@@ -140,11 +110,6 @@ export class Scene extends CGFscene {
         this.delta_time = current_time - this.last_time;
         this.last_time = current_time;
 
-        // Sync cloud layer with UI controls
-        this.sky_sphere.scrollSpeed = this.sky_clouds_scroll_speed;
-        this.sky_sphere.cloudDensity = this.cloud_density;
-        this.sky_sphere.cloudSoftness = this.cloud_softness;
-        this.sky_sphere.cycleActive = this.sky_day_night_cycle;
         this.sky_sphere.update(this.delta_time);
     }
 
