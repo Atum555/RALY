@@ -80,14 +80,6 @@ export class Scene extends CGFscene {
             Rock: 1,
         };
         this.selected_object = 0;
-
-        // Obstacles > Hay Bale
-        this.obstacles_haybale_slices = 50;
-        this.obstacles_haybale_stacks = 10;
-
-        // Obstacles > Rock
-        this.obstacles_rock_radius = 1;
-        this.obstacles_rock_scale = 1.5;
     }
 
     initObjects() {
@@ -95,8 +87,8 @@ export class Scene extends CGFscene {
         this.sky_sphere = new SkySphere(this);
         this.sky_sphere.updateDayCycle();
 
-        this.haybale = new HayBale(this, this.obstacles_haybale_slices, this.obstacles_haybale_stacks);
-        this.rock = new Rock(this, this.obstacles_rock_radius, this.obstacles_rock_scale);
+        this.haybale = new HayBale(this);
+        this.rock = new Rock(this);
 
         this.selectable_objects = [this.haybale, this.rock];
         this.all_objects = [this.haybale, this.rock, this.sky_sphere];

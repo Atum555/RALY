@@ -7,13 +7,13 @@ import { fbm } from "./noiseUtils.js";
  * @param scene - Reference to MyScene object
  */
 export class Rock extends CGFobject {
-    constructor(scene, radius, scale) {
+    constructor(scene) {
         super(scene);
 
         this.slices = 10;
         this.stacks = 10;
-        this.radius = radius;
-        this.scale = scale;
+        this.radius = 1;
+        this.scale = 1.5;
         this.uNoiseScale = 5.0;
         this.uNoiseStrength = 6.0;
         this.initBuffers();
@@ -31,11 +31,7 @@ export class Rock extends CGFobject {
     }
 
     display() {
-        this.scene.gl.texParameteri(
-            this.scene.gl.TEXTURE_2D,
-            this.scene.gl.TEXTURE_MAG_FILTER,
-            this.scene.gl.NEAREST,
-        );
+        this.scene.gl.texParameteri(this.scene.gl.TEXTURE_2D, this.scene.gl.TEXTURE_MAG_FILTER, this.scene.gl.NEAREST);
         this.material.apply();
         super.display();
     }
@@ -76,11 +72,7 @@ export class Rock extends CGFobject {
                 nz /= len;
 
                 var displacement =
-                    fbm([
-                        x * this.uNoiseScale,
-                        y * this.uNoiseScale,
-                        z * this.uNoiseScale,
-                    ]) * this.uNoiseStrength;
+                    fbm([x * this.uNoiseScale, y * this.uNoiseScale, z * this.uNoiseScale]) * this.uNoiseStrength;
 
                 this.vertices.push(
                     (x + nx * displacement) * sx,
@@ -112,11 +104,8 @@ export class Rock extends CGFobject {
 
         // displacement for center vertices
         var displacement =
-            fbm([
-                0 * this.uNoiseScale,
-                0 * this.uNoiseScale,
-                this.radius * sz * this.uNoiseScale,
-            ]) * this.uNoiseStrength;
+            fbm([0 * this.uNoiseScale, 0 * this.uNoiseScale, this.radius * sz * this.uNoiseScale]) *
+            this.uNoiseStrength;
 
         // single top pole vertex
         var topIndex = index++;
@@ -136,11 +125,7 @@ export class Rock extends CGFobject {
 
         var bottomRingStart = bottomIndex - 1 - this.slices;
         for (var i = 0; i < this.slices; ++i) {
-            this.indices.push(
-                bottomRingStart + ((i + 1) % this.slices),
-                bottomRingStart + i,
-                bottomIndex,
-            );
+            this.indices.push(bottomRingStart + ((i + 1) % this.slices), bottomRingStart + i, bottomIndex);
         }
 
         this.primitiveType = this.scene.gl.TRIANGLES;

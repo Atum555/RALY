@@ -22,22 +22,14 @@ export class UI extends CGFinterface {
         // == Sky ==============================================
 
         const sky = this.scene.sky_sphere;
+        const rebuild_sky = () => {
+            sky.initBuffers();
+            sky.initNormalVizBuffers();
+        };
         const sky_controls = this.gui.addFolder("Sky");
-        sky_controls
-            .add(sky, "sky_radius", 100, 1000)
-            .step(10)
-            .name("Radius")
-            .onChange(() => sky.initBuffers());
-        sky_controls
-            .add(sky, "sky_slices", 4, 100)
-            .step(1)
-            .name("Slices")
-            .onChange(() => sky.initBuffers());
-        sky_controls
-            .add(sky, "sky_stacks", 4, 100)
-            .step(1)
-            .name("Stacks")
-            .onChange(() => sky.initBuffers());
+        sky_controls.add(sky, "sky_radius", 100, 1000).step(10).name("Radius").onChange(rebuild_sky);
+        sky_controls.add(sky, "sky_slices", 4, 100).step(1).name("Slices").onChange(rebuild_sky);
+        sky_controls.add(sky, "sky_stacks", 4, 100).step(1).name("Stacks").onChange(rebuild_sky);
         sky_controls.add(sky, "cycle_active").name("Day/Night Cycle");
         sky_controls.add(sky, "sky_sun_moon_display").name("Sun / Moon");
 
@@ -64,47 +56,25 @@ export class UI extends CGFinterface {
 
         // -- Hay Bale -----------------------------------------
 
+        const haybale = this.scene.haybale;
+        const rebuild_haybale = () => {
+            haybale.initBuffers();
+            haybale.initNormalVizBuffers();
+        };
         var haybale_controls = obstacle_controls.addFolder("Hay Bale");
-        const obstacles_haybale_slices = haybale_controls
-            .add(this.scene, "obstacles_haybale_slices", 3, 100)
-            .step(1)
-            .name("Slices")
-            .onChange(v => {
-                this.scene.haybale.slices = v;
-                this.scene.haybale.initBuffers();
-                this.scene.haybale.initNormalVizBuffers();
-            });
-        const obstacles_haybale_stacks = haybale_controls
-            .add(this.scene, "obstacles_haybale_stacks", 1, 50)
-            .step(1)
-            .name("Stacks")
-            .onChange(v => {
-                this.scene.haybale.stacks = v;
-                this.scene.haybale.initBuffers();
-                this.scene.haybale.initNormalVizBuffers();
-            });
+        haybale_controls.add(haybale, "slices", 3, 100).step(1).name("Slices").onChange(rebuild_haybale);
+        haybale_controls.add(haybale, "stacks", 1, 50).step(1).name("Stacks").onChange(rebuild_haybale);
 
         // -- Rock ---------------------------------------------
 
+        const rock = this.scene.rock;
+        const rebuild_rock = () => {
+            rock.initBuffers();
+            rock.initNormalVizBuffers();
+        };
         var rock_controls = obstacle_controls.addFolder("Rock");
-        const obstacles_rock_radius = rock_controls
-            .add(this.scene, "obstacles_rock_radius", 0.1, 5)
-            .step(0.1)
-            .name("Radius")
-            .onChange(v => {
-                this.scene.rock.radius = v;
-                this.scene.rock.initBuffers();
-                this.scene.rock.initNormalVizBuffers();
-            });
-        const obstacles_rock_scale = rock_controls
-            .add(this.scene, "obstacles_rock_scale", 1, 3)
-            .step(0.1)
-            .name("Scale")
-            .onChange(v => {
-                this.scene.rock.scale = v;
-                this.scene.rock.initBuffers();
-                this.scene.rock.initNormalVizBuffers();
-            });
+        rock_controls.add(rock, "radius", 0.1, 5).step(0.1).name("Radius").onChange(rebuild_rock);
+        rock_controls.add(rock, "scale", 1, 3).step(0.1).name("Scale").onChange(rebuild_rock);
 
         return true;
     }
