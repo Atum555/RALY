@@ -32,58 +32,59 @@ export class SkySphere extends CGFobject {
         this.normals = [];
         this.texCoords = [];
 
-        var x, y, z, xy;
-        var nx, ny, nz;
-        var lengthInv = 1 / this.radius;
-        var s, t;
+        let posX, posY, posZ, ringRadius;
+        let normalX, normalY, normalZ;
+        const inverseRadius = 1 / this.radius;
+        let texU, texV;
 
-        var sliceStep = (2 * Math.PI) / this.slices;
-        var stackStep = Math.PI / this.stacks;
-        var sliceAngle, stackAngle;
+        const sliceAngleStep = (2 * Math.PI) / this.slices;
+        const stackAngleStep = Math.PI / this.stacks;
+        const halfStacks = this.stacks / 2;
+        let sliceAngle, stackAngle;
 
-        for (var i = 0; i <= this.stacks / 2; ++i) {
-            stackAngle = Math.PI / 2 - i * stackStep;
-            xy = this.radius * Math.cos(stackAngle);
-            z = this.radius * Math.sin(stackAngle);
+        for (let stackIndex = 0; stackIndex <= halfStacks; ++stackIndex) {
+            stackAngle = Math.PI / 2 - stackIndex * stackAngleStep;
+            ringRadius = this.radius * Math.cos(stackAngle);
+            posZ = this.radius * Math.sin(stackAngle);
 
-            for (var j = 0; j <= this.slices; ++j) {
-                sliceAngle = j * sliceStep;
+            for (let sliceIndex = 0; sliceIndex <= this.slices; ++sliceIndex) {
+                sliceAngle = sliceIndex * sliceAngleStep;
 
-                x = xy * Math.cos(sliceAngle);
-                y = xy * Math.sin(sliceAngle);
-                this.vertices.push(x);
-                this.vertices.push(y);
-                this.vertices.push(z);
+                posX = ringRadius * Math.cos(sliceAngle);
+                posY = ringRadius * Math.sin(sliceAngle);
+                this.vertices.push(posX);
+                this.vertices.push(posY);
+                this.vertices.push(posZ);
 
-                nx = x * lengthInv;
-                ny = y * lengthInv;
-                nz = z * lengthInv;
-                this.normals.push(-nx);
-                this.normals.push(-ny);
-                this.normals.push(-nz);
+                normalX = posX * inverseRadius;
+                normalY = posY * inverseRadius;
+                normalZ = posZ * inverseRadius;
+                this.normals.push(-normalX);
+                this.normals.push(-normalY);
+                this.normals.push(-normalZ);
 
-                s = j / this.slices;
-                t = i / (this.stacks / 2);
-                this.texCoords.push(s);
-                this.texCoords.push(t);
+                texU = sliceIndex / this.slices;
+                texV = stackIndex / halfStacks;
+                this.texCoords.push(texU);
+                this.texCoords.push(texV);
             }
         }
-        var k1, k2;
-        for (var i = 0; i < this.stacks / 2; ++i) {
-            k1 = i * (this.slices + 1);
-            k2 = k1 + this.slices + 1;
+        let currentRingStart, nextRingStart;
+        for (let stackIndex = 0; stackIndex < halfStacks; ++stackIndex) {
+            currentRingStart = stackIndex * (this.slices + 1);
+            nextRingStart = currentRingStart + this.slices + 1;
 
-            for (var j = 0; j < this.slices; ++j, ++k1, ++k2) {
-                if (i != 0) {
-                    this.indices.push(k1 + 1);
-                    this.indices.push(k2);
-                    this.indices.push(k1);
+            for (let sliceIndex = 0; sliceIndex < this.slices; ++sliceIndex, ++currentRingStart, ++nextRingStart) {
+                if (stackIndex != 0) {
+                    this.indices.push(currentRingStart + 1);
+                    this.indices.push(nextRingStart);
+                    this.indices.push(currentRingStart);
                 }
 
-                if (i != this.stacks - 1) {
-                    this.indices.push(k2 + 1);
-                    this.indices.push(k2);
-                    this.indices.push(k1 + 1);
+                if (stackIndex != this.stacks - 1) {
+                    this.indices.push(nextRingStart + 1);
+                    this.indices.push(nextRingStart);
+                    this.indices.push(currentRingStart + 1);
                 }
             }
         }
