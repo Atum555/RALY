@@ -45,13 +45,13 @@ export class SkySphere extends CGFobject {
         for (let stackIndex = 0; stackIndex <= halfStacks; ++stackIndex) {
             stackAngle = Math.PI / 2 - stackIndex * stackAngleStep;
             ringRadius = this.radius * Math.cos(stackAngle);
-            posZ = this.radius * Math.sin(stackAngle);
+            posY = this.radius * Math.sin(stackAngle);
 
             for (let sliceIndex = 0; sliceIndex <= this.slices; ++sliceIndex) {
                 sliceAngle = sliceIndex * sliceAngleStep;
 
                 posX = ringRadius * Math.cos(sliceAngle);
-                posY = ringRadius * Math.sin(sliceAngle);
+                posZ = -ringRadius * Math.sin(sliceAngle);
                 this.vertices.push(posX);
                 this.vertices.push(posY);
                 this.vertices.push(posZ);
@@ -179,7 +179,6 @@ export class SkySphere extends CGFobject {
         });
 
         this.scene.translate(0, this.yPosition - 4 - 5, 0);
-        this.scene.rotate(-Math.PI / 2, 1, 0, 0);
         super.display();
 
         this.scene.setActiveShader(this.scene.defaultShader);
