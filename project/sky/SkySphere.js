@@ -8,16 +8,13 @@ export class SkySphere extends CGFobject {
 
     constructor(scene) {
         super(scene);
-        this.scroll_speed = 0.1;
-        this.time_factor = 1;
-        this.day_speed = 0.005;
-        this.time_of_day = 2.5;
-        this.cycle_active = false;
-        this.day_factor = 0;
+
+        // -- UI-controlled --
 
         this.sky_radius = 500;
         this.sky_slices = 100;
         this.sky_stacks = 100;
+        this.cycle_active = true;
         this.sky_sun_moon_display = true;
 
         this.sky_colors = {
@@ -28,11 +25,19 @@ export class SkySphere extends CGFobject {
         };
 
         this.sky_clouds_display = true;
+        this.sky_clouds_drift_speed = 0.003;
         this.sky_clouds_scale = 0.3;
         this.sky_clouds_alpha = 8.0;
         this.sky_clouds_cover = 0.2;
         this.sky_clouds_light = 0.3;
         this.sky_clouds_dark = 0.5;
+
+        // -- Internal state --
+
+        this.day_speed = 0.005;
+        this.time_of_day = 2.5;
+        this.day_factor = 0;
+        this.sky_clouds_drift = 0;
 
         this.initBuffers();
         this.initShaders();
@@ -120,7 +125,7 @@ export class SkySphere extends CGFobject {
     // =====================================================
 
     update(delta_time) {
-        this.time_factor += this.scroll_speed * delta_time * 0.001;
+        this.sky_clouds_drift += this.sky_clouds_drift_speed * delta_time * 0.001;
         if (this.cycle_active) {
             this.time_of_day += this.day_speed;
 
@@ -168,7 +173,7 @@ export class SkySphere extends CGFobject {
             cloud_display: this.sky_clouds_display,
             sun_moon_display: this.sky_sun_moon_display,
             cloud_scale: this.sky_clouds_scale,
-            time_factor: this.time_factor,
+            drift: this.sky_clouds_drift,
             cloud_alpha: this.sky_clouds_alpha,
             cloud_cover: this.sky_clouds_cover,
             cloud_light: this.sky_clouds_light,

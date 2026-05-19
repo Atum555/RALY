@@ -43,8 +43,8 @@ export class UI extends CGFinterface {
 
         const cloud_controls = sky_controls.addFolder("Clouds");
         cloud_controls.add(sky, "sky_clouds_display").name("Display Clouds");
+        cloud_controls.add(sky, "sky_clouds_drift_speed", 0.0, 0.1).step(0.001).name("Drift Speed");
         cloud_controls.add(sky, "sky_clouds_scale", 0.001, 1.0).step(0.01).name("Scale");
-        cloud_controls.add(sky, "scroll_speed", 0.0, 2.0).step(0.05).name("Scroll Speed");
         cloud_controls.add(sky, "sky_clouds_alpha", 0.0, 20.0).step(0.5).name("Alpha");
         cloud_controls.add(sky, "sky_clouds_cover", 0.0, 1.0).step(0.05).name("Cover");
         cloud_controls.add(sky, "sky_clouds_light", 0.0, 1.0).step(0.05).name("Light");
