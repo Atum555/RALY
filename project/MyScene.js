@@ -38,7 +38,7 @@ export class MyScene extends CGFscene {
     }
 
     initCameras() {
-        this.camera = new CGFcamera(1.5, 0.01, 5000, vec3.fromValues(0, 0, 15), vec3.fromValues(0, 0, 0));
+        this.camera = new CGFcamera(1.0, 0.01, 5000, vec3.fromValues(0, 0, 15), vec3.fromValues(0, 0, 0));
     }
 
     initLights() {
@@ -82,8 +82,8 @@ export class MyScene extends CGFscene {
         this.selected_object = 0;
 
         // Sky
-        this.sky_slices = 30;
-        this.sky_stacks = 30;
+        this.sky_slices = 100;
+        this.sky_stacks = 100;
         this.sky_radius = 500;
 
         // Sky > Sun

@@ -175,8 +175,6 @@ export class SkySphere extends CGFobject {
             sun_angle: this.timeOfDay,
             day_factor: this.dayFactor,
         });
-
-        this.scene.translate(0, this.yPosition - 4 - 5, 0);
         super.display();
 
         this.scene.setActiveShader(this.scene.defaultShader);
