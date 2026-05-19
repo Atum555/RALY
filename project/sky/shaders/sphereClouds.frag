@@ -11,6 +11,7 @@ varying vec3 v_direction;
 uniform float time_factor;
 
 uniform bool cloud_display;
+uniform bool sun_moon_display;
 uniform float cloud_scale;
 uniform float cloud_dark;
 uniform float cloud_light;
@@ -157,11 +158,13 @@ void main() {
     if (cloud_display) cloud_layer = clouds(sky_colour);
     vec3 result = cloud_layer.colour;
 
-    vec4 sun_layer = sun(cloud_layer.coverage);
-    result = mix(result, sun_layer.rgb, sun_layer.a);
+    if (sun_moon_display) {
+        vec4 sun_layer = sun(cloud_layer.coverage);
+        result = mix(result, sun_layer.rgb, sun_layer.a);
 
-    vec4 moon_layer = moon(cloud_layer.coverage);
-    result = mix(result, moon_layer.rgb, moon_layer.a);
+        vec4 moon_layer = moon(cloud_layer.coverage);
+        result = mix(result, moon_layer.rgb, moon_layer.a);
+    }
 
     gl_FragColor = vec4(result, 1.0);
 }

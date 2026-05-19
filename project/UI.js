@@ -1,5 +1,4 @@
 import { CGFinterface, dat } from "../lib/CGF.js";
-import { Scene } from "./Scene.js";
 
 export class UI extends CGFinterface {
     constructor() {
@@ -38,6 +37,8 @@ export class UI extends CGFinterface {
             this.scene.sky_sphere.stacks = value;
             this.scene.sky_sphere.initBuffers();
         });
+        sky_controls.add(this.scene, "sky_day_night_cycle").name("Day/Night Cycle");
+        sky_controls.add(this.scene, "sky_sun_moon_display").name("Sun / Moon");
 
         var sky_colors = sky_controls.addFolder("Colors");
         sky_colors.addColor(this.scene.sky_colors, "sky_day_colour_1").name("Day Color 1");
@@ -55,17 +56,6 @@ export class UI extends CGFinterface {
         cloud_controls.add(this.scene, "sky_clouds_cover", 0.0, 1.0).step(0.05).name("Cover");
         cloud_controls.add(this.scene, "sky_clouds_light", 0.0, 1.0).step(0.05).name("Light");
         cloud_controls.add(this.scene, "sky_clouds_dark", 0.0, 1.0).step(0.05).name("Dark");
-
-        // -- Sun ----------------------------------------------
-
-        const sun_controls = sky_controls.addFolder("Sun");
-        sun_controls.add(this.scene, "sky_sun_day_night_cycle").name("Day/Night Cycle");
-
-        const sun = this.scene.lights[Scene.Lights.SUN];
-        sun_controls.add(sun, "enabled").name("Enabled");
-        sun_controls.add(sun.position, "0", -20.0, 20.0).name("X Position");
-        sun_controls.add(sun.position, "1", -20.0, 20.0).name("Y Position");
-        sun_controls.add(sun.position, "2", -20.0, 20.0).name("Z Position");
 
         // == Obstacles ========================================
 

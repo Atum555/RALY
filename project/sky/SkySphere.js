@@ -162,6 +162,7 @@ export class SkySphere extends CGFobject {
             night_colour1: hexToRGB(this.scene.sky_colors["sky_night_colour_1"], false),
             night_colour2: hexToRGB(this.scene.sky_colors["sky_night_colour_2"], false),
             cloud_display: this.scene.sky_clouds_display,
+            sun_moon_display: this.scene.sky_sun_moon_display,
             cloud_scale: this.scene.sky_clouds_scale,
             time_factor: this.timeFactor,
             cloud_alpha: this.scene.sky_clouds_alpha,

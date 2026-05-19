@@ -85,6 +85,8 @@ export class Scene extends CGFscene {
         this.sky_radius = 500;
         this.sky_slices = 100;
         this.sky_stacks = 100;
+        this.sky_day_night_cycle = false;
+        this.sky_sun_moon_display = true;
 
         // Sky > Colors
         this.sky_colors = {
@@ -102,9 +104,6 @@ export class Scene extends CGFscene {
         this.sky_clouds_cover = 0.2;
         this.sky_clouds_light = 0.3;
         this.sky_clouds_dark = 0.5;
-
-        // Sky > Sun
-        this.sky_sun_day_night_cycle = false;
 
         // Obstacles > Hay Bale
         this.obstacles_haybale_slices = 50;
@@ -145,7 +144,7 @@ export class Scene extends CGFscene {
         this.sky_sphere.scrollSpeed = this.sky_clouds_scroll_speed;
         this.sky_sphere.cloudDensity = this.cloud_density;
         this.sky_sphere.cloudSoftness = this.cloud_softness;
-        this.sky_sphere.cycleActive = this.sky_sun_day_night_cycle;
+        this.sky_sphere.cycleActive = this.sky_day_night_cycle;
         this.sky_sphere.update(this.delta_time);
     }
 
