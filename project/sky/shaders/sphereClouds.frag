@@ -11,6 +11,7 @@ varying vec3 v_direction;
 uniform float time_factor;
 uniform float radius;
 
+uniform bool cloud_display;
 uniform float cloud_scale;
 uniform float cloud_dark;
 uniform float cloud_light;
@@ -154,7 +155,8 @@ void main() {
     float elevation = clamp(v_direction.y, 0.0, 1.0);
     vec3 sky_colour = mix(mix(night_colour2, night_colour1, elevation), mix(day_colour2, day_colour1, elevation), day_factor);
 
-    CloudResult cloud_layer = clouds(sky_colour);
+    CloudResult cloud_layer = CloudResult(sky_colour, 0.0);
+    if (cloud_display) cloud_layer = clouds(sky_colour);
     vec3 result = cloud_layer.colour;
 
     vec4 sun_layer = sun(cloud_layer.coverage);

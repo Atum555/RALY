@@ -50,15 +50,12 @@ export class MyInterface extends CGFinterface {
 
         const cloud_controls = sky_controls.addFolder("Clouds");
         cloud_controls.add(this.scene, "sky_clouds_display").name("Display Clouds");
-        cloud_controls.add(this.scene, "sky_clouds_y_position", -20.0, 20.0).step(0.5).name("Y Position");
         cloud_controls.add(this.scene, "sky_clouds_scroll_speed", 0.0, 2.0).step(0.05).name("Scroll Speed");
-
-        var cloud_appearance = cloud_controls.addFolder("Appearance");
-        cloud_appearance.add(this.scene, "sky_clouds_appearance_dark", 0.0, 1.0).step(0.05).name("Dark");
-        cloud_appearance.add(this.scene, "sky_clouds_appearance_light", 0.0, 1.0).step(0.05).name("Light");
-        cloud_appearance.add(this.scene, "sky_clouds_appearance_cover", 0.0, 1.0).step(0.05).name("Cover");
-        cloud_appearance.add(this.scene, "sky_clouds_appearance_alpha", 0.0, 20.0).step(0.5).name("Alpha");
-        cloud_appearance.add(this.scene, "sky_clouds_appearance_scale", 0.001, 1.0).step(0.01).name("Scale");
+        cloud_controls.add(this.scene, "sky_clouds_dark", 0.0, 1.0).step(0.05).name("Dark");
+        cloud_controls.add(this.scene, "sky_clouds_light", 0.0, 1.0).step(0.05).name("Light");
+        cloud_controls.add(this.scene, "sky_clouds_cover", 0.0, 1.0).step(0.05).name("Cover");
+        cloud_controls.add(this.scene, "sky_clouds_alpha", 0.0, 20.0).step(0.5).name("Alpha");
+        cloud_controls.add(this.scene, "sky_clouds_scale", 0.001, 1.0).step(0.01).name("Scale");
 
         // -- Sun ----------------------------------------------
 

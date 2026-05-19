@@ -6,9 +6,8 @@ export class SkySphere extends CGFobject {
     // Init
     // =====================================================
 
-    constructor(scene, yPosition, scrollSpeed, slices, stacks, radius) {
+    constructor(scene, scrollSpeed, slices, stacks, radius) {
         super(scene);
-        this.yPosition = yPosition;
         this.scrollSpeed = scrollSpeed;
         this.timeFactor = 0;
         this.cloudDensity = 0.38;
@@ -162,11 +161,12 @@ export class SkySphere extends CGFobject {
             uSampler2: 1,
             time_factor: this.timeFactor,
             radius: this.radius,
-            cloud_scale: this.scene.sky_clouds_appearance_scale,
-            cloud_dark: this.scene.sky_clouds_appearance_dark,
-            cloud_light: this.scene.sky_clouds_appearance_light,
-            cloud_cover: this.scene.sky_clouds_appearance_cover,
-            cloud_alpha: this.scene.sky_clouds_appearance_alpha,
+            cloud_display: this.scene.sky_clouds_display,
+            cloud_scale: this.scene.sky_clouds_scale,
+            cloud_dark: this.scene.sky_clouds_dark,
+            cloud_light: this.scene.sky_clouds_light,
+            cloud_cover: this.scene.sky_clouds_cover,
+            cloud_alpha: this.scene.sky_clouds_alpha,
             day_tint: this.scene.sky_colors_day_tint,
             day_colour1: hexToRGB(this.scene.sky_colors["sky_day_colour_1"]).slice(0, 3),
             day_colour2: hexToRGB(this.scene.sky_colors["sky_day_colour_2"]).slice(0, 3),

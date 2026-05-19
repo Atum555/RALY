@@ -95,20 +95,17 @@ export class MyScene extends CGFscene {
             sky_night_colour_2: "#0a1329",
         };
         
-        // Sky > Sun
-        this.sky_sun_day_night_cycle = false;
-
         // Sky > Clouds
         this.sky_clouds_display = true;
-        this.sky_clouds_y_position = 5;
         this.sky_clouds_scroll_speed = 0.1;
+        this.sky_clouds_scale = 0.3;
+        this.sky_clouds_dark = 0.5;
+        this.sky_clouds_light = 0.3;
+        this.sky_clouds_cover = 0.2;
+        this.sky_clouds_alpha = 8.0;
 
-        // Sky > Clouds > Appearance
-        this.sky_clouds_appearance_scale = 0.3;
-        this.sky_clouds_appearance_dark = 0.5;
-        this.sky_clouds_appearance_light = 0.3;
-        this.sky_clouds_appearance_cover = 0.2;
-        this.sky_clouds_appearance_alpha = 8.0;
+        // Sky > Sun
+        this.sky_sun_day_night_cycle = false;
 
         // Obstacles > Hay Bale
         this.obstacles_haybale_slices = 50;
@@ -123,7 +120,6 @@ export class MyScene extends CGFscene {
         this.axis = new CGFaxis(this);
         this.sky_sphere = new SkySphere(
             this,
-            this.sky_clouds_y_position,
             this.sky_clouds_scroll_speed,
             this.sky_slices,
             this.sky_stacks,
@@ -147,15 +143,11 @@ export class MyScene extends CGFscene {
         this.last_time = current_time;
 
         // Sync cloud layer with UI controls
-        this.sky_sphere.yPosition = this.sky_clouds_y_position;
         this.sky_sphere.scrollSpeed = this.sky_clouds_scroll_speed;
         this.sky_sphere.cloudDensity = this.cloud_density;
         this.sky_sphere.cloudSoftness = this.cloud_softness;
         this.sky_sphere.cycleActive = this.sky_sun_day_night_cycle;
-        // Update cloud animation
-        if (this.sky_clouds_display) {
-            this.sky_sphere.update(this.delta_time);
-        }
+        this.sky_sphere.update(this.delta_time);
     }
 
     display() {
@@ -185,7 +177,7 @@ export class MyScene extends CGFscene {
 
         // Lights and axis
         if (this.display_axis) this.axis.display();
-        if (this.sky_clouds_display) this.sky_sphere.display();
+        this.sky_sphere.display();
         this.lights[MyScene.Lights.SUN].update();
 
         // Scene objects
