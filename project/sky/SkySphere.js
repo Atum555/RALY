@@ -130,16 +130,17 @@ export class SkySphere extends CGFobject {
         // Update Day/Night cycle
         this.time_of_day += this.day_night_cycle_speed * delta_time * 0.0001;
 
-        const angle = (this.time_of_day / (Math.PI * 2)) * Math.PI;
-        const sun_y = Math.sin(angle);
+        const sun_pitch = (this.time_of_day / (Math.PI * 2)) * Math.PI;
+        const sun_y = Math.sin(sun_pitch);
 
-        this.day_factor = Math.max(0, Math.min(1, (sun_y - -0.1) / (0.2 - -0.1)));
+        // sun_y map from [-0.1, 0.2] to [0, 1]
+        this.day_factor = Math.max(0, Math.min(1, (sun_y + 0.1) / (0.3)));
         this.day_factor = this.day_factor * this.day_factor;
 
         const radius = 20.0;
         const x = -2;
-        const y = Math.sin(angle) * radius;
-        const z = -Math.cos(angle) * radius;
+        const y = Math.sin(sun_pitch) * radius;
+        const z = -Math.cos(sun_pitch) * radius;
         const { Lights } = this.scene.constructor;
         const sun = this.scene.lights[Lights.SUN];
         const moon = this.scene.lights[Lights.MOON];
