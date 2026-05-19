@@ -125,8 +125,6 @@ export class SkySphere extends CGFobject {
         this.dayFactor = Math.max(0, Math.min(1, (sunY - -0.1) / (0.2 - -0.1)));
         this.dayFactor = this.dayFactor * this.dayFactor;
 
-        this.scene.sky_clouds_tint = 0.2 + 0.3 * this.dayFactor;
-
         var radius = 20.0;
         var x = -2;
         var y = Math.sin(angle) * radius;
@@ -170,7 +168,6 @@ export class SkySphere extends CGFobject {
             cloud_cover: this.scene.sky_clouds_cover,
             cloud_light: this.scene.sky_clouds_light,
             cloud_dark: this.scene.sky_clouds_dark,
-            cloud_tint: this.scene.sky_clouds_tint,
             sun_angle: this.timeOfDay,
             day_factor: this.dayFactor,
         });

@@ -102,7 +102,6 @@ export class Scene extends CGFscene {
         this.sky_clouds_cover = 0.2;
         this.sky_clouds_light = 0.3;
         this.sky_clouds_dark = 0.5;
-        this.sky_clouds_tint = 0.5;
 
         // Sky > Sun
         this.sky_sun_day_night_cycle = false;

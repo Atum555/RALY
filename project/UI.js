@@ -55,7 +55,6 @@ export class UI extends CGFinterface {
         cloud_controls.add(this.scene, "sky_clouds_cover", 0.0, 1.0).step(0.05).name("Cover");
         cloud_controls.add(this.scene, "sky_clouds_light", 0.0, 1.0).step(0.05).name("Light");
         cloud_controls.add(this.scene, "sky_clouds_dark", 0.0, 1.0).step(0.05).name("Dark");
-        cloud_controls.add(this.scene, "sky_clouds_tint", 0.0, 1.0).step(0.05).name("Tint");
 
         // -- Sun ----------------------------------------------
 

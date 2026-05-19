@@ -17,7 +17,6 @@ uniform float cloud_light;
 uniform float cloud_cover;
 uniform float cloud_alpha;
 
-uniform float cloud_tint;
 uniform vec3 day_colour1;
 uniform vec3 day_colour2;
 uniform vec3 night_colour1;
@@ -120,7 +119,7 @@ CloudResult clouds(vec3 sky_colour) {
 
     float cloud_amount = cloud_density + cloud_highlight;
 
-    vec3 lit_cloud = clamp(cloud_tint * sky_colour + cloud_colour, 0.0, 1.0);
+    vec3 lit_cloud = clamp((0.2 + 0.3 * day_factor) * sky_colour + cloud_colour, 0.0, 1.0);
     vec3 hazed_cloud = mix(lit_cloud, sky_colour, haze);
 
     return CloudResult(mix(sky_colour, hazed_cloud, clamp(cloud_amount, 0.0, 1.0)), clamp(cloud_amount, 0.0, 0.6) * (1.0 - haze));
