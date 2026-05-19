@@ -9,7 +9,7 @@ export class SkySphere extends CGFobject {
     constructor(scene) {
         super(scene);
         this.scroll_speed = 0.1;
-        this.time_factor = 0;
+        this.time_factor = 1;
         this.day_speed = 0.005;
         this.time_of_day = 2.5;
         this.cycle_active = false;
@@ -121,37 +121,35 @@ export class SkySphere extends CGFobject {
 
     update(delta_time) {
         this.time_factor += this.scroll_speed * delta_time * 0.001;
-        if (this.cycle_active) this.updateDayCycle();
-    }
+        if (this.cycle_active) {
+            this.time_of_day += this.day_speed;
 
-    updateDayCycle() {
-        this.time_of_day += this.day_speed;
+            var angle = (this.time_of_day / (Math.PI * 2)) * Math.PI;
+            var sun_y = Math.sin(angle);
 
-        var angle = (this.time_of_day / (Math.PI * 2)) * Math.PI;
-        var sun_y = Math.sin(angle);
+            this.day_factor = Math.max(0, Math.min(1, (sun_y - -0.1) / (0.2 - -0.1)));
+            this.day_factor = this.day_factor * this.day_factor;
 
-        this.day_factor = Math.max(0, Math.min(1, (sun_y - -0.1) / (0.2 - -0.1)));
-        this.day_factor = this.day_factor * this.day_factor;
+            var radius = 20.0;
+            var x = -2;
+            var y = Math.sin(angle) * radius;
+            var z = -Math.cos(angle) * radius;
+            const { Lights } = this.scene.constructor;
+            const sun = this.scene.lights[Lights.SUN];
+            const moon = this.scene.lights[Lights.MOON];
 
-        var radius = 20.0;
-        var x = -2;
-        var y = Math.sin(angle) * radius;
-        var z = -Math.cos(angle) * radius;
-        const { Lights } = this.scene.constructor;
-        const sun = this.scene.lights[Lights.SUN];
-        const moon = this.scene.lights[Lights.MOON];
+            sun.setPosition(x, y - 3.5, -z, 1.0);
+            moon.setPosition(x, -y + 3.5, z, 1.0);
 
-        sun.setPosition(x, y - 3.5, -z, 1.0);
-        moon.setPosition(x, -y + 3.5, z, 1.0);
+            var buffer = 3.0;
+            if (y > -buffer) sun.enable();
+            else sun.disable();
+            if (y < buffer) moon.enable();
+            else moon.disable();
 
-        var buffer = 3.0;
-        if (y > -buffer) sun.enable();
-        else sun.disable();
-        if (y < buffer) moon.enable();
-        else moon.disable();
-
-        sun.update();
-        moon.update();
+            sun.update();
+            moon.update();
+        }
     }
 
     // =====================================================
@@ -159,7 +157,6 @@ export class SkySphere extends CGFobject {
     // =====================================================
 
     display() {
-        this.scene.pushMatrix();
         this.scene.setActiveShader(this.sphere_shader);
 
         this.sphere_shader.setUniformsValues({
@@ -182,7 +179,5 @@ export class SkySphere extends CGFobject {
         super.display();
 
         this.scene.setActiveShader(this.scene.defaultShader);
-        this.scene.popMatrix();
-        this.scene.default_material.apply();
     }
 }

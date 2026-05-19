@@ -85,7 +85,6 @@ export class Scene extends CGFscene {
     initObjects() {
         this.axis = new CGFaxis(this);
         this.sky_sphere = new SkySphere(this);
-        this.sky_sphere.updateDayCycle();
 
         this.haybale = new HayBale(this);
         this.rock = new Rock(this);
