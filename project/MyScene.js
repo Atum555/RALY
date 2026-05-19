@@ -87,22 +87,22 @@ export class MyScene extends CGFscene {
         this.sky_stacks = 100;
 
         // Sky > Colors
-        this.sky_colors_day_tint = 0.5;
         this.sky_colors = {
             sky_day_colour_1: "#3366cc",
             sky_day_colour_2: "#6db3ff",
             sky_night_colour_1: "#050b1a",
             sky_night_colour_2: "#0a1329",
         };
-        
+
         // Sky > Clouds
         this.sky_clouds_display = true;
-        this.sky_clouds_scroll_speed = 0.1;
         this.sky_clouds_scale = 0.3;
-        this.sky_clouds_dark = 0.5;
-        this.sky_clouds_light = 0.3;
-        this.sky_clouds_cover = 0.2;
+        this.sky_clouds_scroll_speed = 0.1;
         this.sky_clouds_alpha = 8.0;
+        this.sky_clouds_cover = 0.2;
+        this.sky_clouds_light = 0.3;
+        this.sky_clouds_dark = 0.5;
+        this.sky_clouds_tint = 0.5;
 
         // Sky > Sun
         this.sky_sun_day_night_cycle = false;

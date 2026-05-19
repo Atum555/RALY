@@ -125,7 +125,7 @@ export class SkySphere extends CGFobject {
         this.dayFactor = Math.max(0, Math.min(1, (sunY - -0.1) / (0.2 - -0.1)));
         this.dayFactor = this.dayFactor * this.dayFactor;
 
-        this.scene.sky_colors_day_tint = 0.2 + 0.3 * this.dayFactor;
+        this.scene.sky_clouds_tint = 0.2 + 0.3 * this.dayFactor;
 
         var radius = 20.0;
         var x = -2;
@@ -158,20 +158,19 @@ export class SkySphere extends CGFobject {
         this.scene.setActiveShader(this.sphereShader);
 
         this.sphereShader.setUniformsValues({
-            uSampler2: 1,
-            time_factor: this.timeFactor,
             radius: this.radius,
+            day_colour1: hexToRGB(this.scene.sky_colors["sky_day_colour_1"], false),
+            day_colour2: hexToRGB(this.scene.sky_colors["sky_day_colour_2"], false),
+            night_colour1: hexToRGB(this.scene.sky_colors["sky_night_colour_1"], false),
+            night_colour2: hexToRGB(this.scene.sky_colors["sky_night_colour_2"], false),
             cloud_display: this.scene.sky_clouds_display,
             cloud_scale: this.scene.sky_clouds_scale,
-            cloud_dark: this.scene.sky_clouds_dark,
-            cloud_light: this.scene.sky_clouds_light,
-            cloud_cover: this.scene.sky_clouds_cover,
+            time_factor: this.timeFactor,
             cloud_alpha: this.scene.sky_clouds_alpha,
-            day_tint: this.scene.sky_colors_day_tint,
-            day_colour1: hexToRGB(this.scene.sky_colors["sky_day_colour_1"]).slice(0, 3),
-            day_colour2: hexToRGB(this.scene.sky_colors["sky_day_colour_2"]).slice(0, 3),
-            night_colour1: hexToRGB(this.scene.sky_colors["sky_night_colour_1"]).slice(0, 3),
-            night_colour2: hexToRGB(this.scene.sky_colors["sky_night_colour_2"]).slice(0, 3),
+            cloud_cover: this.scene.sky_clouds_cover,
+            cloud_light: this.scene.sky_clouds_light,
+            cloud_dark: this.scene.sky_clouds_dark,
+            cloud_tint: this.scene.sky_clouds_tint,
             sun_angle: this.timeOfDay,
             day_factor: this.dayFactor,
         });
