@@ -72,9 +72,9 @@ export class SkySphere extends CGFobject {
                 normal_x = pos_x * inverse_radius;
                 normal_y = pos_y * inverse_radius;
                 normal_z = pos_z * inverse_radius;
-                this.normals.push(-normal_x);
-                this.normals.push(-normal_y);
-                this.normals.push(-normal_z);
+                this.normals.push(-normal_x * 30);
+                this.normals.push(-normal_y * 30);
+                this.normals.push(-normal_z * 30);
 
                 tex_u = slice_index / this.sky_slices;
                 tex_v = stack_index / half_stacks;
