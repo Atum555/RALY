@@ -14,7 +14,7 @@ export class SkySphere extends CGFobject {
         this.sky_radius = 500;
         this.sky_slices = 100;
         this.sky_stacks = 100;
-        this.cycle_active = true;
+        this.day_night_cycle_speed = 1;
         this.sky_sun_moon_display = true;
 
         this.sky_colors = {
@@ -34,7 +34,6 @@ export class SkySphere extends CGFobject {
 
         // -- Internal state --
 
-        this.day_speed = 0.005;
         this.time_of_day = 2.5;
         this.day_factor = 0;
         this.sky_clouds_drift = 0;
@@ -126,35 +125,33 @@ export class SkySphere extends CGFobject {
 
     update(delta_time) {
         this.sky_clouds_drift += this.sky_clouds_drift_speed * delta_time * 0.001;
-        if (this.cycle_active) {
-            this.time_of_day += this.day_speed;
+        this.time_of_day += this.day_night_cycle_speed * delta_time * 0.0001;
 
-            var angle = (this.time_of_day / (Math.PI * 2)) * Math.PI;
-            var sun_y = Math.sin(angle);
+        const angle = (this.time_of_day / (Math.PI * 2)) * Math.PI;
+        const sun_y = Math.sin(angle);
 
-            this.day_factor = Math.max(0, Math.min(1, (sun_y - -0.1) / (0.2 - -0.1)));
-            this.day_factor = this.day_factor * this.day_factor;
+        this.day_factor = Math.max(0, Math.min(1, (sun_y - -0.1) / (0.2 - -0.1)));
+        this.day_factor = this.day_factor * this.day_factor;
 
-            var radius = 20.0;
-            var x = -2;
-            var y = Math.sin(angle) * radius;
-            var z = -Math.cos(angle) * radius;
-            const { Lights } = this.scene.constructor;
-            const sun = this.scene.lights[Lights.SUN];
-            const moon = this.scene.lights[Lights.MOON];
+        const radius = 20.0;
+        const x = -2;
+        const y = Math.sin(angle) * radius;
+        const z = -Math.cos(angle) * radius;
+        const { Lights } = this.scene.constructor;
+        const sun = this.scene.lights[Lights.SUN];
+        const moon = this.scene.lights[Lights.MOON];
 
-            sun.setPosition(x, y - 3.5, -z, 1.0);
-            moon.setPosition(x, -y + 3.5, z, 1.0);
+        sun.setPosition(x, y - 3.5, -z, 1.0);
+        moon.setPosition(x, -y + 3.5, z, 1.0);
 
-            var buffer = 3.0;
-            if (y > -buffer) sun.enable();
-            else sun.disable();
-            if (y < buffer) moon.enable();
-            else moon.disable();
+        const buffer = 3.0;
+        if (y > -buffer) sun.enable();
+        else sun.disable();
+        if (y < buffer) moon.enable();
+        else moon.disable();
 
-            sun.update();
-            moon.update();
-        }
+        sun.update();
+        moon.update();
     }
 
     // =====================================================
