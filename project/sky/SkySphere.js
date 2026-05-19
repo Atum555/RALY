@@ -124,7 +124,10 @@ export class SkySphere extends CGFobject {
     // =====================================================
 
     update(delta_time) {
+        // Update clouds
         this.sky_clouds_drift += this.sky_clouds_drift_speed * delta_time * 0.001;
+
+        // Update Day/Night cycle
         this.time_of_day += this.day_night_cycle_speed * delta_time * 0.0001;
 
         const angle = (this.time_of_day / (Math.PI * 2)) * Math.PI;
@@ -163,14 +166,14 @@ export class SkySphere extends CGFobject {
 
         this.sphere_shader.setUniformsValues({
             radius: this.sky_radius,
+            sun_moon_display: this.sky_sun_moon_display,
             day_colour1: hexToRGB(this.sky_colors["sky_day_colour_1"], false),
             day_colour2: hexToRGB(this.sky_colors["sky_day_colour_2"], false),
             night_colour1: hexToRGB(this.sky_colors["sky_night_colour_1"], false),
             night_colour2: hexToRGB(this.sky_colors["sky_night_colour_2"], false),
             cloud_display: this.sky_clouds_display,
-            sun_moon_display: this.sky_sun_moon_display,
+            cloud_drift: this.sky_clouds_drift,
             cloud_scale: this.sky_clouds_scale,
-            drift: this.sky_clouds_drift,
             cloud_alpha: this.sky_clouds_alpha,
             cloud_cover: this.sky_clouds_cover,
             cloud_light: this.sky_clouds_light,

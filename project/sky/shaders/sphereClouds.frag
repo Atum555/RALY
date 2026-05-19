@@ -7,7 +7,7 @@ const mat2 noise_rotation = mat2(1.6, 1.2, -1.2, 1.6);
 
 varying vec3 v_direction;
 
-uniform float drift;
+uniform float cloud_drift;
 
 uniform bool cloud_display;
 uniform bool sun_moon_display;
@@ -74,40 +74,40 @@ CloudResult clouds(vec3 sky_colour) {
     float domain_warp = fbm(uv * cloud_scale * 0.5);
 
     float cloud_turbulence = 0.0;
-    vec2 turbulence_uv = uv * cloud_scale - domain_warp + drift;
+    vec2 turbulence_uv = uv * cloud_scale - domain_warp + cloud_drift;
     float weight = 0.8;
     for(int i = 0; i < 8; i++) {
         cloud_turbulence += abs(weight * noise(turbulence_uv));
-        turbulence_uv = noise_rotation * turbulence_uv + drift;
+        turbulence_uv = noise_rotation * turbulence_uv + cloud_drift;
         weight *= 0.7;
     }
 
     float cloud_density = 0.0;
-    vec2 density_uv = uv * cloud_scale - domain_warp + drift;
+    vec2 density_uv = uv * cloud_scale - domain_warp + cloud_drift;
     weight = 0.7;
     for(int i = 0; i < 8; i++) {
         cloud_density += weight * noise(density_uv);
-        density_uv = noise_rotation * density_uv + drift;
+        density_uv = noise_rotation * density_uv + cloud_drift;
         weight *= 0.6;
     }
 
     cloud_density *= cloud_turbulence + cloud_density;
 
     float cloud_highlight = 0.0;
-    vec2 highlight_uv = uv * cloud_scale * 2.0 - domain_warp + drift * 2.0;
+    vec2 highlight_uv = uv * cloud_scale * 2.0 - domain_warp + cloud_drift * 2.0;
     weight = 0.4;
     for(int i = 0; i < 7; i++) {
         cloud_highlight += weight * noise(highlight_uv);
-        highlight_uv = noise_rotation * highlight_uv + drift * 2.0;
+        highlight_uv = noise_rotation * highlight_uv + cloud_drift * 2.0;
         weight *= 0.6;
     }
 
     float highlight_detail = 0.0;
-    vec2 detail_uv = uv * cloud_scale * 3.0 - domain_warp + drift * 3.0;
+    vec2 detail_uv = uv * cloud_scale * 3.0 - domain_warp + cloud_drift * 3.0;
     weight = 0.4;
     for(int i = 0; i < 7; i++) {
         highlight_detail += abs(weight * noise(detail_uv));
-        detail_uv = noise_rotation * detail_uv + drift * 3.0;
+        detail_uv = noise_rotation * detail_uv + cloud_drift * 3.0;
         weight *= 0.6;
     }
 
@@ -153,10 +153,11 @@ void main() {
     vec3 sky_colour = mix(mix(night_colour2, night_colour1, elevation), mix(day_colour2, day_colour1, elevation), day_factor);
 
     CloudResult cloud_layer = CloudResult(sky_colour, 0.0);
-    if (cloud_display) cloud_layer = clouds(sky_colour);
+    if(cloud_display)
+        cloud_layer = clouds(sky_colour);
     vec3 result = cloud_layer.colour;
 
-    if (sun_moon_display) {
+    if(sun_moon_display) {
         vec4 sun_layer = sun(cloud_layer.coverage);
         result = mix(result, sun_layer.rgb, sun_layer.a);
 
