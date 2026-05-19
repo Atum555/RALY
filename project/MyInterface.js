@@ -24,31 +24,27 @@ export class MyInterface extends CGFinterface {
 
         const sky_controls = this.gui.addFolder("Sky");
         const sky_radius = sky_controls.add(this.scene, "sky_radius", 1, 100).step(1).name("Radius");
-        sky_radius.onChange(v => {
-            this.scene.sky_sphere.radius = v;
+        sky_radius.onChange(value => {
+            this.scene.sky_sphere.radius = value;
             this.scene.sky_sphere.initBuffers();
         });
         const sky_slices = sky_controls.add(this.scene, "sky_slices", 3, 100).step(1).name("Slices");
-        sky_slices.onChange(v => {
-            this.scene.sky_sphere.slices = v;
+        sky_slices.onChange(value => {
+            this.scene.sky_sphere.slices = value;
             this.scene.sky_sphere.initBuffers();
         });
         const sky_stacks = sky_controls.add(this.scene, "sky_stacks", 2, 100).step(1).name("Stacks");
-        sky_stacks.onChange(v => {
-            this.scene.sky_sphere.stacks = v;
+        sky_stacks.onChange(value => {
+            this.scene.sky_sphere.stacks = value;
             this.scene.sky_sphere.initBuffers();
         });
 
-        // -- Sun ----------------------------------------------
-
-        const sun_controls = sky_controls.addFolder("Sun");
-        sun_controls.add(this.scene, "sky_sun_day_night_cycle").name("Day/Night Cycle");
-
-        const sun = this.scene.lights[MyScene.Lights.SUN];
-        sun_controls.add(sun, "enabled").name("Enabled");
-        sun_controls.add(sun.position, "0", -20.0, 20.0).name("X Position");
-        sun_controls.add(sun.position, "1", -20.0, 20.0).name("Y Position");
-        sun_controls.add(sun.position, "2", -20.0, 20.0).name("Z Position");
+        var sky_colors = sky_controls.addFolder("Colors");
+        sky_colors.add(this.scene, "sky_colors_day_tint", 0.0, 1.0).step(0.05).name("Day Tint");
+        sky_colors.addColor(this.scene.sky_colors, "sky_day_colour_1").name("Day Color 1");
+        sky_colors.addColor(this.scene.sky_colors, "sky_day_colour_2").name("Day Color 2");
+        sky_colors.addColor(this.scene.sky_colors, "sky_night_colour_1").name("Night Color 1");
+        sky_colors.addColor(this.scene.sky_colors, "sky_night_colour_2").name("Night Color 2");
 
         // -- Clouds -------------------------------------------
 
@@ -64,12 +60,16 @@ export class MyInterface extends CGFinterface {
         cloud_appearance.add(this.scene, "sky_clouds_appearance_alpha", 0.0, 20.0).step(0.5).name("Alpha");
         cloud_appearance.add(this.scene, "sky_clouds_appearance_scale", 0.001, 1.0).step(0.01).name("Scale");
 
-        var cloud_colors = cloud_controls.addFolder("Colors");
-        cloud_colors.add(this.scene, "sky_clouds_colors_sky_tint", 0.0, 1.0).step(0.05).name("Sky Tint");
-        cloud_colors.addColor(this.scene.sky_clouds_colors, "sky_colour_1").name("Sky Color 1");
-        cloud_colors.addColor(this.scene.sky_clouds_colors, "sky_colour_2").name("Sky Color 2");
-        cloud_colors.addColor(this.scene.sky_clouds_colors, "night_colour_1").name("Night Color 1");
-        cloud_colors.addColor(this.scene.sky_clouds_colors, "night_colour_2").name("Night Color 2");
+        // -- Sun ----------------------------------------------
+
+        const sun_controls = sky_controls.addFolder("Sun");
+        sun_controls.add(this.scene, "sky_sun_day_night_cycle").name("Day/Night Cycle");
+
+        const sun = this.scene.lights[MyScene.Lights.SUN];
+        sun_controls.add(sun, "enabled").name("Enabled");
+        sun_controls.add(sun.position, "0", -20.0, 20.0).name("X Position");
+        sun_controls.add(sun.position, "1", -20.0, 20.0).name("Y Position");
+        sun_controls.add(sun.position, "2", -20.0, 20.0).name("Z Position");
 
         // == Obstacles ========================================
 

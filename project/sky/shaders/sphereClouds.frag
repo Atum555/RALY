@@ -17,9 +17,9 @@ uniform float cloud_light;
 uniform float cloud_cover;
 uniform float cloud_alpha;
 
-uniform float sky_tint;
-uniform vec3 sky_colour1;
-uniform vec3 sky_colour2;
+uniform float day_tint;
+uniform vec3 day_colour1;
+uniform vec3 day_colour2;
 uniform vec3 night_colour1;
 uniform vec3 night_colour2;
 
@@ -120,7 +120,7 @@ CloudResult clouds(vec3 sky_colour) {
 
     float cloud_amount = cloud_density + cloud_highlight;
 
-    vec3 lit_cloud = clamp(sky_tint * sky_colour + cloud_colour, 0.0, 1.0);
+    vec3 lit_cloud = clamp(day_tint * sky_colour + cloud_colour, 0.0, 1.0);
     vec3 hazed_cloud = mix(lit_cloud, sky_colour, haze);
 
     return CloudResult(mix(sky_colour, hazed_cloud, clamp(cloud_amount, 0.0, 1.0)), clamp(cloud_amount, 0.0, 0.6) * (1.0 - haze));
@@ -152,7 +152,7 @@ vec4 moon(float coverage) {
 
 void main() {
     float elevation = clamp(v_direction.y, 0.0, 1.0);
-    vec3 sky_colour = mix(mix(night_colour2, night_colour1, elevation), mix(sky_colour2, sky_colour1, elevation), day_factor);
+    vec3 sky_colour = mix(mix(night_colour2, night_colour1, elevation), mix(day_colour2, day_colour1, elevation), day_factor);
 
     CloudResult cloud_layer = clouds(sky_colour);
     vec3 result = cloud_layer.colour;

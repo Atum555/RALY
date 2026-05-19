@@ -86,6 +86,15 @@ export class MyScene extends CGFscene {
         this.sky_stacks = 100;
         this.sky_radius = 500;
 
+        // Sky > Colors
+        this.sky_colors_day_tint = 0.5;
+        this.sky_colors = {
+            sky_day_colour_1: "#3366cc",
+            sky_day_colour_2: "#6db3ff",
+            sky_night_colour_1: "#050b1a",
+            sky_night_colour_2: "#0a1329",
+        };
+        
         // Sky > Sun
         this.sky_sun_day_night_cycle = false;
 
@@ -100,15 +109,6 @@ export class MyScene extends CGFscene {
         this.sky_clouds_appearance_light = 0.3;
         this.sky_clouds_appearance_cover = 0.2;
         this.sky_clouds_appearance_alpha = 8.0;
-
-        // Sky > Clouds > Colors
-        this.sky_clouds_colors_sky_tint = 0.5;
-        this.sky_clouds_colors = {
-            sky_colour_1: "#3366cc",
-            sky_colour_2: "#6db3ff",
-            night_colour_1: "#050b1a",
-            night_colour_2: "#0a1329",
-        };
 
         // Obstacles > Hay Bale
         this.obstacles_haybale_slices = 50;
