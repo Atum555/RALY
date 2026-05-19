@@ -62,7 +62,7 @@ export class MyInterface extends CGFinterface {
         cloud_appearance.add(this.scene, "sky_clouds_appearance_light", 0.0, 1.0).step(0.05).name("Light");
         cloud_appearance.add(this.scene, "sky_clouds_appearance_cover", 0.0, 1.0).step(0.05).name("Cover");
         cloud_appearance.add(this.scene, "sky_clouds_appearance_alpha", 0.0, 20.0).step(0.5).name("Alpha");
-        cloud_appearance.add(this.scene, "sky_clouds_appearance_scale", 0.5, 3.0).step(0.1).name("Scale");
+        cloud_appearance.add(this.scene, "sky_clouds_appearance_scale", 0.001, 1.0).step(0.01).name("Scale");
 
         var cloud_colors = cloud_controls.addFolder("Colors");
         cloud_colors.add(this.scene, "sky_clouds_colors_sky_tint", 0.0, 1.0).step(0.05).name("Sky Tint");

@@ -64,12 +64,11 @@ CloudResult clouds(vec3 sky_colour) {
     // Project view direction onto a flat cloud plane above the observer.
     // The 1/y term shrinks features toward the horizon, simulating
     // distance from the dome centre.
-    float elevation = max(v_direction.y, 0.01);
-    vec2 plane_uv = v_direction.xz / elevation;
+    vec2 plane_uv = v_direction.xz / v_direction.y;
 
-    // 0 at zenith, 1 at horizon — thickens coverage with distance.
-    float horizon_factor = 1.0 - clamp(v_direction.y, 0.0, 1.0);
-    float density_boost = mix(1.0, 2.0, horizon_factor * horizon_factor);
+    // 1 at horizon, 0 well above it — atmospheric haze that tints
+    // distant clouds toward the sky colour so the blue wins through.
+    float haze = 1.0 - smoothstep(0.02, 0.25, v_direction.y);
 
     vec2 uv = plane_uv * cloud_scale * 0.5 * (radius / 50.0);
     float drift = time_factor * cloud_drift_speed;
@@ -117,11 +116,14 @@ CloudResult clouds(vec3 sky_colour) {
     cloud_highlight += highlight_detail;
 
     vec3 cloud_colour = vec3(1.1, 1.1, 0.9) * clamp(cloud_dark + cloud_light * cloud_highlight, 0.0, 1.0);
-    cloud_density = cloud_cover * density_boost + cloud_alpha * cloud_density * cloud_turbulence;
+    cloud_density = cloud_cover + cloud_alpha * cloud_density * cloud_turbulence;
 
     float cloud_amount = cloud_density + cloud_highlight;
 
-    return CloudResult(mix(sky_colour, clamp(sky_tint * sky_colour + cloud_colour, 0.0, 1.0), clamp(cloud_amount, 0.0, 1.0)), clamp(cloud_amount, 0.0, 0.6));
+    vec3 lit_cloud = clamp(sky_tint * sky_colour + cloud_colour, 0.0, 1.0);
+    vec3 hazed_cloud = mix(lit_cloud, sky_colour, haze);
+
+    return CloudResult(mix(sky_colour, hazed_cloud, clamp(cloud_amount, 0.0, 1.0)), clamp(cloud_amount, 0.0, 0.6) * (1.0 - haze));
 }
 
 vec4 sun(float coverage) {

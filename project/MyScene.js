@@ -95,7 +95,7 @@ export class MyScene extends CGFscene {
         this.sky_clouds_scroll_speed = 0.1;
 
         // Sky > Clouds > Appearance
-        this.sky_clouds_appearance_scale = 1.1;
+        this.sky_clouds_appearance_scale = 0.3;
         this.sky_clouds_appearance_dark = 0.5;
         this.sky_clouds_appearance_light = 0.3;
         this.sky_clouds_appearance_cover = 0.2;
