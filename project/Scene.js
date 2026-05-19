@@ -4,7 +4,7 @@ import { HayBale } from "./obstacles/HayBale.js";
 import { Rock } from "./obstacles/Rock.js";
 import { hexToRGB } from "./utils.js";
 
-export class MyScene extends CGFscene {
+export class Scene extends CGFscene {
     static Lights = Object.freeze({
         SUN: 0,
         MOON: 1,
@@ -42,7 +42,7 @@ export class MyScene extends CGFscene {
     }
 
     initLights() {
-        const sun = this.lights[MyScene.Lights.SUN];
+        const sun = this.lights[Scene.Lights.SUN];
         const SUN_COLOR = hexToRGB("#ffe6b3ff");
         sun.setPosition(15, 6, 6, 1);
         sun.setDiffuse(...SUN_COLOR);
@@ -51,7 +51,7 @@ export class MyScene extends CGFscene {
         sun.setVisible(true);
         sun.update();
 
-        const moon = this.lights[MyScene.Lights.MOON];
+        const moon = this.lights[Scene.Lights.MOON];
         const MOON_COLOR = hexToRGB("#334D80FF");
         moon.setPosition(15, 6, 6, 1);
         moon.setDiffuse(...MOON_COLOR);
@@ -178,7 +178,7 @@ export class MyScene extends CGFscene {
         // Lights and axis
         if (this.display_axis) this.axis.display();
         this.sky_sphere.display();
-        this.lights[MyScene.Lights.SUN].update();
+        this.lights[Scene.Lights.SUN].update();
 
         // Scene objects
         this.selectable_objects[this.selected_object].display();

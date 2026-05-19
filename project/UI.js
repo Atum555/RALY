@@ -1,7 +1,7 @@
 import { CGFinterface, dat } from "../lib/CGF.js";
-import { MyScene } from "./MyScene.js";
+import { Scene } from "./Scene.js";
 
-export class MyInterface extends CGFinterface {
+export class UI extends CGFinterface {
     constructor() {
         super();
     }
@@ -62,7 +62,7 @@ export class MyInterface extends CGFinterface {
         const sun_controls = sky_controls.addFolder("Sun");
         sun_controls.add(this.scene, "sky_sun_day_night_cycle").name("Day/Night Cycle");
 
-        const sun = this.scene.lights[MyScene.Lights.SUN];
+        const sun = this.scene.lights[Scene.Lights.SUN];
         sun_controls.add(sun, "enabled").name("Enabled");
         sun_controls.add(sun.position, "0", -20.0, 20.0).name("X Position");
         sun_controls.add(sun.position, "1", -20.0, 20.0).name("Y Position");
