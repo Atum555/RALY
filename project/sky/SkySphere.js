@@ -1,4 +1,4 @@
-import { CGFobject, CGFappearance, CGFshader } from "../../lib/CGF.js";
+import { CGFobject, CGFshader } from "../../lib/CGF.js";
 import { hexToRGB } from "../utils.js";
 
 export class SkySphere extends CGFobject {
@@ -35,7 +35,6 @@ export class SkySphere extends CGFobject {
         this.sky_clouds_dark = 0.5;
 
         this.initBuffers();
-        this.initMaterial();
         this.initShaders();
     }
 
@@ -108,15 +107,6 @@ export class SkySphere extends CGFobject {
         this.initGLBuffers();
     }
 
-    initMaterial() {
-        this.cloud_material = new CGFappearance(this.scene);
-        this.cloud_material.setAmbient(1, 1, 1, 1);
-        this.cloud_material.setDiffuse(0, 0, 0, 1);
-        this.cloud_material.setSpecular(0, 0, 0, 0);
-        this.cloud_material.setShininess(0);
-        this.cloud_material.setEmission(1, 1, 1, 1);
-    }
-
     initShaders() {
         this.sphere_shader = new CGFshader(
             this.scene.gl,
@@ -170,7 +160,6 @@ export class SkySphere extends CGFobject {
 
     display() {
         this.scene.pushMatrix();
-        this.cloud_material.apply();
         this.scene.setActiveShader(this.sphere_shader);
 
         this.sphere_shader.setUniformsValues({
