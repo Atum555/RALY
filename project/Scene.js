@@ -134,9 +134,9 @@ export class Scene extends CGFscene {
         const right = this.gui.isKeyPressed("KeyD");
 
         if (left && !right) {
-            this.wagon.steer(-steer_step);
-        } else if (right && !left) {
             this.wagon.steer(steer_step);
+        } else if (right && !left) {
+            this.wagon.steer(-steer_step);
         } else if (Math.abs(this.wagon.speed) > 0.01) {
             // Recenter the wheels while rolling with no steering input.
             if (this.wagon.steering_angle > 0) this.wagon.steer(-steer_step);
