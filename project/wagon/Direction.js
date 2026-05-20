@@ -1,13 +1,13 @@
-import { CGFobject } from "../../lib/CGF.js";
+import { CGFGroup } from "../core/CGFGroup.js";
 import { Beam } from "./Beam.js";
 import { Wheel } from "./Wheel.js";
 
-export class Direction extends CGFobject {
+export class Direction extends CGFGroup {
     constructor(scene,beamLength,steeringAngle) {
         super(scene);
         this.beamLength = beamLength;
-        this.wheel = new Wheel(this.scene);
-        this.beam = new Beam(this.scene,this.beamLength,0.2);
+        this.wheel = this.addPart(new Wheel(this.scene));
+        this.beam = this.addPart(new Beam(this.scene, this.beamLength, 0.2));
         this.steeringAngle = steeringAngle;
     }
 
@@ -42,16 +42,6 @@ export class Direction extends CGFobject {
         this.wheel.display();
         this.scene.popMatrix();
         this.scene.popMatrix();
-    }
-
-    enableNormalViz() {
-        this.beam.enableNormalViz();
-        this.wheel.enableNormalViz();
-    }
-
-    disableNormalViz() {
-        this.beam.disableNormalViz();
-        this.wheel.disableNormalViz();
     }
 
     updateDirection(angle){

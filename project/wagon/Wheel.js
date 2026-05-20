@@ -1,17 +1,12 @@
-import { CGFobject } from "../../lib/CGF.js";
+import { CGFGroup } from "../core/CGFGroup.js";
 import { MyUnitCube } from "./MyUnitCube.js";
 import { MyCylinder } from "./MyCylinder.js";
 
-/**
- * Wheel
- * @constructor
- * @param scene - Reference to MyScene object
- */
-export class Wheel extends CGFobject {
+export class Wheel extends CGFGroup {
     constructor(scene) {
         super(scene);
-        this.hub = new MyCylinder(scene, 12, 1);
-        this.segment = new MyUnitCube(scene);
+        this.hub = this.addPart(new MyCylinder(scene, 12, 1));
+        this.segment = this.addPart(new MyUnitCube(scene));
     }
 
     display() {
@@ -45,15 +40,5 @@ export class Wheel extends CGFobject {
             this.segment.display();
             this.scene.popMatrix();
         }
-    }
-
-    enableNormalViz() {
-        this.hub.enableNormalViz();
-        this.segment.enableNormalViz();
-    }
-
-    disableNormalViz() {
-        this.hub.disableNormalViz();
-        this.segment.disableNormalViz();
     }
 }

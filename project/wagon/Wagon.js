@@ -1,9 +1,9 @@
-import { CGFobject } from "../../lib/CGF.js";
+import { CGFGroup } from "../core/CGFGroup.js";
 import { WagonBody } from "./WagonBody.js";
 import { UnderBody } from "./UnderBody.js";
 import { HayBale } from "../obstacles/HayBale.js";
 
-export class Wagon extends CGFobject {
+export class Wagon extends CGFGroup {
     // =====================================================
     // Init
     // =====================================================
@@ -19,9 +19,9 @@ export class Wagon extends CGFobject {
     }
 
     initComponents() {
-        this.body = new WagonBody(this.scene);
-        this.under_body = new UnderBody(this.scene, 0.0);
-        this.haybale = new HayBale(this.scene, 10, 10);
+        this.body = this.addPart(new WagonBody(this.scene));
+        this.under_body = this.addPart(new UnderBody(this.scene, 0.0));
+        this.haybale = this.addPart(new HayBale(this.scene, 10, 10));
     }
 
     // =====================================================
@@ -67,21 +67,5 @@ export class Wagon extends CGFobject {
             this.haybale.display();
             this.scene.popMatrix();
         }
-    }
-
-    // =====================================================
-    // Normals
-    // =====================================================
-
-    enableNormalViz() {
-        this.body.enableNormalViz();
-        this.under_body.enableNormalViz();
-        this.haybale.enableNormalViz();
-    }
-
-    disableNormalViz() {
-        this.body.disableNormalViz();
-        this.under_body.disableNormalViz();
-        this.haybale.disableNormalViz();
     }
 }

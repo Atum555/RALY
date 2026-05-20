@@ -1,19 +1,19 @@
-import { CGFobject } from "../../lib/CGF.js";
+import { CGFGroup } from "../core/CGFGroup.js";
 import { Board } from "./Board.js";
 /**
  * WagonBody
  * @constructor
  * @param scene - Reference to MyScene object
  */
-export class WagonBody extends CGFobject {
+export class WagonBody extends CGFGroup {
     constructor(scene) {
         super(scene);
 
-        
-        this.floorBoard = new Board(this.scene, 10, 4, 4);
-        this.sideBoard = new Board(this.scene,7.5,1.65,1.65)
-        this.bargeBoard = new Board(this.scene, 1.5, 4.4,4);
-        this.hold = new Board(this.scene, 4, 1, 1);
+
+        this.floorBoard = this.addPart(new Board(this.scene, 10, 4, 4));
+        this.sideBoard = this.addPart(new Board(this.scene, 7.5, 1.65, 1.65));
+        this.bargeBoard = this.addPart(new Board(this.scene, 1.5, 4.4, 4));
+        this.hold = this.addPart(new Board(this.scene, 4, 1, 1));
     }
     
     display(){
@@ -58,19 +58,5 @@ export class WagonBody extends CGFobject {
         this.scene.rotate(Math.PI / 2, 0, 1,0);
         this.hold.display();
         this.scene.popMatrix();
-    }
-
-    enableNormalViz() {
-        this.floorBoard.enableNormalViz();
-        this.sideBoard.enableNormalViz();
-        this.bargeBoard.enableNormalViz();
-        this.hold.enableNormalViz();
-    }
-
-    disableNormalViz() {
-        this.floorBoard.disableNormalViz();
-        this.sideBoard.disableNormalViz();
-        this.bargeBoard.disableNormalViz();
-        this.hold.disableNormalViz();
     }
 }

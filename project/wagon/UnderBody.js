@@ -1,4 +1,4 @@
-import { CGFobject } from "../../lib/CGF.js";
+import { CGFGroup } from "../core/CGFGroup.js";
 import { Direction } from "./Direction.js";
 import { Wheel } from "./Wheel.js";
 import { Beam } from "./Beam.js";
@@ -8,13 +8,13 @@ import { Beam } from "./Beam.js";
  * @constructor
  * @param scene - Reference to MyScene object
  */
-export class UnderBody extends CGFobject {
+export class UnderBody extends CGFGroup {
     constructor(scene, steeringAngle) {
         super(scene);
-        this.direction = new Direction(this.scene, 5.5, steeringAngle);
-        this.wheel = new Wheel(this.scene);
-        this.beam = new Beam(this.scene, 5.5, 0.2);
-        this.bigBeam = new Beam(this.scene, 9, 0.2);
+        this.direction = this.addPart(new Direction(this.scene, 5.5, steeringAngle));
+        this.wheel = this.addPart(new Wheel(this.scene));
+        this.beam = this.addPart(new Beam(this.scene, 5.5, 0.2));
+        this.bigBeam = this.addPart(new Beam(this.scene, 9, 0.2));
     }
 
     display() {
@@ -71,20 +71,6 @@ export class UnderBody extends CGFobject {
 
 
         this.scene.popMatrix();
-    }
-
-    enableNormalViz() {
-        this.direction.enableNormalViz();
-        this.wheel.enableNormalViz();
-        this.beam.enableNormalViz();
-        this.bigBeam.enableNormalViz();
-    }
-
-    disableNormalViz() {
-        this.direction.disableNormalViz();
-        this.wheel.disableNormalViz();
-        this.beam.disableNormalViz();
-        this.bigBeam.disableNormalViz();
     }
 
     updateDirection(angle){
