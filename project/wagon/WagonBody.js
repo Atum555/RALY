@@ -59,4 +59,18 @@ export class WagonBody extends CGFobject {
         this.hold.display();
         this.scene.popMatrix();
     }
+
+    enableNormalViz() {
+        this.floorBoard.enableNormalViz();
+        this.sideBoard.enableNormalViz();
+        this.bargeBoard.enableNormalViz();
+        this.hold.enableNormalViz();
+    }
+
+    disableNormalViz() {
+        this.floorBoard.disableNormalViz();
+        this.sideBoard.disableNormalViz();
+        this.bargeBoard.disableNormalViz();
+        this.hold.disableNormalViz();
+    }
 }

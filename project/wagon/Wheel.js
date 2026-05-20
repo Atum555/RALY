@@ -46,4 +46,14 @@ export class Wheel extends CGFobject {
             this.scene.popMatrix();
         }
     }
+
+    enableNormalViz() {
+        this.hub.enableNormalViz();
+        this.segment.enableNormalViz();
+    }
+
+    disableNormalViz() {
+        this.hub.disableNormalViz();
+        this.segment.disableNormalViz();
+    }
 }

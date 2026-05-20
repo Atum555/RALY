@@ -73,6 +73,20 @@ export class UnderBody extends CGFobject {
         this.scene.popMatrix();
     }
 
+    enableNormalViz() {
+        this.direction.enableNormalViz();
+        this.wheel.enableNormalViz();
+        this.beam.enableNormalViz();
+        this.bigBeam.enableNormalViz();
+    }
+
+    disableNormalViz() {
+        this.direction.disableNormalViz();
+        this.wheel.disableNormalViz();
+        this.beam.disableNormalViz();
+        this.bigBeam.disableNormalViz();
+    }
+
     updateDirection(angle){
         this.direction.updateDirection(angle);
     }

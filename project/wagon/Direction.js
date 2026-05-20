@@ -46,10 +46,12 @@ export class Direction extends CGFobject {
 
     enableNormalViz() {
         this.beam.enableNormalViz();
+        this.wheel.enableNormalViz();
     }
 
     disableNormalViz() {
         this.beam.disableNormalViz();
+        this.wheel.disableNormalViz();
     }
 
     updateDirection(angle){
