@@ -2,6 +2,10 @@ import { CGFGroup } from "../../core/CGFGroup.js";
 import { Board } from "./Board.js";
 
 export class Body extends CGFGroup {
+    // =====================================================
+    // Init
+    // =====================================================
+
     constructor(scene) {
         super(scene);
 
@@ -10,6 +14,10 @@ export class Body extends CGFGroup {
         this.endBoard = this.addPart(new Board(this.scene, 1.5, 4.4, 4));
         this.foothold = this.addPart(new Board(this.scene, 4, 1, 1));
     }
+
+    // =====================================================
+    // Display
+    // =====================================================
 
     display() {
         // Floor

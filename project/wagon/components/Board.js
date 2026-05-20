@@ -1,69 +1,68 @@
 import { CGFobject } from "../../../lib/CGF.js";
 import { WagonWoodMaterial } from "../materials/WagonWoodMaterial.js";
 
-/**
- * Board
- * @constructor
- * @param scene - Reference to MyScene object
- */
 export class Board extends CGFobject {
-    constructor(scene,length,topWidth,bottomWidth) {
+    // =====================================================
+    // Init
+    // =====================================================
+
+    constructor(scene, length, top_width, bottom_width) {
         super(scene);
         this.length = length;
-        this.topWidth = topWidth;
-        this.bottomWidth = bottomWidth;
+        this.top_width = top_width;
+        this.bottom_width = bottom_width;
         this.material = new WagonWoodMaterial(scene);
         this.initBuffers();
     }
 
-    display() {
-        this.material.apply();
-        super.display();
-    }
-
     initBuffers() {
-        let bW = this.bottomWidth / 2;
-        let tW = this.topWidth / 2;
-        let halfLen = this.length / 2;
+        const THICKNESS = 0.25;
 
+        let top_half = this.top_width / 2;
+        let bottom_half = this.bottom_width / 2;
+        let half_length = this.length / 2;
+        let height = THICKNESS;
+
+        // prettier-ignore
         this.vertices = [
             // bottom face (trapezoid from front to back)
-            -tW, 0, halfLen,
-            tW, 0, halfLen,
-            -bW, 0, -halfLen,
-            bW, 0, -halfLen,
+            -top_half, 0, half_length,
+            top_half, 0, half_length,
+            -bottom_half, 0, -half_length,
+            bottom_half, 0, -half_length,
 
             // top face (trapezoid from front to back)
-            -tW, 0.25, halfLen,
-            tW, 0.25, halfLen,
-            -bW, 0.25, -halfLen,
-            bW, 0.25, -halfLen,
+            -top_half, height, half_length,
+            top_half, height, half_length,
+            -bottom_half, height, -half_length,
+            bottom_half, height, -half_length,
 
             // front face
-            -tW, 0, halfLen,
-            tW, 0, halfLen,
-            -tW, 0.25, halfLen,
-            tW, 0.25, halfLen,
+            -top_half, 0, half_length,
+            top_half, 0, half_length,
+            -top_half, height, half_length,
+            top_half, height, half_length,
 
             // back face
-            -bW, 0, -halfLen,
-            bW, 0, -halfLen,
-            -bW, 0.25, -halfLen,
-            bW, 0.25, -halfLen,
+            -bottom_half, 0, -half_length,
+            bottom_half, 0, -half_length,
+            -bottom_half, height, -half_length,
+            bottom_half, height, -half_length,
 
             // left face
-            -tW, 0, halfLen,
-            -tW, 0.25, halfLen,
-            -bW, 0, -halfLen,
-            -bW, 0.25, -halfLen,
+            -top_half, 0, half_length,
+            -top_half, height, half_length,
+            -bottom_half, 0, -half_length,
+            -bottom_half, height, -half_length,
 
             // right face
-            tW, 0, halfLen,
-            tW, 0.25, halfLen,
-            bW, 0, -halfLen,
-            bW, 0.25, -halfLen,
+            top_half, 0, half_length,
+            top_half, height, half_length,
+            bottom_half, 0, -half_length,
+            bottom_half, height, -half_length,
         ];
 
+        // prettier-ignore
         this.indices = [
             // bottom
             0, 2, 1,
@@ -85,6 +84,7 @@ export class Board extends CGFobject {
             22, 23, 21,
         ];
 
+        // prettier-ignore
         this.normals = [
             // bottom
             0, -1, 0,
@@ -120,5 +120,14 @@ export class Board extends CGFobject {
 
         this.primitiveType = this.scene.gl.TRIANGLES;
         this.initGLBuffers();
+    }
+
+    // =====================================================
+    // Display
+    // =====================================================
+
+    display() {
+        this.material.apply();
+        super.display();
     }
 }
