@@ -1,5 +1,5 @@
-import { CGFobject } from "../../lib/CGF.js";
-import { fbm } from "./NoiseUtils.js";
+import { CGFobject, CGFappearance } from "../../lib/CGF.js";
+import { fbm } from "./noiseUtils.js";
 
 /**
  * Sphere
@@ -7,16 +7,33 @@ import { fbm } from "./NoiseUtils.js";
  * @param scene - Reference to MyScene object
  */
 export class Rock extends CGFobject {
-    constructor(scene, radius, scale) {
+    constructor(scene) {
         super(scene);
 
         this.slices = 10;
         this.stacks = 10;
-        this.radius = radius;
-        this.scale = scale;
+        this.radius = 1;
+        this.scale = 1.5;
         this.uNoiseScale = 5.0;
         this.uNoiseStrength = 6.0;
         this.initBuffers();
+        this.initMaterials();
+    }
+
+    initMaterials() {
+        this.material = new CGFappearance(this.scene);
+        this.material.setAmbient(0.5, 0.5, 0.5, 1);
+        this.material.setDiffuse(0.7, 0.7, 0.7, 1);
+        this.material.setSpecular(0.2, 0.2, 0.2, 1);
+        this.material.setShininess(10.0);
+        this.material.loadTexture("obstacles/textures/rock.jpg");
+        this.material.setTextureWrap("REPEAT", "REPEAT");
+    }
+
+    display() {
+        this.scene.gl.texParameteri(this.scene.gl.TEXTURE_2D, this.scene.gl.TEXTURE_MAG_FILTER, this.scene.gl.NEAREST);
+        this.material.apply();
+        super.display();
     }
 
     initBuffers() {
@@ -55,11 +72,7 @@ export class Rock extends CGFobject {
                 nz /= len;
 
                 var displacement =
-                    fbm([
-                        x * this.uNoiseScale,
-                        y * this.uNoiseScale,
-                        z * this.uNoiseScale,
-                    ]) * this.uNoiseStrength;
+                    fbm([x * this.uNoiseScale, y * this.uNoiseScale, z * this.uNoiseScale]) * this.uNoiseStrength;
 
                 this.vertices.push(
                     (x + nx * displacement) * sx,
@@ -91,11 +104,8 @@ export class Rock extends CGFobject {
 
         // displacement for center vertices
         var displacement =
-            fbm([
-                0 * this.uNoiseScale,
-                0 * this.uNoiseScale,
-                this.radius * sz * this.uNoiseScale,
-            ]) * this.uNoiseStrength;
+            fbm([0 * this.uNoiseScale, 0 * this.uNoiseScale, this.radius * sz * this.uNoiseScale]) *
+            this.uNoiseStrength;
 
         // single top pole vertex
         var topIndex = index++;
@@ -115,11 +125,7 @@ export class Rock extends CGFobject {
 
         var bottomRingStart = bottomIndex - 1 - this.slices;
         for (var i = 0; i < this.slices; ++i) {
-            this.indices.push(
-                bottomRingStart + ((i + 1) % this.slices),
-                bottomRingStart + i,
-                bottomIndex,
-            );
+            this.indices.push(bottomRingStart + ((i + 1) % this.slices), bottomRingStart + i, bottomIndex);
         }
 
         this.primitiveType = this.scene.gl.TRIANGLES;
