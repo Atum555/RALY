@@ -12,9 +12,9 @@ export class UnderBody extends CGFGroup {
         super(scene);
 
         this.direction = this.addPart(new Direction(this.scene, 5.5, steering_angle));
-        this.wheel = this.addPart(new Wheel(this.scene));
         this.beam = this.addPart(new Beam(this.scene, 5.5, 0.2));
         this.big_beam = this.addPart(new Beam(this.scene, 9, 0.2));
+        this.wheel = this.addPart(new Wheel(this.scene));
     }
 
     // =====================================================

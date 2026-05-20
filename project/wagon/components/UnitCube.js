@@ -1,23 +1,33 @@
 import { CGFobject } from "../../../lib/CGF.js";
 import { WagonWoodMaterial } from "../materials/WagonWoodMaterial.js";
 
-/**
- * MyUnitCube
- * @constructor
- * @param scene - Reference to MyScene object
- */
-export class MyUnitCube extends CGFobject {
+export class UnitCube extends CGFobject {
+    // =====================================================
+    // Init
+    // =====================================================
+
     constructor(scene) {
         super(scene);
+
         this.material = new WagonWoodMaterial(scene);
+
         this.initBuffers();
     }
+
+    // =====================================================
+    // Display
+    // =====================================================
 
     display() {
         this.material.apply();
         super.display();
     }
 
+    // =====================================================
+    // Buffers
+    // =====================================================
+
+    // prettier-ignore
     initBuffers() {
         this.vertices = [
             // Front face
@@ -57,6 +67,7 @@ export class MyUnitCube extends CGFobject {
             -0.5, -0.5,  0.5
         ];
 
+        // prettier-ignore
         this.indices = [
             0, 1, 2,
             0, 2, 3,
@@ -77,6 +88,7 @@ export class MyUnitCube extends CGFobject {
             20, 22, 23
         ];
 
+        // prettier-ignore
         this.normals = [
             // Front
              0,  0,  1,

@@ -1,25 +1,35 @@
 import { CGFobject } from "../../../lib/CGF.js";
 import { WagonWoodMaterial } from "../materials/WagonWoodMaterial.js";
 
-/**
- * Beam
- * @constructor
- * @param scene - Reference to MyScene object
- */
 export class Beam extends CGFobject {
-    constructor(scene,length,thickness) {
+    // =====================================================
+    // Init
+    // =====================================================
+
+    constructor(scene, length, thickness) {
         super(scene);
+
         this.length = length;
         this.thickness = thickness;
         this.material = new WagonWoodMaterial(scene);
+
         this.initBuffers();
     }
+
+    // =====================================================
+    // Display
+    // =====================================================
 
     display() {
         this.material.apply();
         super.display();
     }
 
+    // =====================================================
+    // Buffers
+    // =====================================================
+
+    // prettier-ignore
     initBuffers() {
         this.vertices = [
             // Front face
@@ -59,6 +69,7 @@ export class Beam extends CGFobject {
             -this.thickness, -this.thickness,  (this.length / 2)
         ];
 
+        // prettier-ignore
         this.indices = [
             0, 1, 2,
             0, 2, 3,
@@ -79,6 +90,7 @@ export class Beam extends CGFobject {
             20, 22, 23
         ];
 
+        // prettier-ignore
         this.normals = [
             // Front
              0,  0,  1,
