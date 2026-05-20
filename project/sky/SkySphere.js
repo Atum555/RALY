@@ -128,7 +128,7 @@ export class SkySphere extends CGFobject {
         this.sky_clouds_drift += this.sky_clouds_drift_speed * delta_time * 0.001;
 
         // Update Day/Night cycle
-        this.time_of_day += this.day_night_cycle_speed * delta_time * 0.0001;
+        this.time_of_day += this.day_night_cycle_speed * delta_time * 0.00002;
 
         const sun_pitch = (this.time_of_day / (Math.PI * 2)) * Math.PI;
         const sun_y = Math.sin(sun_pitch);
