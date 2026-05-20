@@ -24,7 +24,6 @@ export class MyCylinder extends CGFobject {
         var alphaAng = (2 * Math.PI) / this.slices;
         var z = 0;
         var stackZ = 1 / this.stacks;
-        var n = 4; // The "Roundedness" factor. Try 4 for a squircle, 10 for a box.
 
         for (var j = 0; j <= this.stacks; j++) {
             ang = 0;
@@ -32,9 +31,8 @@ export class MyCylinder extends CGFobject {
                 var cosA = Math.cos(ang);
                 var sinA = Math.sin(ang);
 
-                // Calculate the "push out" factor (Superellipse formula)
-                var x = Math.pow(Math.abs(cosA), 2 / n) * Math.sign(cosA);
-                var y = Math.pow(Math.abs(sinA), 2 / n) * Math.sign(sinA);
+                var x = Math.cos(angle);
+                var y = Math.sin(angle);
 
                 this.vertices.push(x, -y, z);
                 // Normals

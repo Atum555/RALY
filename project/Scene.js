@@ -2,6 +2,7 @@ import { CGFscene, CGFcamera, CGFaxis, CGFappearance } from "../lib/CGF.js";
 import { SkySphere } from "./sky/SkySphere.js";
 import { HayBale } from "./obstacles/HayBale.js";
 import { Rock } from "./obstacles/Rock.js";
+import { Wagon } from "./wagon/Wagon.js";
 import { hexToRGB } from "./utils.js";
 
 export class Scene extends CGFscene {
@@ -78,8 +79,9 @@ export class Scene extends CGFscene {
         this.object_ids = {
             HayBale: 0,
             Rock: 1,
+            Wagon: 2,
         };
-        this.selected_object = 0;
+        this.selected_object = 2;
     }
 
     initObjects() {
@@ -88,9 +90,10 @@ export class Scene extends CGFscene {
 
         this.haybale = new HayBale(this);
         this.rock = new Rock(this);
+        this.wagon = new Wagon(this);
 
-        this.selectable_objects = [this.haybale, this.rock];
-        this.all_objects = [this.haybale, this.rock, this.sky_sphere];
+        this.selectable_objects = [this.haybale, this.rock, this.wagon];
+        this.all_objects = [this.haybale, this.rock, this.wagon, this.sky_sphere];
     }
 
     // == Update ===========================================
@@ -102,6 +105,7 @@ export class Scene extends CGFscene {
         this.last_time = current_time;
 
         this.sky_sphere.update(this.delta_time);
+        this.wagon.update();
     }
 
     display() {

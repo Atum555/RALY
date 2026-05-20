@@ -9,7 +9,7 @@ export class SkySphere extends CGFobject {
     constructor(scene) {
         super(scene);
 
-        // -- UI-controlled --
+        // -- UI-controlled state --
 
         this.sky_radius = 500;
         this.sky_slices = 100;
