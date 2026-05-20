@@ -11,12 +11,9 @@ export class Wagon extends CGFGroup {
     constructor(scene) {
         super(scene);
 
-        // -- UI-controlled state --
-
-        this.steering_angle = 0;
-
         // -- Driving state (W/A/S/D) --
 
+        this.steering_angle = 0;
         this.position_x = 0;
         this.position_z = 0;
         this.heading = 0;
