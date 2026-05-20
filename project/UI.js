@@ -27,7 +27,7 @@ export class UI extends CGFinterface {
             sky.initNormalVizBuffers();
         };
         const sky_controls = this.gui.addFolder("Sky");
-        sky_controls.add(sky, "sky_radius", 100, 1000).step(10).name("Radius").onChange(rebuild_sky);
+        sky_controls.add(sky, "sky_radius", 1000, 10000).step(10).name("Radius").onChange(rebuild_sky);
         sky_controls.add(sky, "sky_slices", 4, 100).step(1).name("Slices").onChange(rebuild_sky);
         sky_controls.add(sky, "sky_stacks", 4, 100).step(1).name("Stacks").onChange(rebuild_sky);
         sky_controls.add(sky, "day_night_cycle_speed", 0.0, 5.0).step(0.05).name("Day/Night Speed");
