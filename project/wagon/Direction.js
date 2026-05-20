@@ -56,4 +56,8 @@ export class Direction extends CGFobject {
     disableNormalViz() {
         this.beam.disableNormalViz();
     }
+
+    updateDirection(angle){
+        this.steeringAngle = angle
+    }
 }

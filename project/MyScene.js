@@ -39,6 +39,7 @@ export class MyScene extends CGFscene {
         this.quad = new MyQuad(this);
         this.obstacleScene = new ObstacleScene(this);
         this.wagon = new Wagon(this);
+        this.steeringAngle = 0;
         this.objects = [this.diamond, this.sphere, this.quad, this.obstacleScene, this.wagon];
 
         // Initialize cloud layer
@@ -140,6 +141,7 @@ export class MyScene extends CGFscene {
         if (this.displayClouds) {
             this.cloudLayer.update(this.deltaTime);
         }
+        this.wagon.updateDirection(this.steeringAngle);
     }
 
     hexToRGB(hex) {

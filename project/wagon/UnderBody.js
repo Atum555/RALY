@@ -72,4 +72,8 @@ export class UnderBody extends CGFobject {
 
         this.scene.popMatrix();
     }
+
+    updateDirection(angle){
+        this.direction.updateDirection(angle);
+    }
 }
