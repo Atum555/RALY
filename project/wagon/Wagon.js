@@ -1,9 +1,4 @@
-import {
-    CGFobject,
-    CGFappearance,
-    CGFtexture,
-    CGFshader,
-} from "../../lib/CGF.js";
+import { CGFobject, CGFappearance, CGFtexture, CGFshader } from "../../lib/CGF.js";
 import { Beam } from "./Beam.js";
 import { Direction } from "./Direction.js";
 import { WagonBody } from "./WagonBody.js";
@@ -13,8 +8,15 @@ import { HayBale } from "../obstacles/HayBale.js";
 export class Wagon extends CGFobject {
     constructor(scene) {
         super(scene);
+
+        // -- UI-controlled --
+
+        this.steering_angle = 0;
+
+        // -- Internal state --
+
         this.beamLength = 6;
-        this.haybale = new HayBale(this.scene,10,10);
+        this.haybale = new HayBale(this.scene, 10, 10);
         this.body = new WagonBody(this.scene);
         this.UnderBody = new UnderBody(this.scene, 0.0);
         this.initMaterials();
@@ -39,17 +41,17 @@ export class Wagon extends CGFobject {
     display() {
         //this.beam.display();
         this.scene.pushMatrix();
-        this.scene.translate(0,2.4,0);
+        this.scene.translate(0, 2.4, 0);
         this.body.display();
         // HayBales being carried
-        this.scene.translate(1,1.2,-3.6);
+        this.scene.translate(1, 1.2, -3.6);
         this.haybaleMaterial.apply();
         this.haybale.display();
-        this.scene.translate(-2,0,0);
+        this.scene.translate(-2, 0, 0);
         this.haybale.display();
-        this.scene.translate(0,2,0);
+        this.scene.translate(0, 2, 0);
         this.haybale.display();
-        this.scene.translate(2,0,0);
+        this.scene.translate(2, 0, 0);
         this.haybale.display();
         this.scene.popMatrix();
         this.bodyMaterial.apply();
@@ -68,7 +70,7 @@ export class Wagon extends CGFobject {
         this.haybale.disableNormalViz();
     }
 
-    updateDirection(angle){
-        this.UnderBody.updateDirection(angle);
+    update() {
+        this.UnderBody.updateDirection(this.steering_angle);
     }
 }

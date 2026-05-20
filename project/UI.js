@@ -18,10 +18,6 @@ export class UI extends CGFinterface {
         this.gui.add(this.scene, "display_axis").name("Display Axis");
         this.gui.add(this.scene, "display_normals").name("Display Normals");
         this.gui.add(this.scene, "selected_object", this.scene.object_ids).name("Selected Object");
-        this.gui
-            .add(this.scene, "steering_angle", (-Math.PI * 2) / 3, (Math.PI * 2) / 3)
-            .step(0.01)
-            .name("Steering");
 
         // == Sky ==============================================
 
@@ -53,6 +49,15 @@ export class UI extends CGFinterface {
         cloud_controls.add(sky, "sky_clouds_cover", 0.0, 1.0).step(0.05).name("Cover");
         cloud_controls.add(sky, "sky_clouds_light", 0.0, 1.0).step(0.05).name("Light");
         cloud_controls.add(sky, "sky_clouds_dark", 0.0, 1.0).step(0.05).name("Dark");
+
+        // == Wagon ============================================
+
+        const wagon = this.scene.wagon;
+        const wagon_controls = this.gui.addFolder("Wagon");
+        wagon_controls
+            .add(wagon, "steering_angle", (-Math.PI * 2) / 3, (Math.PI * 2) / 3)
+            .step(0.01)
+            .name("Steering");
 
         // == Obstacles ========================================
 

@@ -82,8 +82,6 @@ export class Scene extends CGFscene {
             Wagon: 2,
         };
         this.selected_object = 2;
-
-        this.steering_angle = 0;
     }
 
     initObjects() {
@@ -107,7 +105,7 @@ export class Scene extends CGFscene {
         this.last_time = current_time;
 
         this.sky_sphere.update(this.delta_time);
-        this.wagon.updateDirection(this.steering_angle);
+        this.wagon.update();
     }
 
     display() {
