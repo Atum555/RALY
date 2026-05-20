@@ -3,7 +3,7 @@ import { SkySphere } from "./sky/SkySphere.js";
 import { HayBale } from "./obstacles/HayBale.js";
 import { Rock } from "./obstacles/Rock.js";
 import { Wagon } from "./wagon/Wagon.js";
-import { MyTerrain } from "./MyTerrain.js";
+import { Terrain } from "./terrain/Terrain.js";
 import { MyFlowerPatch } from "./MyFlowerPatch.js";
 import { MyBarn } from "./MyBarn.js";
 import { hexToRGB } from "./utils.js";
@@ -97,7 +97,7 @@ export class Scene extends CGFscene {
         this.wagon = new Wagon(this);
 
         // Environment
-        this.terrain = new MyTerrain(this);
+        this.terrain = new Terrain(this);
         this.flower_patch_1 = new MyFlowerPatch(this, 15, 10, 10);
         this.flower_patch_2 = new MyFlowerPatch(this, 20, 15, 15);
         this.barn = new MyBarn(this);

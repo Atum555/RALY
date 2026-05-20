@@ -1,6 +1,6 @@
-import { CGFobject, CGFshader, CGFtexture } from "../lib/CGF.js";
+import { CGFobject, CGFshader, CGFtexture } from "../../lib/CGF.js";
 
-export class MyTerrain extends CGFobject {
+export class Terrain extends CGFobject {
     constructor(scene, nrDivs = 20) {
         super(scene);
 
@@ -11,13 +11,13 @@ export class MyTerrain extends CGFobject {
         // Note: Vertex displacement (heightmap) logic will be injected here in a future sprint.
         this.shader = new CGFshader(
             scene.gl,
-            "shaders/terrain.vert",
-            "shaders/terrain.frag",
+            "terrain/shaders/terrain.vert",
+            "terrain/shaders/terrain.frag",
         );
 
-        this.grassTexture = new CGFtexture(scene, "images/grass.jpg");
-        this.dirtTexture = new CGFtexture(scene, "images/dirt.jpg");
-        this.splatMap = new CGFtexture(scene, "images/altmap.png");
+        this.grassTexture = new CGFtexture(scene, "terrain/images/grass.jpg");
+        this.dirtTexture = new CGFtexture(scene, "terrain/images/dirt.jpg");
+        this.splatMap = new CGFtexture(scene, "terrain/images/altmap.png");
 
         this.shader.setUniformsValues({
             uSamplerGrass: 0,
