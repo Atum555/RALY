@@ -1,5 +1,5 @@
 import { CGFGroup } from "../core/CGFGroup.js";
-import { WagonBody } from "./components/WagonBody.js";
+import { Body } from "./components/Body.js";
 import { UnderBody } from "./components/UnderBody.js";
 import { HayBale } from "../obstacles/HayBale.js";
 
@@ -19,7 +19,7 @@ export class Wagon extends CGFGroup {
     }
 
     initComponents() {
-        this.body = this.addPart(new WagonBody(this.scene));
+        this.body = this.addPart(new Body(this.scene));
         this.under_body = this.addPart(new UnderBody(this.scene, 0.0));
         this.haybale = this.addPart(new HayBale(this.scene, 10, 10));
     }
