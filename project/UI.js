@@ -85,6 +85,27 @@ export class UI extends CGFinterface {
         rock_controls.add(rock, "radius", 0.1, 5).step(0.1).name("Radius").onChange(rebuild_rock);
         rock_controls.add(rock, "scale", 1, 3).step(0.1).name("Scale").onChange(rebuild_rock);
 
+        this.initKeys();
         return true;
+    }
+
+    // == Keyboard (W/A/S/D wagon controls) ================
+
+    initKeys() {
+        this.scene.gui = this;
+        this.processKeyboard = function () {};
+        this.activeKeys = {};
+    }
+
+    processKeyDown(event) {
+        this.activeKeys[event.code] = true;
+    }
+
+    processKeyUp(event) {
+        this.activeKeys[event.code] = false;
+    }
+
+    isKeyPressed(keyCode) {
+        return this.activeKeys[keyCode] || false;
     }
 }

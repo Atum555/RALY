@@ -15,6 +15,23 @@ export class Wagon extends CGFGroup {
 
         this.steering_angle = 0;
 
+        // -- Driving state (W/A/S/D) --
+
+        this.position_x = 0;
+        this.position_z = 0;
+        this.heading = 0;
+        this.speed = 0;
+
+        this.max_speed = 15.0;
+        this.min_speed = 0.0;
+        this.max_steering_angle = Math.PI / 5;
+        this.min_steering_angle = -Math.PI / 5;
+
+        this.acceleration_rate = 8.0;
+        this.braking_rate = 12.0;
+        this.steering_rate = 1.6;
+        this.wheel_base = 13.5;
+
         this.initComponents();
     }
 
@@ -25,10 +42,40 @@ export class Wagon extends CGFGroup {
     }
 
     // =====================================================
+    // Movement
+    // =====================================================
+
+    clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    accelerate(amount) {
+        this.speed = this.clamp(this.speed + amount, this.min_speed, this.max_speed);
+    }
+
+    steer(amount) {
+        this.steering_angle = this.clamp(
+            this.steering_angle + amount,
+            this.min_steering_angle,
+            this.max_steering_angle,
+        );
+    }
+
+    // =====================================================
     // Update
     // =====================================================
 
-    update() {
+    update(delta_seconds = 0) {
+        // Bicycle-model kinematics: the steered front wheels turn the heading
+        // while the wagon rolls forward. Forward is +Z (the front axle side).
+        if (delta_seconds > 0) {
+            const angular_velocity =
+                (this.speed * Math.tan(this.steering_angle)) / this.wheel_base;
+            this.heading += angular_velocity * delta_seconds;
+            this.position_x += Math.sin(this.heading) * this.speed * delta_seconds;
+            this.position_z += Math.cos(this.heading) * this.speed * delta_seconds;
+        }
+
         this.under_body.updateDirection(this.steering_angle);
     }
 
@@ -38,6 +85,10 @@ export class Wagon extends CGFGroup {
 
     display() {
         this.scene.pushMatrix();
+
+        // Drive the wagon around the world
+        this.scene.translate(this.position_x, 0, this.position_z);
+        this.scene.rotate(this.heading, 0, 1, 0);
 
         // Chassis
         this.under_body.display();
