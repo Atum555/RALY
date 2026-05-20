@@ -57,13 +57,15 @@ export class Wagon extends CGFobject {
     }
 
     enableNormalViz() {
-        this.beam.enableNormalViz();
         this.body.enableNormalViz();
+        this.UnderBody.enableNormalViz();
+        this.haybale.enableNormalViz();
     }
 
     disableNormalViz() {
-        this.beam.disableNormalViz();
         this.body.disableNormalViz();
+        this.UnderBody.disableNormalViz();
+        this.haybale.disableNormalViz();
     }
 
     updateDirection(angle){
