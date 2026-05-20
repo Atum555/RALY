@@ -1,9 +1,4 @@
-import {
-    CGFobject,
-    CGFappearance,
-    CGFtexture,
-    CGFshader,
-} from "../../lib/CGF.js";
+import { CGFobject } from "../../lib/CGF.js";
 import { Beam } from "./Beam.js";
 import { Wheel } from "./Wheel.js";
 

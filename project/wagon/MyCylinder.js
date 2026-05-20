@@ -1,4 +1,5 @@
 import { CGFobject } from "../../lib/CGF.js";
+import { WagonWoodMaterial } from "./materials/WagonWoodMaterial.js";
 
 /**
  * MyCylinder
@@ -12,7 +13,13 @@ export class MyCylinder extends CGFobject {
         this.slices = slices;
         this.stacks = stacks;
 
+        this.material = new WagonWoodMaterial(scene);
         this.initBuffers();
+    }
+
+    display() {
+        this.material.apply();
+        super.display();
     }
 
     initBuffers() {

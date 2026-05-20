@@ -1,4 +1,5 @@
 import { CGFobject } from "../../lib/CGF.js";
+import { WagonWoodMaterial } from "./materials/WagonWoodMaterial.js";
 
 /**
  * MyUnitCube
@@ -8,7 +9,13 @@ import { CGFobject } from "../../lib/CGF.js";
 export class MyUnitCube extends CGFobject {
     constructor(scene) {
         super(scene);
+        this.material = new WagonWoodMaterial(scene);
         this.initBuffers();
+    }
+
+    display() {
+        this.material.apply();
+        super.display();
     }
 
     initBuffers() {

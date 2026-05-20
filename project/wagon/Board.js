@@ -1,4 +1,5 @@
 import { CGFobject } from "../../lib/CGF.js";
+import { WagonWoodMaterial } from "./materials/WagonWoodMaterial.js";
 
 /**
  * Board
@@ -11,7 +12,13 @@ export class Board extends CGFobject {
         this.length = length;
         this.topWidth = topWidth;
         this.bottomWidth = bottomWidth;
+        this.material = new WagonWoodMaterial(scene);
         this.initBuffers();
+    }
+
+    display() {
+        this.material.apply();
+        super.display();
     }
 
     initBuffers() {

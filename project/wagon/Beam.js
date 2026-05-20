@@ -1,4 +1,5 @@
 import { CGFobject } from "../../lib/CGF.js";
+import { WagonWoodMaterial } from "./materials/WagonWoodMaterial.js";
 
 /**
  * Beam
@@ -10,7 +11,13 @@ export class Beam extends CGFobject {
         super(scene);
         this.length = length;
         this.thickness = thickness;
+        this.material = new WagonWoodMaterial(scene);
         this.initBuffers();
+    }
+
+    display() {
+        this.material.apply();
+        super.display();
     }
 
     initBuffers() {

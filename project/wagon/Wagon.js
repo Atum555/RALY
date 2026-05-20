@@ -1,6 +1,4 @@
-import { CGFobject, CGFappearance, CGFtexture, CGFshader } from "../../lib/CGF.js";
-import { Beam } from "./Beam.js";
-import { Direction } from "./Direction.js";
+import { CGFobject } from "../../lib/CGF.js";
 import { WagonBody } from "./WagonBody.js";
 import { UnderBody } from "./UnderBody.js";
 import { HayBale } from "../obstacles/HayBale.js";
@@ -9,68 +7,65 @@ export class Wagon extends CGFobject {
     constructor(scene) {
         super(scene);
 
-        // -- UI-controlled --
+        // -- UI-controlled state --
 
         this.steering_angle = 0;
 
-        // -- Internal state --
-
-        this.beamLength = 6;
-        this.haybale = new HayBale(this.scene, 10, 10);
-        this.body = new WagonBody(this.scene);
-        this.UnderBody = new UnderBody(this.scene, 0.0);
-        this.initMaterials();
+        this.initComponents();
     }
 
-    initMaterials() {
-        this.haybaleMaterial = new CGFappearance(this.scene);
-        this.haybaleMaterial.setAmbient(0.3, 0.3, 0.3, 1);
-        this.haybaleMaterial.setDiffuse(0.8, 0.8, 0.8, 1);
-        this.haybaleMaterial.setSpecular(0.1, 0.1, 0.1, 1);
-        this.haybaleMaterial.setShininess(10.0);
-        this.haybaleMaterial.loadTexture("obstacles/textures/hay2.jpg");
-        this.haybaleMaterial.setTextureWrap("REPEAT", "REPEAT");
-
-        this.bodyMaterial = new CGFappearance(this.scene);
-        this.bodyMaterial.setAmbient(0.3, 0.3, 0.3, 1);
-        this.bodyMaterial.setDiffuse(0.8, 0.8, 0.8, 1);
-        this.bodyMaterial.setSpecular(0.1, 0.1, 0.1, 1);
-        this.bodyMaterial.setShininess(10.0);
+    initComponents() {
+        this.body = new WagonBody(this.scene);
+        this.under_body = new UnderBody(this.scene, 0.0);
+        this.haybale = new HayBale(this.scene, 10, 10);
     }
 
     display() {
-        //this.beam.display();
         this.scene.pushMatrix();
+
+        // Chassis
+        this.under_body.display();
+
+        // Body
         this.scene.translate(0, 2.4, 0);
         this.body.display();
-        // HayBales being carried
-        this.scene.translate(1, 1.2, -3.6);
-        this.haybaleMaterial.apply();
-        this.haybale.display();
-        this.scene.translate(-2, 0, 0);
-        this.haybale.display();
-        this.scene.translate(0, 2, 0);
-        this.haybale.display();
-        this.scene.translate(2, 0, 0);
-        this.haybale.display();
+
+        // Cargo
+        this.displayHayBales();
+
         this.scene.popMatrix();
-        this.bodyMaterial.apply();
-        this.UnderBody.display();
+    }
+
+    displayHayBales() {
+        // 2x2 stack of hay bales, relative to the body frame.
+        const positions = [
+            [1, 1.2, -3.6],
+            [-1, 1.2, -3.6],
+            [-1, 3.2, -3.6],
+            [1, 3.2, -3.6],
+        ];
+
+        for (const [x, y, z] of positions) {
+            this.scene.pushMatrix();
+            this.scene.translate(x, y, z);
+            this.haybale.display();
+            this.scene.popMatrix();
+        }
     }
 
     enableNormalViz() {
         this.body.enableNormalViz();
-        this.UnderBody.enableNormalViz();
+        this.under_body.enableNormalViz();
         this.haybale.enableNormalViz();
     }
 
     disableNormalViz() {
         this.body.disableNormalViz();
-        this.UnderBody.disableNormalViz();
+        this.under_body.disableNormalViz();
         this.haybale.disableNormalViz();
     }
 
     update() {
-        this.UnderBody.updateDirection(this.steering_angle);
+        this.under_body.updateDirection(this.steering_angle);
     }
 }
