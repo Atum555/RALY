@@ -4,6 +4,10 @@ import { UnderBody } from "./UnderBody.js";
 import { HayBale } from "../obstacles/HayBale.js";
 
 export class Wagon extends CGFobject {
+    // =====================================================
+    // Init
+    // =====================================================
+
     constructor(scene) {
         super(scene);
 
@@ -19,6 +23,18 @@ export class Wagon extends CGFobject {
         this.under_body = new UnderBody(this.scene, 0.0);
         this.haybale = new HayBale(this.scene, 10, 10);
     }
+
+    // =====================================================
+    // Update
+    // =====================================================
+
+    update() {
+        this.under_body.updateDirection(this.steering_angle);
+    }
+
+    // =====================================================
+    // Display
+    // =====================================================
 
     display() {
         this.scene.pushMatrix();
@@ -53,6 +69,10 @@ export class Wagon extends CGFobject {
         }
     }
 
+    // =====================================================
+    // Normals
+    // =====================================================
+
     enableNormalViz() {
         this.body.enableNormalViz();
         this.under_body.enableNormalViz();
@@ -63,9 +83,5 @@ export class Wagon extends CGFobject {
         this.body.disableNormalViz();
         this.under_body.disableNormalViz();
         this.haybale.disableNormalViz();
-    }
-
-    update() {
-        this.under_body.updateDirection(this.steering_angle);
     }
 }
