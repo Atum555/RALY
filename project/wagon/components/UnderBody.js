@@ -1,4 +1,4 @@
-import { CGFGroup } from "../core/CGFGroup.js";
+import { CGFGroup } from "../../core/CGFGroup.js";
 import { Direction } from "./Direction.js";
 import { Wheel } from "./Wheel.js";
 import { Beam } from "./Beam.js";

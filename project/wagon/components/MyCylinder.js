@@ -1,5 +1,5 @@
-import { CGFobject } from "../../lib/CGF.js";
-import { WagonWoodMaterial } from "./materials/WagonWoodMaterial.js";
+import { CGFobject } from "../../../lib/CGF.js";
+import { WagonWoodMaterial } from "../materials/WagonWoodMaterial.js";
 
 /**
  * MyCylinder

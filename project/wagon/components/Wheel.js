@@ -1,4 +1,4 @@
-import { CGFGroup } from "../core/CGFGroup.js";
+import { CGFGroup } from "../../core/CGFGroup.js";
 import { MyUnitCube } from "./MyUnitCube.js";
 import { MyCylinder } from "./MyCylinder.js";
 

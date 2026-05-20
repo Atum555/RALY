@@ -1,6 +1,6 @@
 import { CGFGroup } from "../core/CGFGroup.js";
-import { WagonBody } from "./WagonBody.js";
-import { UnderBody } from "./UnderBody.js";
+import { WagonBody } from "./components/WagonBody.js";
+import { UnderBody } from "./components/UnderBody.js";
 import { HayBale } from "../obstacles/HayBale.js";
 
 export class Wagon extends CGFGroup {
