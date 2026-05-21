@@ -1,5 +1,6 @@
 import { CGFGroup } from "../../core/CGFGroup.js";
 import { CoverBeam } from "./CoverBeam.js";
+import { CoverCloth } from "./CoverCloth.js";
 
 export class Cover extends CGFGroup {
     // =====================================================
@@ -9,8 +10,9 @@ export class Cover extends CGFGroup {
     constructor(scene, length, nBeams) {
         super(scene);
         this.nBeams = nBeams;
-        this.length = length
+        this.length = length;
         this.coverBeam = this.addPart(new CoverBeam(this.scene, 0.1, 12));
+        this.coverCloth = this.addPart(new CoverCloth(this.scene,0.1,12,nBeams,length,1.0));
     }
 
     // =====================================================
@@ -19,6 +21,7 @@ export class Cover extends CGFGroup {
 
     display(){
         this.displayCoverBeams();
+        this.coverCloth.display();
     }
 
 
