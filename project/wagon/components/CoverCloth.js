@@ -1,4 +1,5 @@
 import { CGFobject } from "../../../lib/CGF.js";
+import { buildArchProfile, getBeamZPositions } from "./CoverUtils.js";
 
 export class CoverCloth extends CGFobject {
     // =====================================================
@@ -31,48 +32,8 @@ export class CoverCloth extends CGFobject {
         this.normals = [];
         this.texCoords = [];
 
-        // Arch path profile (XY plane)
-        const alpha = (11 * Math.PI) / 24;
-        const boardLength = 4.0;
-        const halfWidth = 2.2;
-        const cosAlpha = Math.cos(alpha);
-        const sinAlpha = Math.sin(alpha);
-
-        const topX = halfWidth + boardLength * cosAlpha;
-        const topY = boardLength * sinAlpha;
-        const radius = topX;
-
-        let archProfile = [];
-
-        // Left straight section
-        archProfile.push({ x: -halfWidth, y: 0, nx: -sinAlpha, ny: cosAlpha });
-        archProfile.push({ x: -topX, y: topY, nx: -sinAlpha, ny: cosAlpha });
-
-        // Curved arch
-        for (let i = 1; i < this.slices; i++) {
-            let angle = Math.PI - (i * Math.PI) / this.slices;
-            let cx = radius * Math.cos(angle);
-            let cy = radius * Math.sin(angle) + topY;
-            archProfile.push({
-                x: cx,
-                y: cy,
-                nx: Math.cos(angle),
-                ny: Math.sin(angle),
-            });
-        }
-
-        // Right straight section
-        archProfile.push({ x: topX, y: topY, nx: sinAlpha, ny: cosAlpha });
-        archProfile.push({ x: halfWidth, y: 0, nx: sinAlpha, ny: cosAlpha });
-
-        // Beam Z positions
-        let beamZPositions = [];
-        for (let i = 0; i < this.numBeams; i++) {
-            let z =
-                -(this.totalLength / 2) +
-                i * (this.totalLength / (this.numBeams - 1));
-            beamZPositions.push(z);
-        }
+        let archProfile = buildArchProfile(2.13, this.slices, 1.3);
+        let beamZPositions = getBeamZPositions(this.numBeams, this.totalLength);
 
         // Generate vertices grid
         let totalZLines = 0;

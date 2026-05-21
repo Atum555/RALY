@@ -1,6 +1,7 @@
 import { CGFGroup } from "../../core/CGFGroup.js";
 import { CoverBeam } from "./CoverBeam.js";
 import { CoverCloth } from "./CoverCloth.js";
+import { getBeamZPositions } from "./CoverUtils.js";
 
 export class Cover extends CGFGroup {
     // =====================================================
@@ -26,12 +27,10 @@ export class Cover extends CGFGroup {
 
 
     displayCoverBeams(){
+        let positions = getBeamZPositions(this.nBeams, this.length);
         for (let i = 0; i < this.nBeams; i++) {
             this.scene.pushMatrix();
-
-            let zOffset = -(this.length / 2) + i * (this.length / (this.nBeams- 1));
-            this.scene.translate(0, 0, zOffset);
-
+            this.scene.translate(0, 0, positions[i]);
             this.coverBeam.display();
             this.scene.popMatrix();
         }

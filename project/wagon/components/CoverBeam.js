@@ -1,5 +1,6 @@
 import { CGFobject } from "../../../lib/CGF.js";
 import { WagonWoodMaterial } from "../materials/WagonWoodMaterial.js";
+import { buildArchProfile } from "./CoverUtils.js";
 
 export class CoverBeam extends CGFobject {
     // =====================================================
@@ -29,36 +30,7 @@ export class CoverBeam extends CGFobject {
         this.normals = [];
         this.texCoords = [];
 
-        const alpha = (11 * Math.PI) / 24;
-        const boardLength = 4;
-        const halfWidth = 2.1;
-
-        const cosAlpha = Math.cos(alpha);
-        const sinAlpha = Math.sin(alpha);
-
-        const topX = halfWidth + boardLength * cosAlpha;
-        const topY = boardLength * sinAlpha;
-        const radius = topX;
-
-        let path = [];
-
-        // first half (straight piece)
-        path.push({ x: -halfWidth, y: 0, nx: -sinAlpha, ny: cosAlpha });
-        path.push({ x: -topX, y: topY, nx: -sinAlpha, ny: cosAlpha });
-
-        // Curved arch piece (Semicircle from Pi to 0)
-        for (let i = 1; i < this.slices; i++) {
-            let angle = Math.PI - (i * Math.PI) / this.slices;
-            let cx = radius * Math.cos(angle);
-            let cy = radius * Math.sin(angle) + topY; // Shift arch so it sits on top of boards
-            let nx = Math.cos(angle);
-            let ny = Math.sin(angle);
-            path.push({ x: cx, y: cy, nx: nx, ny: ny });
-        }
-
-        // second half (straight piece)
-        path.push({ x: topX, y: topY, nx: sinAlpha, ny: cosAlpha });
-        path.push({ x: halfWidth, y: 0, nx: sinAlpha, ny: cosAlpha });
+        let path = buildArchProfile(2.1, this.slices, 0);
 
         // Extrude a 4-point square profile along the calculated path
         const profileOffsets = [
