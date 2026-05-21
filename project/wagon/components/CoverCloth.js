@@ -35,7 +35,6 @@ export class CoverCloth extends CGFobject {
         let archProfile = buildArchProfile(2.13, this.slices, 1.3);
         let beamZPositions = getBeamZPositions(this.numBeams, this.totalLength);
 
-        // Generate vertices grid
         let totalZLines = 0;
 
         // Beam intervals
@@ -89,7 +88,6 @@ export class CoverCloth extends CGFobject {
             }
         }
 
-        // Normals via finite differences
         let numXVertices = archProfile.length;
         for (let z = 0; z < totalZLines; z++) {
             for (let x = 0; x < numXVertices; x++) {
@@ -127,7 +125,6 @@ export class CoverCloth extends CGFobject {
             }
         }
 
-        // Grid indices
         let numX = archProfile.length;
         for (let z = 0; z < totalZLines - 1; z++) {
             for (let x = 0; x < numX - 1; x++) {

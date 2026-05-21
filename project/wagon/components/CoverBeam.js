@@ -32,22 +32,19 @@ export class CoverBeam extends CGFobject {
 
         let path = buildArchProfile(2.1, this.slices, 0);
 
-        // Extrude a 4-point square profile along the calculated path
         const profileOffsets = [
-            { dx: -this.thickness, dz: this.thickness }, // Point 0
-            { dx: -this.thickness, dz: -this.thickness }, // Point 1
-            { dx: this.thickness, dz: -this.thickness }, // Point 2
-            { dx: this.thickness, dz: this.thickness }, // Point 3
+            { dx: -this.thickness, dz: this.thickness },
+            { dx: -this.thickness, dz: -this.thickness },
+            { dx: this.thickness, dz: -this.thickness },
+            { dx: this.thickness, dz: this.thickness },
         ];
 
-        // Generate Vertices, Normals, and Textures Coords
         for (let p = 0; p < path.length; p++) {
             let point = path[p];
 
             for (let i = 0; i < 4; i++) {
                 let offset = profileOffsets[i];
 
-                // We shift along the beam's path normal to give the beam its thickness in the XY plane
                 let vx = point.x + offset.dx * point.nx;
                 let vy = point.y + offset.dx * point.ny;
                 let vz = offset.dz;
@@ -67,7 +64,6 @@ export class CoverBeam extends CGFobject {
             }
         }
 
-        // Indices
         for (let p = 0; p < path.length - 1; p++) {
             let currentRing = p * 4;
             let nextRing = (p + 1) * 4;
