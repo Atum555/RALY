@@ -25,6 +25,10 @@ export class Direction extends CGFGroup {
         this.steering_angle = angle;
     }
 
+    update(wheelRotation) {
+        this.wheelRotation = wheelRotation;
+    }
+
     // =====================================================
     // Display
     // =====================================================
@@ -68,6 +72,7 @@ export class Direction extends CGFGroup {
         this.scene.pushMatrix();
         this.scene.translate(this.beam_length / 2, 0, 0);
         this.scene.rotate(Math.PI / 2, 0, 1, 0);
+        this.scene.rotate(this.wheelRotation, 0, 0, 1);
         this.wheel.display();
         this.scene.popMatrix();
 
@@ -75,6 +80,7 @@ export class Direction extends CGFGroup {
         this.scene.translate(-this.beam_length / 2, 0, 0);
         this.scene.rotate(Math.PI / 2, 0, 1, 0);
         this.scene.rotate(Math.PI, 0, 1, 0);
+        this.scene.rotate(-this.wheelRotation, 0, 0, 1);
         this.wheel.display();
         this.scene.popMatrix();
     }

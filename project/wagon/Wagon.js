@@ -15,6 +15,7 @@ export class Wagon extends CGFGroup {
         // -- UI-controlled state --
 
         this.steering_angle = 0;
+        this.wheelRotation = 0;
 
         this.initComponents();
     }
@@ -32,6 +33,8 @@ export class Wagon extends CGFGroup {
 
     update() {
         this.under_body.updateDirection(this.steering_angle);
+        this.wheelRotation = (this.wheelRotation + this.scene.delta_time * 0.003) % (Math.PI * 2);
+        this.under_body.update(this.wheelRotation);
     }
 
     // =====================================================

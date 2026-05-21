@@ -25,6 +25,11 @@ export class UnderBody extends CGFGroup {
         this.direction.updateDirection(angle);
     }
 
+    update(wheelRotation) {
+        this.wheelRotation = wheelRotation;
+        this.direction.update(wheelRotation);
+    }
+
     // =====================================================
     // Display
     // =====================================================
@@ -104,9 +109,15 @@ export class UnderBody extends CGFGroup {
         this.scene.pushMatrix();
         this.scene.translate(5.5 / 2, -0.4, -8);
         this.scene.rotate(Math.PI / 2, 0, 1, 0);
+        this.scene.rotate(this.wheelRotation, 0, 0, 1);
         this.wheel.display();
-        this.scene.translate(0, 0, -5.5);
+        this.scene.popMatrix();
+
+        this.scene.pushMatrix();
+        this.scene.translate(-5.5 / 2, -0.4, -8);
+        this.scene.rotate(Math.PI / 2, 0, 1, 0);
         this.scene.rotate(Math.PI, 0, 1, 0);
+        this.scene.rotate(-this.wheelRotation, 0, 0, 1);
         this.wheel.display();
         this.scene.popMatrix();
     }
