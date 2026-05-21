@@ -123,7 +123,7 @@ export class CoverCloth extends CGFobject {
 
                 let len = Math.sqrt(nx * nx + ny * ny + nz * nz);
                 if (len === 0) len = 1;
-                this.normals.push(nx / len, ny / len, nz / len);
+                this.normals.push(-nx / len, -ny / len, -nz / len);
             }
         }
 
