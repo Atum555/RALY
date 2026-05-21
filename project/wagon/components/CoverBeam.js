@@ -10,7 +10,17 @@ export class CoverBeam extends CGFobject {
         super(scene);
         this.thickness = thickness;
         this.slices = slices;
+        this.material = new WagonWoodMaterial(scene);
         this.initBuffers();
+    }
+
+    // =====================================================
+    // Display
+    // =====================================================
+
+    display() {
+        this.material.apply();
+        super.display();
     }
 
     initBuffers() {
