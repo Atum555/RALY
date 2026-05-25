@@ -19,7 +19,7 @@ export class Barn extends CGFGroup {
 
     initComponents() {
         this.cube = this.addPart(new Cube(this.scene, this.top, this.opening, this.length, this.header, this.width));
-        this.prism = this.addPart(new Prism(this.scene));
+        this.prism = this.addPart(new Prism(this.scene, this.width, this.top, this.length));
         this.roof = null;
     }
 
@@ -32,6 +32,8 @@ export class Barn extends CGFGroup {
         this.scene.pushMatrix();
 
         this.cube.display();
+        this.scene.translate(0,this.top,0);
+        this.prism.display();
 
         this.scene.popMatrix();
     }
