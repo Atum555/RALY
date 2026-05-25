@@ -43,28 +43,28 @@ export class Cube extends CGFobject {
 
         this.vertices = [
             // Front face
-             -w,  0.1,  hl,
-              w,  0.1,  hl,
+             -w,  0.2,  hl,
+              w,  0.2,  hl,
               w,  t,    hl,
              -w,  t,    hl,
 
             // Back face
-            -w, 0.1, -hl,
+            -w, 0.2, -hl,
             -w,  t, -hl,
              w,  t, -hl,
-             w, 0.1, -hl,
+             w, 0.2, -hl,
 
             // Left face
-            -w, 0.1,  -hl,
-            -w, 0.1,   hl,
+            -w, 0.2,  -hl,
+            -w, 0.2,   hl,
             -w,  t,   hl,
             -w,  t,  -hl,
 
             // Right face
-             w, 0.1,  -hl,
+             w, 0.2,  -hl,
              w,  t,  -hl,
              w,  t,   hl,
-             w, 0.1,   hl,
+             w, 0.2,   hl,
 
             // Top face
             -w,  t, -hl,
@@ -73,22 +73,22 @@ export class Cube extends CGFobject {
              w,  t, -hl,
 
             // Bottom face
-            -w, 0.1, -hl,
-             w, 0.1, -hl,
-             w, 0.1,  hl,
-            -w, 0.1,  hl,
+            -w, 0.2, -hl,
+             w, 0.2, -hl,
+             w, 0.2,  hl,
+            -w, 0.2,  hl,
 
             // Front opening
-             -h, 0.1,  hl,
-              h, 0.1,  hl,
+             -h, 0.2,  hl,
+              h, 0.2,  hl,
               h, hb,  hl,
              -h, hb,  hl,
               h, t,   hl,
              -h, t,   hl,
 
             // Back opening
-             -h, 0.1,  -hl,
-              h, 0.1,  -hl,
+             -h, 0.2,  -hl,
+              h, 0.2,  -hl,
               h, hb, -hl,
              -h, hb, -hl,
               h, t,  -hl,
@@ -223,7 +223,7 @@ export class Cube extends CGFobject {
         const uInnerL = 2 * (w - h) / w;
         const uInnerR = 2 * (w + h) / w;
         const uRight = 4;
-        const vBottom = t > 0 ? 1 - 0.1 / t : 1;
+        const vBottom = t > 0 ? 1 - 0.2 / t : 1;
         const vHeader = t > 0 ? 1 - hb / t : 0;
         const vTop = 0;
 
