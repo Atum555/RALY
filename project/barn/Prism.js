@@ -1,4 +1,5 @@
 import { CGFobject } from "../../../lib/CGF.js";
+import { BarnWoodMaterial } from "./materials/BarnWoodMaterial.js";
 
 export class Prism extends CGFobject {
     // =====================================================
@@ -10,8 +11,13 @@ export class Prism extends CGFobject {
         this.width = width;
         this.height = height;
         this.length = length;
-
+        this.material = new BarnWoodMaterial(this.scene);
         this.initBuffers();
+    }
+
+    display() {
+        this.material.apply();
+        super.display();
     }
 
     initBuffers() {
@@ -34,13 +40,13 @@ export class Prism extends CGFobject {
         for (let i = 0; i < profile.length; i++) {
             this.vertices.push(profile[i].x, profile[i].y, -hl);
             this.normals.push(0, 0, -1);
-            this.texCoords.push(i / 4, 0);
+            this.texCoords.push(i / 4 * 4, 0);
         }
 
         for (let i = 0; i < profile.length; i++) {
             this.vertices.push(profile[i].x, profile[i].y, hl);
             this.normals.push(0, 0, 1);
-            this.texCoords.push(i / 4, 1);
+            this.texCoords.push(i / 4 * 4, 1);
         }
 
         for (let i = 0; i < profile.length - 1; i++) {
@@ -59,15 +65,42 @@ export class Prism extends CGFobject {
             this.indices.push(b1, f1, f0);
         }
 
-        for (let i = 1; i < profile.length - 1; i++) {
-            this.indices.push(0, i + 1, i);
-            this.indices.push(0, i, i + 1); // Inverse face
+        const backCapStart = this.vertices.length / 3;
+
+        for (let i = 0; i < profile.length; i++) {
+            this.vertices.push(profile[i].x, profile[i].y, -hl);
+            this.normals.push(0, 0, -1);
+
+            let u = (profile[i].x + hw) / this.width * 4;
+            let v = profile[i].y / this.height;
+            this.texCoords.push(u, v);
         }
 
-        const frontStart = profile.length;
         for (let i = 1; i < profile.length - 1; i++) {
-            this.indices.push(frontStart, frontStart + i, frontStart + i + 1);
-            this.indices.push(frontStart, frontStart + i + 1, frontStart + i); // Inverse face
+            this.indices.push(backCapStart, backCapStart + i + 1, backCapStart + i);
+            this.indices.push(backCapStart, backCapStart + i, backCapStart + i + 1);
+        }
+
+        const frontCapStart = this.vertices.length / 3;
+        for (let i = 0; i < profile.length; i++) {
+            this.vertices.push(profile[i].x, profile[i].y, hl);
+            this.normals.push(0, 0, 1);
+            let u = (profile[i].x + hw) / this.width * 4;
+            let v = profile[i].y / this.height;
+            this.texCoords.push(u, v);
+        }
+
+        for (let i = 1; i < profile.length - 1; i++) {
+            this.indices.push(
+                frontCapStart,
+                frontCapStart + i,
+                frontCapStart + i + 1,
+            );
+            this.indices.push(
+                frontCapStart,
+                frontCapStart + i + 1,
+                frontCapStart + i,
+            );
         }
 
         this.primitiveType = this.scene.gl.TRIANGLES;
