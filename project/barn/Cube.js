@@ -28,28 +28,28 @@ export class Cube extends CGFobject {
 
         this.vertices = [
             // Front face
-             -w,  0.0,  hl,
-              w,  0.0,  hl,
+             -w,  0.1,  hl,
+              w,  0.1,  hl,
               w,  t,    hl,
              -w,  t,    hl,
 
             // Back face
-            -w, 0, -hl,
+            -w, 0.1, -hl,
             -w,  t, -hl,
              w,  t, -hl,
              w, 0, -hl,
 
             // Left face
             -w, 0,  -hl,
-            -w, 0,   hl,
+            -w, 0.1,   hl,
             -w,  t,  hl,
             -w,  t, -hl,
 
             // Right face
-             w, 0,  -hl,
+             w, 0.1,  -hl,
              w,  t, -hl,
              w,  t,  hl,
-             w, 0,   hl,
+             w, 0.1,   hl,
 
             // Top face (unused, kept for reuse)
             -w,  t, -hl,
@@ -58,22 +58,22 @@ export class Cube extends CGFobject {
              w,  t, -hl,
 
             // Bottom face
-            -w, 0, -hl,
-             w, 0, -hl,
-             w, 0,  hl,
-            -w, 0,  hl,
+            -w, 0.1, -hl,
+             w, 0.1, -hl,
+             w, 0.1,  hl,
+            -w, 0.1,  hl,
 
             // Front opening edges
-             -h, 0,   hl,
-              h, 0,   hl,
+             -h, 0.1,   hl,
+              h, 0.1,   hl,
               h, hb,  hl,
              -h, hb,  hl,
               h, t,   hl,
              -h, t,   hl,
 
             // Back opening edges
-             -h, 0,  -hl,
-              h, 0,  -hl,
+             -h, 0.1,  -hl,
+              h, 0.1,  -hl,
               h, hb, -hl,
              -h, hb, -hl,
               h, t,  -hl,
