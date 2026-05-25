@@ -1,6 +1,11 @@
 import { CGFobject } from "../../../lib/CGF.js";
+import { BarnWoodMaterial } from "./materials/BarnWoodMaterial.js";
 
 export class Cube extends CGFobject {
+    // =====================================================
+    // Init
+    // =====================================================
+
     constructor(scene, top, opening, length, header, width) {
         super(scene);
         this.top = top;
@@ -11,13 +16,14 @@ export class Cube extends CGFobject {
         this.halfLength = length / 2;
         this.halfWidth = width / 2;
         this.headerBottom = header;
+        this.material = new BarnWoodMaterial(this.scene);
         this.initBuffers();
     }
 
-    display() {
+    display(){
+        this.material.apply();
         super.display();
     }
-
     // prettier-ignore
     initBuffers() {
         const t = this.top;
@@ -37,21 +43,21 @@ export class Cube extends CGFobject {
             -w, 0.1, -hl,
             -w,  t, -hl,
              w,  t, -hl,
-             w, 0, -hl,
+             w, 0.1, -hl,
 
             // Left face
-            -w, 0,  -hl,
+            -w, 0.1,  -hl,
             -w, 0.1,   hl,
-            -w,  t,  hl,
-            -w,  t, -hl,
+            -w,  t,   hl,
+            -w,  t,  -hl,
 
             // Right face
              w, 0.1,  -hl,
-             w,  t, -hl,
-             w,  t,  hl,
+             w,  t,  -hl,
+             w,  t,   hl,
              w, 0.1,   hl,
 
-            // Top face (unused, kept for reuse)
+            // Top face
             -w,  t, -hl,
             -w,  t,  hl,
              w,  t,  hl,
@@ -63,36 +69,42 @@ export class Cube extends CGFobject {
              w, 0.1,  hl,
             -w, 0.1,  hl,
 
-            // Front opening edges
-             -h, 0.1,   hl,
-              h, 0.1,   hl,
+            // Front opening
+             -h, 0.1,  hl,
+              h, 0.1,  hl,
               h, hb,  hl,
              -h, hb,  hl,
               h, t,   hl,
              -h, t,   hl,
 
-            // Back opening edges
+            // Back opening
              -h, 0.1,  -hl,
               h, 0.1,  -hl,
               h, hb, -hl,
              -h, hb, -hl,
               h, t,  -hl,
              -h, t,  -hl,
+
+            // Duplicated opening corners
+             -h, t,   hl,
+              h, t,   hl,
+             -h, t,  -hl,
+              h, t,  -hl,
         ];
 
         // prettier-ignore
         this.indices = [
             // Front left wall
-             0, 24, 29,
-             0, 29,  3,
-             0, 29, 24,
-             0,  3, 29,
+             0, 24, 36,
+             0, 36,  3,
+             0, 36, 24,
+             0,  3, 36,
 
             // Front right wall
             25,  1,  2,
-            25,  2, 28,
+            25,  2, 37,
             25,  2,  1,
-            25, 28,  2,
+            25, 37,  2,
 
             // Front top header
             27, 26, 28,
@@ -101,22 +113,22 @@ export class Cube extends CGFobject {
             27, 29, 28,
 
             // Back left wall
-             4, 35, 30,
-             4,  5, 35,
-             4, 30, 35,
-             4, 35,  5,
+             4, 30, 38,
+             4, 38,  5,
+             4, 38, 30,
+             4,  5, 38,
 
             // Back right wall
-            31,  6,  7,
-            31, 34,  6,
             31,  7,  6,
-            31,  6, 34,
+            31,  6, 39,
+            31,  6,  7,
+            31, 39,  6,
 
             // Back top header
-            33, 34, 32,
-            33, 35, 34,
             33, 32, 34,
             33, 34, 35,
+            33, 34, 32,
+            33, 35, 34,
 
             // Left face
              8,  9, 10,
@@ -163,7 +175,7 @@ export class Cube extends CGFobject {
              1,  0,  0,
              1,  0,  0,
 
-            // Top (unused)
+            // Top unused
              0,  1,  0,
              0,  1,  0,
              0,  1,  0,
@@ -175,7 +187,7 @@ export class Cube extends CGFobject {
              0, -1,  0,
              0, -1,  0,
 
-            // Front opening edges
+            // Front opening
              0,  0,  1,
              0,  0,  1,
              0,  0,  1,
@@ -183,13 +195,88 @@ export class Cube extends CGFobject {
              0,  0,  1,
              0,  0,  1,
 
-            // Back opening edges
+            // Back opening
              0,  0, -1,
              0,  0, -1,
              0,  0, -1,
              0,  0, -1,
              0,  0, -1,
              0,  0, -1,
+
+            // Duplicated corners
+             0,  0,  1,
+             0,  0,  1,
+             0,  0, -1,
+             0,  0, -1,
+        ];
+
+        const uLeft = 0;
+        const uInnerL = 2 * (w - h) / w;
+        const uInnerR = 2 * (w + h) / w;
+        const uRight = 4;
+        const vBottom = t > 0 ? 1 - 0.1 / t : 1;
+        const vHeader = t > 0 ? 1 - hb / t : 0;
+        const vTop = 0;
+
+        // prettier-ignore
+        this.texCoords = [
+            // Front face
+            uLeft, vBottom,
+            uRight, vBottom,
+            uRight, vTop,
+            uLeft, vTop,
+
+            // Back face
+            uLeft, vBottom,
+            uLeft, vTop,
+            uRight, vTop,
+            uRight, vBottom,
+
+            // Left face
+            0, 1,
+            4, 1,
+            4, 0,
+            0, 0,
+
+            // Right face
+            0, 1,
+            0, 0,
+            4, 0,
+            4, 1,
+
+            // Top unused
+            0, 1,
+            4, 1,
+            4, 0,
+            0, 0,
+
+            // Bottom face
+            0, 1,
+            4, 1,
+            4, 0,
+            0, 0,
+
+            // Front opening
+            uInnerL, vBottom,
+            uInnerR, vBottom,
+            uInnerR, vHeader,
+            uInnerL, vHeader,
+            uInnerR, vTop,
+            uInnerL, vTop,
+
+            // Back opening
+            uInnerL, vBottom,
+            uInnerR, vBottom,
+            uInnerR, vHeader,
+            uInnerL, vHeader,
+            uInnerR, vTop,
+            uInnerL, vTop,
+
+            // Duplicated corners
+            uInnerL, vTop,
+            uInnerR, vTop,
+            uInnerL, vTop,
+            uInnerR, vTop,
         ];
 
         this.primitiveType = this.scene.gl.TRIANGLES;
