@@ -15,10 +15,18 @@ export class Prism extends CGFobject {
         this.initBuffers();
     }
 
+    // =====================================================
+    // Display
+    // =====================================================
+
     display() {
         this.material.apply();
         super.display();
     }
+
+    // =====================================================
+    // Buffers
+    // =====================================================
 
     initBuffers() {
         this.vertices = [];

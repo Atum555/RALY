@@ -20,10 +20,19 @@ export class Cube extends CGFobject {
         this.initBuffers();
     }
 
+    // =====================================================
+    // Display
+    // =====================================================
+
     display(){
         this.material.apply();
         super.display();
     }
+
+    // =====================================================
+    // Buffers
+    // =====================================================
+
     // prettier-ignore
     initBuffers() {
         const t = this.top;

@@ -1,6 +1,10 @@
 import { CGFappearance } from "../../../lib/CGF.js";
 
 export class BarnWoodMaterial extends CGFappearance {
+    // =====================================================
+    // Init
+    // =====================================================
+
     constructor(scene) {
         super(scene);
         this.setAmbient(1, 0.3, 0.3, 1);
