@@ -50,6 +50,7 @@ export class Cube extends CGFobject {
             "barn/shaders/barn.frag",
         );
         this.shader.setUniformsValues({ uSampler2: 1, uSampler3: 2, uSampler4: 3 });
+        this.shader.setUniformsValues({ uWoodTint: [1, 1, 1], uUseMask: 1 });
     }
 
     // =====================================================
@@ -257,11 +258,11 @@ export class Cube extends CGFobject {
         ];
 
         const uLeft = 0;
-        const uRight = 1;
-        const uInnerL = this.uInnerL = uRight * (w - h) / (2 * w);
-        const uInnerR = this.uInnerR = uRight * (w + h) / (2 * w);
-        const vBottom = this.vBottom = t > 0 ? 1 - 0.2 / t : 1;
-        const vHeader = this.vHeader = t > 0 ? 1 - hb / t : 0;
+        const uRight = 4;
+        const uInnerL = uRight * (w - h) / (2 * w);
+        const uInnerR = uRight * (w + h) / (2 * w);
+        const vBottom = t > 0 ? 1 - 0.2 / t : 1;
+        const vHeader = t > 0 ? 1 - hb / t : 0;
         const vTop = 0;
 
         // prettier-ignore
@@ -280,26 +281,26 @@ export class Cube extends CGFobject {
 
             // Left face
             0, 1,
-            1, 1,
-            1, 0,
+            4, 1,
+            4, 0,
             0, 0,
 
             // Right face
             0, 1,
             0, 0,
-            1, 0,
-            1, 1,
+            4, 0,
+            4, 1,
 
             // Top unused
             0, 1,
-            1, 1,
-            1, 0,
+            4, 1,
+            4, 0,
             0, 0,
 
             // Bottom face
             0, 1,
-            1, 1,
-            1, 0,
+            4, 1,
+            4, 0,
             0, 0,
 
             // Front opening
