@@ -1,5 +1,4 @@
-import { CGFobject } from "../../../lib/CGF.js";
-import { BarnWoodMaterial } from "./materials/BarnWoodMaterial.js";
+import { CGFobject, CGFshader, CGFtexture } from "../../../lib/CGF.js";
 
 export class Cube extends CGFobject {
     // =====================================================
@@ -16,8 +15,12 @@ export class Cube extends CGFobject {
         this.halfLength = length / 2;
         this.halfWidth = width / 2;
         this.headerBottom = header;
-        this.material = new BarnWoodMaterial(this.scene);
+        this.woodTex = new CGFtexture(this.scene, "barn/textures/wood.jpg");
+        this.doorTex = new CGFtexture(this.scene, "barn/textures/door.jpg");
+        this.windowTex = new CGFtexture(this.scene, "barn/textures/windows.jpg");
+        this.maskTex = new CGFtexture(this.scene, "barn/textures/mask.jpg");
         this.initBuffers();
+        this.initShaders();
     }
 
     // =====================================================
@@ -25,8 +28,28 @@ export class Cube extends CGFobject {
     // =====================================================
 
     display(){
-        this.material.apply();
+        this.woodTex.bind(0);
+        this.scene.setActiveShader(this.shader);
+        this.doorTex.bind(1);
+        this.windowTex.bind(2);
+        this.maskTex.bind(3);
+        this.scene.gl.texParameteri(this.scene.gl.TEXTURE_2D, this.scene.gl.TEXTURE_MAG_FILTER, this.scene.gl.NEAREST);
+        this.scene.gl.texParameteri(this.scene.gl.TEXTURE_2D, this.scene.gl.TEXTURE_MIN_FILTER, this.scene.gl.NEAREST);
         super.display();
+        this.scene.setActiveShader(this.scene.defaultShader);
+    }
+
+    // =====================================================
+    // Shaders
+    // =====================================================
+
+    initShaders() {
+        this.shader = new CGFshader(
+            this.scene.gl,
+            "barn/shaders/barn.vert",
+            "barn/shaders/barn.frag",
+        );
+        this.shader.setUniformsValues({ uSampler2: 1, uSampler3: 2, uSampler4: 3 });
     }
 
     // =====================================================
@@ -94,23 +117,12 @@ export class Cube extends CGFobject {
               h, t,  -hl,
              -h, t,  -hl,
 
-            // Duplicated opening corners
-             -h, t,   hl,
-              h, t,   hl,
-             -h, t,  -hl,
-              h, t,  -hl,
+             // Duplicated opening corners
+              -h, t,   hl,
+               h, t,   hl,
+              -h, t,  -hl,
+               h, t,  -hl,
 
-            // Front door closure
-             -h, 0.2,  hl,
-              h, 0.2,  hl,
-              h, hb,  hl,
-             -h, hb,  hl,
-
-            // Back door closure
-             -h, 0.2,  -hl,
-              h, 0.2,  -hl,
-              h, hb, -hl,
-             -h, hb, -hl,
         ];
 
         // prettier-ignore
@@ -170,16 +182,16 @@ export class Cube extends CGFobject {
             20, 22, 23,
 
             // Front door
-            40, 41, 42,
-            40, 42, 43,
-            40, 42, 41,
-            40, 43, 42,
+             24, 25, 26,
+             24, 26, 27,
+             24, 26, 25,
+             24, 27, 26,
 
             // Back door
-            44, 45, 46,
-            44, 46, 47,
-            44, 46, 45,
-            44, 47, 46,
+             30, 31, 32,
+             30, 32, 33,
+             30, 32, 31,
+             30, 33, 32,
         ];
 
         // prettier-ignore
@@ -236,31 +248,20 @@ export class Cube extends CGFobject {
              0,  0, -1,
              0,  0, -1,
 
-            // Duplicated corners
-             0,  0,  1,
-             0,  0,  1,
-             0,  0, -1,
-             0,  0, -1,
+             // Duplicated corners
+              0,  0,  1,
+              0,  0,  1,
+              0,  0, -1,
+              0,  0, -1,
 
-            // Front door
-             0,  0,  1,
-             0,  0,  1,
-             0,  0,  1,
-             0,  0,  1,
-
-            // Back door
-             0,  0, -1,
-             0,  0, -1,
-             0,  0, -1,
-             0,  0, -1,
         ];
 
         const uLeft = 0;
-        const uInnerL = 2 * (w - h) / w;
-        const uInnerR = 2 * (w + h) / w;
-        const uRight = 4;
-        const vBottom = t > 0 ? 1 - 0.2 / t : 1;
-        const vHeader = t > 0 ? 1 - hb / t : 0;
+        const uRight = 1;
+        const uInnerL = this.uInnerL = uRight * (w - h) / (2 * w);
+        const uInnerR = this.uInnerR = uRight * (w + h) / (2 * w);
+        const vBottom = this.vBottom = t > 0 ? 1 - 0.2 / t : 1;
+        const vHeader = this.vHeader = t > 0 ? 1 - hb / t : 0;
         const vTop = 0;
 
         // prettier-ignore
@@ -279,26 +280,26 @@ export class Cube extends CGFobject {
 
             // Left face
             0, 1,
-            4, 1,
-            4, 0,
+            1, 1,
+            1, 0,
             0, 0,
 
             // Right face
             0, 1,
             0, 0,
-            4, 0,
-            4, 1,
+            1, 0,
+            1, 1,
 
             // Top unused
             0, 1,
-            4, 1,
-            4, 0,
+            1, 1,
+            1, 0,
             0, 0,
 
             // Bottom face
             0, 1,
-            4, 1,
-            4, 0,
+            1, 1,
+            1, 0,
             0, 0,
 
             // Front opening
@@ -317,23 +318,12 @@ export class Cube extends CGFobject {
             uInnerR, vTop,
             uInnerL, vTop,
 
-            // Duplicated corners
-            uInnerL, vTop,
-            uInnerR, vTop,
-            uInnerL, vTop,
-            uInnerR, vTop,
+             // Duplicated corners
+             uInnerL, vTop,
+             uInnerR, vTop,
+             uInnerL, vTop,
+             uInnerR, vTop,
 
-            // Front door
-            0, 1,
-            1, 1,
-            1, 0,
-            0, 0,
-
-            // Back door
-            0, 1,
-            1, 1,
-            1, 0,
-            0, 0,
         ];
 
         this.primitiveType = this.scene.gl.TRIANGLES;
