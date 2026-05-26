@@ -99,6 +99,18 @@ export class Cube extends CGFobject {
               h, t,   hl,
              -h, t,  -hl,
               h, t,  -hl,
+
+            // Front door closure
+             -h, 0.2,  hl,
+              h, 0.2,  hl,
+              h, hb,  hl,
+             -h, hb,  hl,
+
+            // Back door closure
+             -h, 0.2,  -hl,
+              h, 0.2,  -hl,
+              h, hb, -hl,
+             -h, hb, -hl,
         ];
 
         // prettier-ignore
@@ -156,6 +168,18 @@ export class Cube extends CGFobject {
             20, 23, 22,
             20, 21, 22,
             20, 22, 23,
+
+            // Front door
+            40, 41, 42,
+            40, 42, 43,
+            40, 42, 41,
+            40, 43, 42,
+
+            // Back door
+            44, 45, 46,
+            44, 46, 47,
+            44, 46, 45,
+            44, 47, 46,
         ];
 
         // prettier-ignore
@@ -215,6 +239,18 @@ export class Cube extends CGFobject {
             // Duplicated corners
              0,  0,  1,
              0,  0,  1,
+             0,  0, -1,
+             0,  0, -1,
+
+            // Front door
+             0,  0,  1,
+             0,  0,  1,
+             0,  0,  1,
+             0,  0,  1,
+
+            // Back door
+             0,  0, -1,
+             0,  0, -1,
              0,  0, -1,
              0,  0, -1,
         ];
@@ -286,6 +322,18 @@ export class Cube extends CGFobject {
             uInnerR, vTop,
             uInnerL, vTop,
             uInnerR, vTop,
+
+            // Front door
+            0, 1,
+            1, 1,
+            1, 0,
+            0, 0,
+
+            // Back door
+            0, 1,
+            1, 1,
+            1, 0,
+            0, 0,
         ];
 
         this.primitiveType = this.scene.gl.TRIANGLES;
