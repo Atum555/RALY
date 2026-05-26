@@ -3,6 +3,7 @@ import { SkySphere } from "./sky/SkySphere.js";
 import { HayBale } from "./obstacles/HayBale.js";
 import { Rock } from "./obstacles/Rock.js";
 import { Wagon } from "./wagon/Wagon.js";
+import { Barn } from "./barn/Barn.js";
 import { hexToRGB } from "./utils.js";
 
 export class Scene extends CGFscene {
@@ -80,8 +81,9 @@ export class Scene extends CGFscene {
             HayBale: 0,
             Rock: 1,
             Wagon: 2,
+            Barn: 3,
         };
-        this.selected_object = 2;
+        this.selected_object = 3;
     }
 
     initObjects() {
@@ -91,9 +93,10 @@ export class Scene extends CGFscene {
         this.haybale = new HayBale(this);
         this.rock = new Rock(this);
         this.wagon = new Wagon(this);
+        this.barn = new Barn(this);
 
-        this.selectable_objects = [this.haybale, this.rock, this.wagon];
-        this.all_objects = [this.haybale, this.rock, this.wagon, this.sky_sphere];
+        this.selectable_objects = [this.haybale, this.rock, this.wagon, this.barn];
+        this.all_objects = [this.haybale, this.rock, this.wagon, this.sky_sphere, this.barn];
     }
 
     // == Update ===========================================
@@ -115,7 +118,6 @@ export class Scene extends CGFscene {
         this.updateProjectionMatrix();
         this.loadIdentity();
         this.applyViewMatrix();
-
         // World transform
         this.setDefaultAppearance();
         // prettier-ignore
@@ -140,6 +142,7 @@ export class Scene extends CGFscene {
 
         // Scene objects
         this.selectable_objects[this.selected_object].display();
+        this.wagon.display();
     }
 
     // == Utils ============================================
