@@ -44,11 +44,11 @@ export class Tulip extends LSystem {
         this.primitives = [];
 
         this.grammar.push("S");
-        this.primitives.push(new Stem(this.scene, 0.12, this.stemColor));
+        this.primitives.push(this.addPart(new Stem(this.scene, 0.12, this.stemColor)));
         this.grammar.push("L");
-        this.primitives.push(new Leaf(this.scene, 3, this.stemColor,4,4));
+        this.primitives.push(this.addPart(new Leaf(this.scene, 3, this.stemColor, 4, 4)));
         this.grammar.push("F");
-        this.primitives.push(new Flower(this.scene, this.flowerColor));
+        this.primitives.push(this.addPart(new Flower(this.scene, this.flowerColor)));
     }
 
     // =====================================================

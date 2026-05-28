@@ -1,6 +1,6 @@
-import { CGFobject } from "../../../lib/CGF.js";
+import { CGFGroup } from "../../core/CGFGroup.js";
 
-export class LSystem extends CGFobject {
+export class LSystem extends CGFGroup {
     // =====================================================
     // Init
     // =====================================================
