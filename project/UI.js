@@ -50,6 +50,16 @@ export class UI extends CGFinterface {
         cloud_controls.add(sky, "sky_clouds_light", 0.0, 1.0).step(0.05).name("Light");
         cloud_controls.add(sky, "sky_clouds_dark", 0.0, 1.0).step(0.05).name("Dark");
 
+        // == Tulip ============================================
+
+        const tulip = this.scene.tulip;
+        const tulip_controls = this.gui.addFolder("Tulip");
+        tulip_controls.add(tulip, "axiom").name("Axiom");
+        tulip_controls.add(tulip, "angle", 0, 90).name("Angle");
+        tulip_controls.add(tulip, "iterations", 1, 6).step(1).name("Iterations");
+        tulip_controls.add(tulip, "scaleFactor", 0.1, 1).name("Scale Factor");
+        tulip_controls.add(tulip, "init").name("Regenerate");
+
         // == Wagon ============================================
 
         const wagon = this.scene.wagon;
