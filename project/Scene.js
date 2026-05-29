@@ -5,6 +5,7 @@ import { Rock } from "./obstacles/Rock.js";
 import { Wagon } from "./wagon/Wagon.js";
 import { Tulip } from "./flowers/tulip/Tulip.js";
 import { Flower } from "./flowers/tulip/Flower.js";
+import { Chrysantemum } from "./flowers/Chrysantemum/Chrysantemum.js";
 import { hexToRGB } from "./utils.js";
 
 export class Scene extends CGFscene {
@@ -81,9 +82,10 @@ export class Scene extends CGFscene {
         this.object_ids = {
             "Tulip Grid": 0,
             Tulip: 1,
-            HayBale: 2,
-            Rock: 3,
-            Wagon: 4,
+            Rose: 2,
+            HayBale: 3,
+            Rock: 4,
+            Wagon: 5,
         };
         this.selected_object = 0;
     }
@@ -101,10 +103,10 @@ export class Scene extends CGFscene {
             let x = (col - (cols - 1) / 2) * spacing + (Math.random() - 0.5) * 0.5;
             let z = (row - 0.5) * spacing + (Math.random() - 0.5) * 0.5;
 
-            let t = new Tulip(this);
-            t.angle = 8 + Math.random() * 12;
+            let t = new Chrysantemum(this);
+            t.angle = 10 + Math.random() * 12;
             t.iterations = 1 + Math.random * 3;
-            t.scaleFactor = 0.5 + Math.random() * 0.2;
+            t.scaleFactor = 0.4 + Math.random() * 0.2;
             t.gridX = x;
             t.gridZ = z;
             t.init();
@@ -112,6 +114,8 @@ export class Scene extends CGFscene {
         }
 
         this.tulip = new Tulip(this);
+
+        this.rose = new Chrysantemum(this);
 
         this.tulipGrid = {
             scene: this,
@@ -129,8 +133,8 @@ export class Scene extends CGFscene {
         this.rock = new Rock(this);
         this.wagon = new Wagon(this);
 
-        this.selectable_objects = [this.tulipGrid, this.tulip, this.haybale, this.rock, this.wagon];
-        this.all_objects = [this.tulip, this.haybale, this.rock, this.wagon, this.sky_sphere];
+        this.selectable_objects = [this.tulipGrid, this.tulip, this.rose, this.haybale, this.rock, this.wagon];
+        this.all_objects = [this.tulip, this.rose, this.haybale, this.rock, this.wagon, this.sky_sphere];
     }
 
     // == Update ===========================================
