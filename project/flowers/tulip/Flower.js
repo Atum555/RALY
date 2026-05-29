@@ -1,5 +1,5 @@
 import { CGFobject } from "../../../lib/CGF.js";
-import { Petal } from "./Petal.js";
+import { Petal } from "../common/Petal.js";
 import { FlowerMaterial } from "../materials/FlowerMaterial.js";
 
 export class Flower extends CGFobject {
