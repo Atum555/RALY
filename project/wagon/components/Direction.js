@@ -1,6 +1,8 @@
+import { CGFobjModel } from "../../../lib/extra/CGFobjModel.js";
 import { CGFGroup } from "../../core/CGFGroup.js";
 import { Beam } from "./Beam.js";
 import { Wheel } from "./Wheel.js";
+import { HorseMaterial } from "../materials/HorseMaterial.js";
 
 export class Direction extends CGFGroup {
     // =====================================================
@@ -15,6 +17,8 @@ export class Direction extends CGFGroup {
 
         this.beam = this.addPart(new Beam(this.scene, this.beam_length, 0.2));
         this.wheel = this.addPart(new Wheel(this.scene));
+        this.horse = new CGFobjModel(this.scene, "wagon/horse/horse.obj");
+        this.horseMaterial = new HorseMaterial(this.scene);
     }
 
     // =====================================================
@@ -35,10 +39,17 @@ export class Direction extends CGFGroup {
 
     display() {
         this.scene.pushMatrix();
-
         // Steer the whole axle by the current steering angle
         this.scene.rotate(this.steering_angle, 0, 1, 0);
-
+        this.scene.pushMatrix();
+        this.scene.translate(2, 2, 10);
+            this.scene.scale(0.8,0.8,0.8);
+            this.horseMaterial.apply();
+            this.horse.display();
+            this.scene.translate(-4 / 0.8,0,0);
+            this.horseMaterial.apply();
+            this.horse.display();
+        this.scene.popMatrix();
         this.displayBeams();
         this.displayWheels();
 
