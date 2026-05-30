@@ -49,11 +49,11 @@ export class Roof extends CGFobject {
         const hl = this.length / 2 + this.overhangLength;
 
         const baseProfile = [
-            { x: -hw, y: 0 },
+            { x: -hw, y: -4 },
             { x: -hw * 0.7, y: this.height * 0.45 },
             { x: 0, y: this.height },
             { x: hw * 0.7, y: this.height * 0.45 },
-            { x: hw, y: 0 },
+            { x: hw, y: -4 },
         ];
 
         const numPoints = baseProfile.length;

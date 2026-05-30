@@ -4,13 +4,12 @@ import { Cube } from "./Cube.js";
 import { BarnWoodMaterial } from "./materials/BarnWoodMaterial.js";
 import { Beam } from "./Beam.js";
 import { Prism } from "./Prism.js";
-//import { Roof } from "./Roof.js";
+import { Roof } from "./Roof.js";
 
 export class Barn extends CGFGroup {
     // =====================================================
     // Init
     // =====================================================
-// TODO Fix the roof
 
     constructor(scene, radius = 96, elevation = 0) {
         super(scene);
@@ -30,7 +29,7 @@ export class Barn extends CGFGroup {
         this.cube = this.addPart(new Cube(this.scene, this.top, this.opening, this.length, this.header, this.width));
         this.prism = this.addPart(new Prism(this.scene, this.width, this.top, this.length));
         this.beam = this.addPart(new Beam(this.scene,16,0.4));
-        //this.roof = this.addPart(new Roof(this.scene,this.width,this.top,this.length,2,5,5));
+        this.roof = this.addPart(new Roof(this.scene,this.width,this.top,this.length,2,5,5));
         this.circle = this.addPart(new Circle(this.scene, this.pickup["r"], 50));
     }
 
@@ -48,7 +47,7 @@ export class Barn extends CGFGroup {
         this.cube.display();
         this.scene.translate(0, this.top, 0);
         this.prism.display();
-//        this.roof.display();
+        this.roof.display();
         this.scene.popMatrix();
         this.scene.pushMatrix();
         this.scene.translate(this.pickup["x"], 0, this.pickup["z"]);
@@ -84,7 +83,5 @@ export class Barn extends CGFGroup {
             this.scene.rotate(Math.PI / 2, 0, 1,0);
         }
         this.scene.popMatrix();
-
-
     }
 }
