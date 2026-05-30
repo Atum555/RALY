@@ -11,7 +11,7 @@ export class SkySphere extends CGFobject {
 
         // -- UI-controlled state --
 
-        this.sky_radius = 5000;
+        this.sky_radius = 50000;
         this.sky_slices = 100;
         this.sky_stacks = 100;
         this.day_night_cycle_speed = 1;
@@ -137,7 +137,7 @@ export class SkySphere extends CGFobject {
         this.day_factor = Math.max(0, Math.min(1, (sun_y + 0.1) / (0.3)));
         this.day_factor = this.day_factor * this.day_factor;
 
-        const radius = 20.0;
+        const radius = 200.0;
         const x = -2;
         const y = Math.sin(sun_pitch) * radius;
         const z = -Math.cos(sun_pitch) * radius;
