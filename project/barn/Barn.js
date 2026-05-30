@@ -1,6 +1,8 @@
 import { CGFGroup } from "../core/CGFGroup.js";
 import { Circle } from "./Circle.js";
 import { Cube } from "./Cube.js";
+import { BarnWoodMaterial } from "./materials/BarnWoodMaterial.js";
+import { Beam } from "./Beam.js";
 import { Prism } from "./Prism.js";
 //import { Roof } from "./Roof.js";
 
@@ -8,8 +10,6 @@ export class Barn extends CGFGroup {
     // =====================================================
     // Init
     // =====================================================
-// TODO Add shader for windows and door, essentially allowing it to have a second and third texture
-// TODO since we're already gonna be using a shader why not also do it for the white beams that can be added detail to the barn
 // TODO Fix the roof
 
     constructor(scene, radius = 96, elevation = 0) {
@@ -22,12 +22,14 @@ export class Barn extends CGFGroup {
         this.width = 48;
         this.header = 10;
         this.pickup = {x: 0, z: 48, r : this.length / 2}
+        this.material = new BarnWoodMaterial(scene);
         this.initComponents();
     }
 
     initComponents() {
         this.cube = this.addPart(new Cube(this.scene, this.top, this.opening, this.length, this.header, this.width));
         this.prism = this.addPart(new Prism(this.scene, this.width, this.top, this.length));
+        this.beam = this.addPart(new Beam(this.scene,16,0.4));
         //this.roof = this.addPart(new Roof(this.scene,this.width,this.top,this.length,2,5,5));
         this.circle = this.addPart(new Circle(this.scene, this.pickup["r"], 50));
     }
@@ -40,6 +42,7 @@ export class Barn extends CGFGroup {
     display() {
         this.scene.pushMatrix();
         this.scene.translate(0, this.elevation, 0);
+        this.displayBeams();
         this.scene.pushMatrix();
 
         this.cube.display();
@@ -52,5 +55,36 @@ export class Barn extends CGFGroup {
         this.circle.display();
         this.scene.popMatrix();
         this.scene.popMatrix();
+    }
+
+    displayFrontBeams(){
+        this.scene.pushMatrix();
+        this.scene.translate(this.length / 2 - 0.4 ,8.2,this.length / 2 + 1 - 0.9);
+        this.scene.rotate(Math.PI / 2, 1, 0, 0);
+        this.beam.display();
+        this.scene.translate(-this.opening - 2.3,0,0);
+        this.beam.display();
+        this.scene.translate(-this.opening -0.6,0,0);
+        this.beam.display();
+        this.scene.translate(-this.opening - 2.3, 0, 0);
+        this.beam.display();
+        this.scene.rotate(Math.PI / 2, 0,1,0);
+        this.scene.scale(1,1,2.95);
+        this.scene.translate(2.2,0,8);
+        this.beam.display();
+        this.scene.translate(5.4,0,0);
+        this.beam.display();
+        this.scene.popMatrix();
+    }
+
+    displayBeams(){
+        this.scene.pushMatrix();
+        for(let i = 0; i < 4; i++){
+            this.displayFrontBeams();
+            this.scene.rotate(Math.PI / 2, 0, 1,0);
+        }
+        this.scene.popMatrix();
+
+
     }
 }

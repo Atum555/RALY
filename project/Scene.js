@@ -40,7 +40,7 @@ export class Scene extends CGFscene {
     }
 
     initCameras() {
-        this.camera = new CGFcamera(1.0, 0.01, 5000, vec3.fromValues(0, 0, 15), vec3.fromValues(0, 0, 0));
+        this.camera = new CGFcamera(1.0, 0.01, 5000, vec3.fromValues(0, 20, 80), vec3.fromValues(0, 0, 0));
     }
 
     initLights() {

@@ -11,7 +11,6 @@ export class Prism extends CGFobject {
         this.height = height;
         this.length = length;
         this.woodTex = new CGFtexture(this.scene, "barn/textures/wood.jpg");
-        this.maskTex = new CGFtexture(this.scene, "barn/textures/prismMask.jpg");
         this.initBuffers();
         this.initShaders();
     }
@@ -37,7 +36,6 @@ export class Prism extends CGFobject {
     display() {
         this.woodTex.bind(0);
         this.scene.setActiveShader(this.shader);
-        this.maskTex.bind(3);
         this.scene.gl.texParameteri(this.scene.gl.TEXTURE_2D, this.scene.gl.TEXTURE_MAG_FILTER, this.scene.gl.NEAREST);
         this.scene.gl.texParameteri(this.scene.gl.TEXTURE_2D, this.scene.gl.TEXTURE_MIN_FILTER, this.scene.gl.NEAREST);
         super.display();
