@@ -6,6 +6,7 @@ import { Wagon } from "./wagon/Wagon.js";
 import { Terrain } from "./terrain/Terrain.js";
 import { MyFlowerPatch } from "./MyFlowerPatch.js";
 import { Barn } from "./barn/Barn.js";
+import { FpsCounter } from "./core/FpsCounter.js";
 import { hexToRGB } from "./utils.js";
 
 export class Scene extends CGFscene {
@@ -89,6 +90,10 @@ export class Scene extends CGFscene {
     }
 
     initObjects() {
+        // On-screen FPS readout, measured per rendered frame in display().
+        this.fps_counter = new FpsCounter();
+        this.last_display_time = performance.now();
+
         this.axis = new CGFaxis(this);
         this.sky_sphere = new SkySphere(this);
 
@@ -145,6 +150,11 @@ export class Scene extends CGFscene {
     }
 
     display() {
+        // Per-frame FPS measurement (display() runs once per rendered frame).
+        const now = performance.now();
+        this.fps_counter.tick(now - this.last_display_time);
+        this.last_display_time = now;
+
         // Frame setup
         this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
