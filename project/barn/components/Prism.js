@@ -1,11 +1,11 @@
-import { CGFobject } from "../lib/CGF.js";
+import { CGFobject } from "../../../lib/CGF.js";
 
 /**
- * MyPrism
+ * Prism
  * @constructor
  * @param scene - Reference to MyScene object
  */
-export class MyPrism extends CGFobject {
+export class Prism extends CGFobject {
     constructor(scene, slices, stacks) {
         super(scene);
 
@@ -63,11 +63,7 @@ export class MyPrism extends CGFobject {
                 var normal = [y2 - y1, x2 - x1, 0];
 
                 // normalization
-                var nsize = Math.sqrt(
-                    normal[0] * normal[0] +
-                        normal[1] * normal[1] +
-                        normal[2] * normal[2],
-                );
+                var nsize = Math.sqrt(normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]);
                 normal[0] /= nsize;
                 normal[1] /= nsize;
                 normal[2] /= nsize;

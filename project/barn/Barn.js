@@ -1,40 +1,47 @@
-import { CGFobject, CGFappearance } from "../lib/CGF.js";
-import { MyUnitCube } from "./MyUnitCube.js";
-import { MyPrism } from "./MyPrism.js";
-import { MyCylinder } from "./MyCylinder.js";
+import { CGFobject, CGFappearance } from "../../lib/CGF.js";
+import { UnitCube } from "./components/UnitCube.js";
+import { Prism } from "./components/Prism.js";
+import { Cylinder } from "./components/Cylinder.js";
 
 /**
- * MyBarn - Solid barn structure with roof and delivery drop zone
- * 
+ * Barn - Solid barn structure with roof and delivery drop zone
+ *
  * GEOMETRIC ARCHITECTURE:
- * 
- * BASE (MyUnitCube):
+ *
+ * BASE (UnitCube):
  *   - Unit cube vertices: [-0.5, +0.5] in all axes
  *   - Origin at center (0, 0, 0)
  *   - Bottom face at Y = -0.5
  *   - Positioning: Translate(0, bodyHeight/2, 0) + Scale(width, height, depth)
  *     → Bottom sits at Y = 0, top at Y = bodyHeight
- * 
- * ROOF (MyPrism with slices=3):
+ *
+ * ROOF (Prism with slices=3):
  *   - Triangular prism with Z-axis from 0 to 1
  *   - Triangle cross-section on XY plane, vertices on unit circle
  *   - Rotate 90° around Z-axis to align ridge with barn width
  *   - Position at Y = bodyHeight + roofHeight/2 for flush mounting
- * 
- * DROP ZONE (MyCylinder with slices=24):
+ *
+ * DROP ZONE (Cylinder with slices=24):
  *   - Circular cylinder, Z-axis from 0 to 1, radius ~1
  *   - Has closed top/bottom caps
  *   - Rotate -90° around X-axis to lie flat on ground
  *   - Position in front of barn at Z = bodyDepth/2 + offset
  */
-export class MyBarn extends CGFobject {
+export class Barn extends CGFobject {
     constructor(scene) {
         super(scene);
 
         // Initialize geometric primitives
-        this.base = new MyUnitCube(scene);
-        this.roof = new MyPrism(scene, 3, 1);        // 3 slices = triangle
-        this.dropZone = new MyCylinder(scene, 24, 1); // 24 slices = smooth circle
+        this.base = new UnitCube(scene);
+        this.roof = new Prism(scene, 3, 1); // 3 slices = triangle
+        this.dropZone = new Cylinder(scene, 24, 1); // 24 slices = smooth circle
+
+        // World placement, tunable from the UI. The whole barn is translated to
+        // (pos_x, pos_y, pos_z) and uniformly scaled by barn_scale in display().
+        this.pos_x = 0;
+        this.pos_y = 5;
+        this.pos_z = 0;
+        this.barn_scale = 10.0;
 
         // Barn dimensions (in world units)
         this.bodyWidth = 2.0;
@@ -43,7 +50,7 @@ export class MyBarn extends CGFobject {
         this.roofHeight = 0.7;
 
         // Materials: Flat colors only (no textures) for geometry clarity
-        
+
         // Barn walls: warm brown wood
         this.woodMaterial = new CGFappearance(scene);
         this.woodMaterial.setAmbient(0.3, 0.2, 0.1, 1);
@@ -67,8 +74,13 @@ export class MyBarn extends CGFobject {
     }
 
     display() {
+        // Apply the UI-tunable world placement to the entire barn.
+        this.scene.pushMatrix();
+        this.scene.translate(this.pos_x, this.pos_y, this.pos_z);
+        this.scene.scale(this.barn_scale, this.barn_scale, this.barn_scale);
+
         // === BARN BASE ===
-        // MyUnitCube: vertices [-0.5, 0.5] in X, Y, Z with origin at center
+        // UnitCube: vertices [-0.5, 0.5] in X, Y, Z with origin at center
         // After translate(0, bodyHeight/2, 0): bottom sits at Y=0, top at Y=bodyHeight
         // Scale applies to all axes uniformly scaling the box
         this.woodMaterial.apply();
@@ -79,19 +91,19 @@ export class MyBarn extends CGFobject {
         this.scene.popMatrix();
 
         // === BARN ROOF ===
-        // MyPrism (3 slices): triangular prism with ridge parallel to Z-axis
+        // Prism (3 slices): triangular prism with ridge parallel to Z-axis
         // After rotate(90°, Z): ridge parallel to X-axis (barn width direction)
         // Position at Y = bodyHeight + roofHeight/2 ensures flush contact with top wall
         this.roofMaterial.apply();
         this.scene.pushMatrix();
         this.scene.translate(0, this.bodyHeight + this.roofHeight / 2, 0);
-        this.scene.rotate(Math.PI / 2, 0, 0, 1);  // Align ridge with barn width
+        this.scene.rotate(Math.PI / 2, 0, 0, 1); // Align ridge with barn width
         this.scene.scale(this.bodyWidth, this.roofHeight, this.bodyDepth);
         this.roof.display();
         this.scene.popMatrix();
 
         // === DROP ZONE ===
-        // MyCylinder (24 slices): cylinder Z from 0→1, radius ~1
+        // Cylinder (24 slices): cylinder Z from 0→1, radius ~1
         // After rotate(-90°, X): cylinder axis becomes vertical, lies flat on ground
         // Scale: X,Z = radius (0.6), Y = thin disk (0.02)
         this.dropZoneMaterial.apply();
@@ -100,6 +112,8 @@ export class MyBarn extends CGFobject {
         this.scene.rotate(-Math.PI / 2, 1, 0, 0);
         this.scene.scale(0.6, 0.02, 0.6);
         this.dropZone.display();
+        this.scene.popMatrix();
+
         this.scene.popMatrix();
     }
 }

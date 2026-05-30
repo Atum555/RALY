@@ -76,6 +76,16 @@ export class UI extends CGFinterface {
         rock_controls.add(rock, "radius", 0.1, 5).step(0.1).name("Radius").onChange(rebuild_rock);
         rock_controls.add(rock, "scale", 1, 3).step(0.1).name("Scale").onChange(rebuild_rock);
 
+        // == Barn =============================================
+        {
+            const barn = this.scene.barn;
+            const barn_controls = this.gui.addFolder("Barn");
+            barn_controls.add(barn, "barn_scale", 0.1, 20).step(0.1).name("Scale");
+            barn_controls.add(barn, "pos_x", -100, 100).step(0.5).name("Position X");
+            barn_controls.add(barn, "pos_y", -100, 100).step(0.5).name("Position Y");
+            barn_controls.add(barn, "pos_z", -100, 100).step(0.5).name("Position Z");
+        }
+
         this.initKeys();
         return true;
     }
