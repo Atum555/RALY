@@ -120,11 +120,11 @@ export class Scene extends CGFscene {
         this.last_time = current_time;
 
         this.sky_sphere.update(this.delta_time);
-        this.checkWagonControls();
+        this.applyWagonInput();
         this.wagon.update(this.delta_time / 1000.0);
     }
 
-    checkWagonControls() {
+    applyWagonInput() {
         if (!this.gui || !this.wagon) return;
 
         const dt = this.delta_time / 1000.0;
@@ -132,8 +132,20 @@ export class Scene extends CGFscene {
         const brake_step = this.wagon.braking_rate * dt;
         const steer_step = this.wagon.steering_rate * dt;
 
-        if (this.gui.isKeyPressed("KeyW")) this.wagon.accelerate(accel_step);
-        if (this.gui.isKeyPressed("KeyS")) this.wagon.accelerate(-brake_step);
+        const throttle = this.gui.isKeyPressed("KeyW");
+        const brake = this.gui.isKeyPressed("KeyS");
+
+        // Shift boosts the top speed and (via updateCamera) widens the FOV for a
+        // sense of speed. (Shift rather than Ctrl: Ctrl+W/S/A/D collide with
+        // browser shortcuts like close-tab and save.)
+        this.boosting = this.gui.isKeyPressed("ShiftLeft") || this.gui.isKeyPressed("ShiftRight");
+        this.wagon.setBoost(this.boosting);
+
+        if (throttle) this.wagon.accelerate(accel_step);
+        if (brake) this.wagon.accelerate(-brake_step);
+
+        // No throttle or brake: let drag coast the wagon to a stop.
+        this.wagon.coasting = !throttle && !brake;
 
         const left = this.gui.isKeyPressed("KeyA");
         const right = this.gui.isKeyPressed("KeyD");
@@ -144,7 +156,9 @@ export class Scene extends CGFscene {
             this.wagon.steer(-steer_step);
         } else if (Math.abs(this.wagon.speed) > 0.01) {
             // Recenter the wheels while rolling with no steering input.
-            if (this.wagon.steering_angle > 0) this.wagon.steer(-steer_step);
+            // Snap to zero once we're within a step to avoid flickering past it.
+            if (Math.abs(this.wagon.steering_angle) <= steer_step) this.wagon.steer(-this.wagon.steering_angle);
+            else if (this.wagon.steering_angle > 0) this.wagon.steer(-steer_step);
             else if (this.wagon.steering_angle < 0) this.wagon.steer(steer_step);
         }
     }

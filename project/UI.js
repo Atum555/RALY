@@ -1,4 +1,5 @@
 import { CGFinterface, dat } from "../lib/CGF.js";
+import { readonly } from "./utils.js";
 
 export class UI extends CGFinterface {
     constructor() {
@@ -84,6 +85,17 @@ export class UI extends CGFinterface {
             barn_controls.add(barn, "pos_x", -100, 100).step(0.5).name("Position X");
             barn_controls.add(barn, "pos_y", -100, 100).step(0.5).name("Position Y");
             barn_controls.add(barn, "pos_z", -100, 100).step(0.5).name("Position Z");
+        }
+
+        // == Wagon ============================================
+        {
+            const wagon = this.scene.wagon;
+            const wagon_controls = this.gui.addFolder("Wagon");
+
+            // Live driving telemetry, read-only and kept in sync via listen().
+            readonly(wagon_controls.add(wagon, "acceleration").name("Acceleration").listen());
+            readonly(wagon_controls.add(wagon, "speed").name("Speed").listen());
+            readonly(wagon_controls.add(wagon, "steering_angle_degrees").name("Steering Angle (deg)").listen());
         }
 
         this.initKeys();

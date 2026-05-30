@@ -1,16 +1,11 @@
 import { CGFobject, CGFappearance } from "../../lib/CGF.js";
 
-/**
- * MyCylinder
- * @constructor
- * @param scene - Reference to MyScene object
- */
 export class HayBale extends CGFobject {
     constructor(scene) {
         super(scene);
 
-        this.slices = 50;
-        this.stacks = 10;
+        this.slices = 25;
+        this.stacks = 3;
 
         this.initBuffers();
         this.initMaterials();
