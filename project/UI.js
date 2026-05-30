@@ -20,6 +20,26 @@ export class UI extends CGFinterface {
         this.gui.add(this.scene, "display_normals").name("Display Normals");
         this.gui.add(this.scene, "selected_object", this.scene.object_ids).name("Selected Object");
 
+        // == Camera ===========================================
+        {
+            const cam = this.scene.camera;
+            const camera_controls = this.gui.addFolder("Camera");
+            // Distance is also changed by wheel-zoom (see syncOrbitFromCamera), so
+            // listen() keeps the slider in sync.
+            camera_controls.add(this.scene, "cam_dist", 10, 10000).step(1).name("Distance").listen();
+            // CGFcamera stores fov in radians; expose it in degrees. The slider
+            // sets the base FOV (scene.cam_fov_base); the Ctrl boost is layered
+            // on top of it each frame in updateCamera, so it owns cam.fov itself.
+            const fov_deg = { value: (cam.fov * 180) / Math.PI };
+            camera_controls
+                .add(fov_deg, "value", 30, 120)
+                .step(1)
+                .name("FOV")
+                .onChange(deg => {
+                    this.scene.cam_fov_base = (deg * Math.PI) / 180;
+                });
+        }
+
         // == Sky ==============================================
 
         const sky = this.scene.sky_sphere;
@@ -120,5 +140,12 @@ export class UI extends CGFinterface {
 
     isKeyPressed(keyCode) {
         return this.activeKeys[keyCode] || false;
+    }
+
+    // Wheel-zoom is discrete (no held button), so stamp it as manual camera
+    // input to keep the soft-follow camera from fighting the user's zoom.
+    processWheel(event) {
+        super.processWheel(event);
+        if (this.scene) this.scene.cam_last_manual_ms = performance.now();
     }
 }

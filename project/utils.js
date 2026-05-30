@@ -24,3 +24,11 @@ export function hexToRGB(hex, alpha = true) {
     if (!alpha) return rgb;
     return [...rgb, h.length === 8 ? parseInt(h.substring(6, 8), 16) / 255 : 1.0];
 }
+
+// Interpolate angle a -> b by t, taking the shortest way around.
+export function lerpAngle(a, b, t) {
+    let d = b - a;
+    while (d > Math.PI) d -= 2 * Math.PI;
+    while (d < -Math.PI) d += 2 * Math.PI;
+    return a + d * t;
+}

@@ -7,7 +7,7 @@ import { Terrain } from "./terrain/Terrain.js";
 import { MyFlowerPatch } from "./MyFlowerPatch.js";
 import { Barn } from "./barn/Barn.js";
 import { FpsCounter } from "./core/FpsCounter.js";
-import { hexToRGB } from "./utils.js";
+import { hexToRGB, lerpAngle } from "./utils.js";
 
 export class Scene extends CGFscene {
     static Lights = Object.freeze({
@@ -35,15 +35,58 @@ export class Scene extends CGFscene {
         this.last_time = Date.now();
         this.delta_time = 0;
 
-        this.initCameras();
+        this.initCamera();
         this.initLights();
         this.initMaterials();
         this.initUIValues();
         this.initObjects();
     }
 
-    initCameras() {
-        this.camera = new CGFcamera(1.0, 0.01, 50000, vec3.fromValues(0, 0, 15), vec3.fromValues(0, 0, 0));
+    initCamera() {
+        this.camera = new CGFcamera(1.0, 1, 100000, vec3.fromValues(0, 0, 15), vec3.fromValues(0, 0, 0));
+
+        // -- Soft chase-camera state --
+        // The camera orbits an "anchor" (a point above the wagon) at a spherical
+        // offset (yaw / pitch / distance). The mouse fully owns the camera while
+        // the user drags or zooms; a couple of seconds after they stop, the
+        // camera softly eases back to following: it tracks the wagon's position
+        // and swings its yaw to behind the wagon, while keeping the zoom and
+        // elevation the user chose. The easing is gentle, so a turn nudges the
+        // camera around rather than snapping it.
+        this.CAM_BEHIND = 40; // default horizontal follow distance
+        this.CAM_HEIGHT = 15; // default camera height above the wagon
+        this.CAM_LOOK_UP = 8; // anchor sits this far above the wagon
+
+        this.cam_anchor = vec3.fromValues(0, this.CAM_LOOK_UP, 0);
+        this.cam_dist = Math.hypot(this.CAM_BEHIND, this.CAM_HEIGHT - this.CAM_LOOK_UP);
+        this.cam_yaw = Math.PI; // directly behind the wagon when heading = 0
+        // Default elevation behind/above the wagon. Follow eases cam_pitch back to
+        // this once the mouse lets go, the same way yaw realigns to behind.
+        this.CAM_REST_PITCH = Math.atan2(this.CAM_HEIGHT - this.CAM_LOOK_UP, this.CAM_BEHIND);
+        this.cam_pitch = this.CAM_REST_PITCH;
+        // Extra pitch that leans the whole rig with the slope the wagon is on,
+        // so a climb tilts the view up the hill and a descent tilts it down.
+        // Kept separate from cam_pitch (the user's chosen elevation); it eases in
+        // while following and is folded back into cam_pitch (not double-applied)
+        // the moment the mouse takes over. See syncOrbitFromCamera().
+        this.cam_tilt = 0;
+
+        // Base FOV the user controls from the UI; the Ctrl boost adds on top of
+        // it and eases in/out so the projection doesn't snap. camera.fov itself
+        // is owned by updateCamera() while boosting.
+        this.cam_fov_base = this.camera.fov;
+        this.CAM_BOOST_FOV = 0.3; // extra radians of FOV at full boost
+        this.CAM_FOV_RATE = 6.0; // FOV easing rate (1/s)
+        this.boosting = false;
+
+        this.cam_last_manual_ms = -1e9; // follow is active from the start
+        this.CAM_RESUME_DELAY = 3.0; // seconds of no input before follow resumes
+        this.CAM_POS_RATE = 15.0; // anchor easing rate (1/s)
+        this.CAM_YAW_RATE = 3.0; // yaw realign rate (1/s); lower = softer turns
+        this.CAM_PITCH_RATE = 3.0; // pitch realign rate (1/s) back to CAM_REST_PITCH
+        this.CAM_TILT_RATE = 4.0; // tilt easing rate (1/s)
+        this.CAM_TILT_GAIN = 0.9; // fraction of the wagon's slope to mirror
+        this.CAM_PITCH_LIMIT = 1.4; // clamp on pitch (+tilt) so the rig can't go under the anchor or past overhead
     }
 
     initLights() {
@@ -122,6 +165,7 @@ export class Scene extends CGFscene {
         this.sky_sphere.update(this.delta_time);
         this.applyWagonInput();
         this.wagon.update(this.delta_time / 1000.0);
+        this.updateCamera();
     }
 
     applyWagonInput() {
@@ -161,6 +205,106 @@ export class Scene extends CGFscene {
             else if (this.wagon.steering_angle > 0) this.wagon.steer(-steer_step);
             else if (this.wagon.steering_angle < 0) this.wagon.steer(steer_step);
         }
+    }
+
+    // Soft chase camera. See initCameras() for the overall design. The anchor
+    // tracks the wagon's position every frame; only the yaw realignment waits
+    // for the manual-input delay.
+    updateCamera() {
+        if (!this.wagon) return;
+
+        const now = performance.now();
+        const dt = Math.min(this.delta_time / 1000.0, 0.1);
+
+        // Is the user actively controlling the camera right now? Mouse drags
+        // show up as held buttons; wheel-zoom stamps cam_last_manual_ms (UI.js).
+        const dragging = !!(this.gui && this.gui.mouseButtons && this.gui.mouseButtons.some(Boolean));
+        if (dragging) this.cam_last_manual_ms = now;
+        const since_manual = (now - this.cam_last_manual_ms) / 1000.0;
+        const manual_active = dragging || since_manual < 0.2; // 0.2s tail covers wheel ticks
+        // Follow has fully resumed: past the hold window with no manual input.
+        const following = !manual_active && since_manual >= this.CAM_RESUME_DELAY;
+
+        if (manual_active) {
+            // The interface just orbited/zoomed the camera around its target;
+            // capture that yaw/pitch/distance so we keep it once follow resumes.
+            this.syncOrbitFromCamera();
+        } else if (following) {
+            // After the hold, ease the yaw toward directly-behind the wagon so a
+            // turn nudges the view around rather than snapping it.
+            const ky = 1 - Math.exp(-this.CAM_YAW_RATE * dt);
+            this.cam_yaw = lerpAngle(this.cam_yaw, this.wagon.heading + Math.PI, ky);
+            // Likewise ease the elevation back to its default angle relative to
+            // the wagon, so releasing the mouse settles to the resting pitch
+            // rather than holding whatever the drag left.
+            const kpitch = 1 - Math.exp(-this.CAM_PITCH_RATE * dt);
+            this.cam_pitch += (this.CAM_REST_PITCH - this.cam_pitch) * kpitch;
+        }
+        // (During the hold window the yaw/pitch/distance stay frozen.)
+
+        // Lean the rig into the slope while following; hold it level otherwise so
+        // the mouse keeps full control of the elevation. wagon.pitch is negative
+        // nose-up, so this dips the camera on a climb (looking up the hill) and
+        // lifts it on a descent.
+        const target_tilt = following ? this.wagon.pitch * this.CAM_TILT_GAIN : 0;
+        const kt = 1 - Math.exp(-this.CAM_TILT_RATE * dt);
+        this.cam_tilt += (target_tilt - this.cam_tilt) * kt;
+
+        // Position always follows the wagon: ease the anchor toward it.
+        const target = vec3.fromValues(
+            this.wagon.position_x,
+            this.wagon.position_y + this.CAM_LOOK_UP,
+            this.wagon.position_z,
+        );
+        const kp = 1 - Math.exp(-this.CAM_POS_RATE * dt);
+        vec3.lerp(this.cam_anchor, this.cam_anchor, target, kp);
+
+        // Ease the FOV toward the (boosted) target so the widen/settle is smooth.
+        const target_fov = this.cam_fov_base + (this.boosting ? this.CAM_BOOST_FOV : 0);
+        const kf = 1 - Math.exp(-this.CAM_FOV_RATE * dt);
+        this.camera.fov += (target_fov - this.camera.fov) * kf;
+
+        this.applyCamState();
+    }
+
+    // Capture the orbit offset (yaw/pitch/distance) the user's mouse produced,
+    // measured from the camera's current look target.
+    syncOrbitFromCamera() {
+        const p = this.camera.position;
+        const t = this.camera.target;
+        const ox = p[0] - t[0];
+        const oy = p[1] - t[1];
+        const oz = p[2] - t[2];
+        this.cam_dist = Math.hypot(ox, oy, oz) || 1e-3;
+        this.cam_yaw = Math.atan2(ox, oz);
+        // Clamp to the same limit applyCamState() enforces. A near-vertical drag
+        // can recover up to ±π/2 here; capping it now means the view doesn't get
+        // nudged down by the clamp the moment follow resumes.
+        const L = this.CAM_PITCH_LIMIT;
+        this.cam_pitch = Math.max(-L, Math.min(L, Math.asin(Math.max(-1, Math.min(1, oy / this.cam_dist)))));
+        // The camera we just read already has the slope tilt baked in, so it is
+        // now part of cam_pitch. Drop cam_tilt to zero here instead of easing it
+        // out separately, otherwise applyCamState() would add the tilt a second
+        // time and the view would jump the moment the mouse takes over.
+        this.cam_tilt = 0;
+    }
+
+    // Write the orbit state (anchor + yaw/pitch/distance) back to the camera.
+    applyCamState() {
+        // The slope tilt rides on top of the user's chosen elevation; clamp the
+        // sum so a steep hill can't swing the camera under the anchor or past
+        // overhead.
+        const L = this.CAM_PITCH_LIMIT;
+        const pitch = Math.max(-L, Math.min(L, this.cam_pitch + this.cam_tilt));
+        const horiz = this.cam_dist * Math.cos(pitch);
+        this.camera.setPosition(
+            vec3.fromValues(
+                this.cam_anchor[0] + horiz * Math.sin(this.cam_yaw),
+                this.cam_anchor[1] + this.cam_dist * Math.sin(pitch),
+                this.cam_anchor[2] + horiz * Math.cos(this.cam_yaw),
+            ),
+        );
+        this.camera.setTarget(vec3.fromValues(this.cam_anchor[0], this.cam_anchor[1], this.cam_anchor[2]));
     }
 
     display() {
