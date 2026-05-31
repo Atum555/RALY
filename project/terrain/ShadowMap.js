@@ -39,6 +39,26 @@ export class ShadowMap {
     // day/night cycle takes over each frame in updateSun().
     static INITIAL_SUN_DIR = [0.5, 0.3, -0.8];
 
+    // Moon direction (scene-world, towards the moon): the sun's antipode, used
+    // before the sky's day/night cycle takes over each frame in updateSun().
+    static INITIAL_MOON_DIR = [-0.5, -0.3, 0.8];
+
+    // Each light is full down to the horizon and fades to zero over the 0 deg ->
+    // -2 deg band, so it dies out just as it dips below the horizon rather than
+    // leaking light from underneath. Stored as sin(elevation) to compare directly
+    // against the normalized light direction's Y (= sin of its elevation).
+    static LIGHT_CUTOFF_SIN = Math.sin((-2.0 * Math.PI) / 180.0); // off at/below -2 deg
+    static LIGHT_FULL_SIN = 0.0;                                  // full at the horizon
+
+    // Smooth 0->1 gate for a light at elevation asin(dir_y): 0 at/below the cutoff,
+    // 1 at/above full, smoothstepped between so it can't pop on at the threshold.
+    static horizonGate(dir_y) {
+        const lo = ShadowMap.LIGHT_CUTOFF_SIN;
+        const hi = ShadowMap.LIGHT_FULL_SIN;
+        const t = Math.max(0, Math.min(1, (dir_y - lo) / (hi - lo)));
+        return t * t * (3 - 2 * t);
+    }
+
     constructor(scene) {
         this.scene = scene;
         this.gl = scene.gl;
@@ -80,11 +100,17 @@ export class ShadowMap {
         this.wagon_frozen = mat4.create();
         this.wagon_light_vp = mat4.create();
 
-        // Normalized sun direction (towards the sun) and the light's look
-        // direction (-D), refreshed from the sky's day/night cycle every frame.
+        // Normalized sun and moon directions (towards each light), refreshed from
+        // the sky's day/night cycle every frame and used to light the surfaces.
         this.sun_dir = vec3.normalize(vec3.create(), vec3.fromValues(...ShadowMap.INITIAL_SUN_DIR));
-        this.look_dir = vec3.negate(vec3.create(), this.sun_dir);
+        this.moon_dir = vec3.normalize(vec3.create(), vec3.fromValues(...ShadowMap.INITIAL_MOON_DIR));
         this.world_up = vec3.fromValues(0, 1, 0);
+
+        // The single set of maps casts from whichever light is above the horizon.
+        // Sun and moon are antipodal and never both lit, so the sun casts by day and
+        // the moon at night. cast_dir is that light's direction, cast_look its -D.
+        this.cast_dir = vec3.clone(this.sun_dir);
+        this.cast_look = vec3.negate(vec3.create(), this.cast_dir);
 
         // The whole-terrain bias is in normalized light-clip depth, so its real
         // (world) size is bias * the light frustum's depth range. That range is
@@ -102,6 +128,12 @@ export class ShadowMap {
         // without a new vertex attribute.
         this.inv_view = mat4.create();
         this.sun_eye = vec3.create(); // sun direction in eye space, for the wagon body shader
+        this.moon_eye = vec3.create(); // moon direction in eye space, for the night fill
+
+        // Per-light brightness (0..1), gated by elevation so each cuts off near the
+        // horizon. Recomputed each frame in updateSun() and uploaded to the shaders.
+        this.sun_intensity = 1;
+        this.moon_intensity = 0;
 
         // Uniform locations cached per shader program (the terrain and wagon body
         // shaders share these uniforms but have different locations).
@@ -151,14 +183,31 @@ export class ShadowMap {
             this.sun_dir[2] = sky.sun_world_dir[2];
             vec3.normalize(this.sun_dir, this.sun_dir);
         }
-        vec3.negate(this.look_dir, this.sun_dir);
+        if (sky && sky.moon_world_dir) {
+            this.moon_dir[0] = sky.moon_world_dir[0];
+            this.moon_dir[1] = sky.moon_world_dir[1];
+            this.moon_dir[2] = sky.moon_world_dir[2];
+            vec3.normalize(this.moon_dir, this.moon_dir);
+        }
+        // Cast from whichever light is higher (the one above the horizon); the maps
+        // then hold the sun's shadows by day and the moon's at night.
+        const caster = this.sun_dir[1] >= this.moon_dir[1] ? this.sun_dir : this.moon_dir;
+        vec3.copy(this.cast_dir, caster);
+        vec3.negate(this.cast_look, this.cast_dir);
 
-        // eye -> world (undoes the main camera view) and the sun direction in eye
-        // space; both change as the camera moves and as the sun arcs across the sky.
+        // eye -> world (undoes the main camera view) and the sun/moon directions in
+        // eye space; all change as the camera moves and as they arc across the sky.
         const view = this.scene.camera.getViewMatrix();
         mat4.invert(this.inv_view, view);
         this.transformDir(view, this.sun_dir[0], this.sun_dir[1], this.sun_dir[2], this.sun_eye);
         vec3.normalize(this.sun_eye, this.sun_eye);
+        this.transformDir(view, this.moon_dir[0], this.moon_dir[1], this.moon_dir[2], this.moon_eye);
+        vec3.normalize(this.moon_eye, this.moon_eye);
+
+        // Fade each light out over the 0 -> -2 deg band (dir is normalized, so its Y
+        // is sin of the elevation). Multiplied into the direct terms in the shaders.
+        this.sun_intensity = ShadowMap.horizonGate(this.sun_dir[1]);
+        this.moon_intensity = ShadowMap.horizonGate(this.moon_dir[1]);
     }
 
     // Re-render all three depth maps for the sun's current position and rebuild
@@ -210,7 +259,7 @@ export class ShadowMap {
         // distance doesn't matter for an ortho fit, only the bounds do.
         const center = [0, (y_min + y_max) / 2, 0];
         const dist = 2 * h + (y_max - y_min);
-        cam.setPosition([center[0] + this.sun_dir[0] * dist, center[1] + this.sun_dir[1] * dist, center[2] + this.sun_dir[2] * dist]);
+        cam.setPosition([center[0] + this.cast_dir[0] * dist, center[1] + this.cast_dir[1] * dist, center[2] + this.cast_dir[2] * dist]);
         cam.setTarget(center);
         cam._up = this.world_up;
 
@@ -284,7 +333,7 @@ export class ShadowMap {
         // diverge at the horizon. fitFollow keeps the perpendicular footprint at
         // +/-r regardless of the reach.
         const reach = Math.min(
-            r / Math.max(this.sun_dir[1], TERRAIN_NEAR_SHADOW_SUN_FLOOR) + r,
+            r / Math.max(this.cast_dir[1], TERRAIN_NEAR_SHADOW_SUN_FLOOR) + r,
             terrain.effective_size + TERRAIN_NEAR_SHADOW_BACK_HEADROOM,
         );
         const center = [wagon.position_x, wagon.position_y, wagon.position_z];
@@ -326,27 +375,27 @@ export class ShadowMap {
     }
 
     // Aim an ortho light camera at a square of half-extent r centred on `center`,
-    // looking along the sun. The centre is snapped to the map's texel grid (along
-    // the light's right/up axes) so the shadow doesn't shimmer as it follows.
+    // looking along the active light. The centre is snapped to the map's texel grid
+    // (along the light's right/up axes) so the shadow doesn't shimmer as it follows.
     fitFollow(cam, size, r, center, back) {
-        const right = vec3.normalize(vec3.create(), vec3.cross(vec3.create(), this.world_up, this.look_dir));
-        const up = vec3.normalize(vec3.create(), vec3.cross(vec3.create(), this.look_dir, right));
+        const right = vec3.normalize(vec3.create(), vec3.cross(vec3.create(), this.world_up, this.cast_look));
+        const up = vec3.normalize(vec3.create(), vec3.cross(vec3.create(), this.cast_look, right));
 
         const wpt = (2 * r) / size; // world units per texel
         let ar = center[0] * right[0] + center[1] * right[1] + center[2] * right[2];
         let au = center[0] * up[0] + center[1] * up[1] + center[2] * up[2];
-        const ad = center[0] * this.look_dir[0] + center[1] * this.look_dir[1] + center[2] * this.look_dir[2];
+        const ad = center[0] * this.cast_look[0] + center[1] * this.cast_look[1] + center[2] * this.cast_look[2];
         ar = Math.round(ar / wpt) * wpt;
         au = Math.round(au / wpt) * wpt;
         const c = [
-            right[0] * ar + up[0] * au + this.look_dir[0] * ad,
-            right[1] * ar + up[1] * au + this.look_dir[1] * ad,
-            right[2] * ar + up[2] * au + this.look_dir[2] * ad,
+            right[0] * ar + up[0] * au + this.cast_look[0] * ad,
+            right[1] * ar + up[1] * au + this.cast_look[1] * ad,
+            right[2] * ar + up[2] * au + this.cast_look[2] * ad,
         ];
 
         cam.left = -r; cam.right = r; cam.bottom = -r; cam.top = r;
         cam.near = 1; cam.far = 2 * back;
-        cam.setPosition([c[0] + this.sun_dir[0] * back, c[1] + this.sun_dir[1] * back, c[2] + this.sun_dir[2] * back]);
+        cam.setPosition([c[0] + this.cast_dir[0] * back, c[1] + this.cast_dir[1] * back, c[2] + this.cast_dir[2] * back]);
         cam.setTarget(c);
         cam._up = this.world_up;
     }
@@ -455,16 +504,22 @@ export class ShadowMap {
             this.near_bias[0] * this.near_bias_scale, this.near_bias[1] * this.near_bias_scale);
         gl.uniform2f(this.loc("u_wagon_shadow_bias"), this.wagon_bias[0], this.wagon_bias[1]);
         gl.uniform3f(this.loc("u_sun_eye_dir"), this.sun_eye[0], this.sun_eye[1], this.sun_eye[2]);
+        gl.uniform3f(this.loc("u_moon_eye_dir"), this.moon_eye[0], this.moon_eye[1], this.moon_eye[2]);
+        gl.uniform1f(this.loc("u_sun_intensity"), this.sun_intensity);
+        gl.uniform1f(this.loc("u_moon_intensity"), this.moon_intensity);
         gl.uniform1i(this.loc("u_shadow_enabled"), 1);
         gl.activeTexture(gl.TEXTURE0);
     }
 
     // Tell a shader to skip the shadow lookup entirely (but still pass the sun
-    // direction so the wagon body still lights).
+    // and moon directions so the surfaces still light).
     disable(shader) {
         const gl = this.gl;
         this._prog = shader.program;
         gl.uniform3f(this.loc("u_sun_eye_dir"), this.sun_eye[0], this.sun_eye[1], this.sun_eye[2]);
+        gl.uniform3f(this.loc("u_moon_eye_dir"), this.moon_eye[0], this.moon_eye[1], this.moon_eye[2]);
+        gl.uniform1f(this.loc("u_sun_intensity"), this.sun_intensity);
+        gl.uniform1f(this.loc("u_moon_intensity"), this.moon_intensity);
         gl.uniform1i(this.loc("u_shadow_enabled"), 0);
     }
 }

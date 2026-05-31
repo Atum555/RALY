@@ -8,6 +8,11 @@ varying vec3 v_view_pos;
 
 uniform sampler2D u_hay_texture; // mipmapped hay diffuse
 uniform vec3 u_sun_eye_dir;      // sun direction in eye space (the abstract sun)
+uniform vec3 u_moon_eye_dir;     // moon direction in eye space (cool night fill)
+uniform float u_sun_intensity;   // 0..1, faded to 0 over the 0 -> -2 deg horizon band
+uniform float u_moon_intensity;  // 0..1, faded to 0 over the 0 -> -2 deg horizon band
+
+const vec3 MOON_COLOR = vec3(0.12, 0.16, 0.26); // very dim, dark-cool moonlight
 
 // --- Sun shadows (same maps and uniforms as the terrain/wagon shaders) -------
 uniform bool u_shadow_enabled;
@@ -74,23 +79,35 @@ void main() {
 
     vec3 N = normalize(v_normal);
     vec3 L = normalize(u_sun_eye_dir);
+    vec3 Lm = normalize(u_moon_eye_dir);
     float ndl = max(dot(N, L), 0.0);
+    float moon_ndl = max(dot(N, Lm), 0.0);
+
+    // The shadow maps cast from whichever light is above the horizon; bias the
+    // lookup against that active caster's grazing angle.
+    vec3 cast_L = u_sun_intensity >= u_moon_intensity ? L : Lm;
+    float ndl_cast = max(dot(N, cast_L), 0.0);
 
     // Small normal-offset bias. The wagon depth map stores back faces (front-face
     // culling), so self-shadow acne is already prevented geometrically and the
     // offset can stay tiny; a faint grazing term still guards against terrain
     // shadows acne-ing on the bale.
-    vec3 sample_pos = v_view_pos + N * (0.02 + 0.05 * (1.0 - ndl));
+    vec3 sample_pos = v_view_pos + N * (0.02 + 0.05 * (1.0 - ndl_cast));
 
     // True Lambert (not a half-Lambert wrap): the diffuse falls to zero right at
     // the terminator, so the bale's own curved self-shadow boundary lines up with
     // the lighting and the shadow-map artifacts that a wrap would keep lit on the
     // back face are hidden where N.L already vanishes.
-    float shadow = sun_shadow(sample_pos, ndl);
+    float shadow = sun_shadow(sample_pos, ndl_cast);
 
     // Textured base: a cool ambient fill (never goes black) plus the sun's
     // diffuse, which the shadow darkens.
-    vec3 ambient = base * 0.4;
-    vec3 diffuse = base * ndl * shadow * 0.7;
-    gl_FragColor = vec4(ambient + diffuse, 1.0);
+    vec3 ambient = base * 0.3;
+    vec3 diffuse = base * ndl * shadow * 0.7 * u_sun_intensity;
+
+    // Cool moonlight: a second, very dim directional term that self-gates by its
+    // own N.L (zero by day, when the moon is below the horizon), fades off below the
+    // horizon via u_moon_intensity, and is shadowed by the same maps as the sun.
+    vec3 moon = base * MOON_COLOR * moon_ndl * shadow * 0.7 * u_moon_intensity;
+    gl_FragColor = vec4(ambient + diffuse + moon, 1.0);
 }

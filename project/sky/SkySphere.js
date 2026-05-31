@@ -43,6 +43,11 @@ export class SkySphere extends CGFobject {
         // cycle. Refreshed each update(); kept un-normalized (ShadowMap normalizes).
         this.sun_world_dir = [0, 1, 0];
 
+        // Scene-world direction towards the moon, the sun's antipode, tracking the
+        // visible moon's arc so the surface shaders pick up a cool moonlight fill at
+        // night. Like the sun, refreshed each update() and left un-normalized.
+        this.moon_world_dir = [0, -1, 0];
+
         this.initBuffers();
         this.initShaders();
     }
@@ -119,8 +124,8 @@ export class SkySphere extends CGFobject {
     initShaders() {
         this.sphere_shader = new CGFshader(
             this.scene.gl,
-            "sky/shaders/sphereClouds.vert",
-            "sky/shaders/sphereClouds.frag",
+            "sky/shaders/sky_sphere.vert",
+            "sky/shaders/sky_sphere.frag",
         );
     }
 
@@ -159,6 +164,12 @@ export class SkySphere extends CGFobject {
         this.sun_world_dir[1] = y;
         this.sun_world_dir[2] = -z;
 
+        // Direction towards the moon, mirroring the moon light's antipodal arc
+        // (setPosition above); the surface shaders light from this at night.
+        this.moon_world_dir[0] = x;
+        this.moon_world_dir[1] = -y;
+        this.moon_world_dir[2] = z;
+
         const buffer = 3.0;
         if (y > -buffer) sun.enable();
         else sun.disable();
@@ -190,7 +201,8 @@ export class SkySphere extends CGFobject {
             cloud_cover: this.sky_clouds_cover,
             cloud_light: this.sky_clouds_light,
             cloud_dark: this.sky_clouds_dark,
-            sun_angle: this.time_of_day,
+            sun_world_dir: this.sun_world_dir,
+            moon_world_dir: this.moon_world_dir,
             day_factor: this.day_factor,
         });
         super.display();

@@ -29,10 +29,16 @@ uniform float u_parallax_scale; // depth of the parallax effect, in tiled-UV uni
 uniform float u_parallax_near;  // full parallax within this view distance
 uniform float u_parallax_far;   // parallax faded out (and skipped) beyond this
 
-// --- The sun ----------------------------------------------------------------
-// A single directional light. Its eye-space direction is supplied by ShadowMap
-// each frame (u_sun_eye_dir), so it arcs across the sky with the day/night cycle.
+// --- The sun and moon -------------------------------------------------------
+// Two directional lights. Their eye-space directions are supplied by ShadowMap
+// each frame, so they arc across the sky with the day/night cycle. The sun
+// (u_sun_eye_dir) casts shadows; the moon (u_moon_eye_dir) is a cool, dim,
+// unshadowed fill that only contributes while it is above the horizon (its N.L
+// is clamped to zero by day, when it is below).
 uniform vec3 u_sun_eye_dir;
+uniform vec3 u_moon_eye_dir;
+uniform float u_sun_intensity;  // 0..1, faded to 0 over the 0 -> -2 deg horizon band
+uniform float u_moon_intensity; // 0..1, faded to 0 over the 0 -> -2 deg horizon band
 
 // --- Distance fog -----------------------------------------------------------
 uniform bool u_fog_enabled;
@@ -61,7 +67,8 @@ uniform vec2 u_terrain_near_shadow_bias;
 uniform vec2 u_wagon_shadow_bias;
 
 const vec3 SUN_COLOR = vec3(1.0, 0.96, 0.88);     // warm sunlight (used on the dirt)
-const vec3 SKY_AMBIENT = vec3(0.32, 0.36, 0.45);  // cool fill for shadowed dirt slopes
+const vec3 MOON_COLOR = vec3(0.12, 0.16, 0.26);   // very dim, dark-cool moonlight
+const vec3 SKY_AMBIENT = vec3(0.22, 0.25, 0.32);  // cool fill for shadowed dirt slopes
 
 // --- Value noise + fBm, so the grass varies without any image texture ---
 float hash(vec2 p) {
@@ -269,7 +276,7 @@ float sun_shadow(vec3 view_pos, float ndl) {
 // read at the parallaxed UVs and lit with a warm sun plus cool ambient fill and
 // a roughness-shaped specular highlight.
 vec3 lit_material(sampler2D diff_map, sampler2D norm_map, sampler2D arm_map, sampler2D disp_map,
-                 vec2 uv, vec3 T, vec3 B, vec3 n_geom, vec3 L, vec3 V, float p_fade, float shadow) {
+                 vec2 uv, vec3 T, vec3 B, vec3 n_geom, vec3 L, vec3 Lm, vec3 V, float p_fade, float shadow) {
     vec3 vt = vec3(dot(V, T), dot(V, B), dot(V, n_geom));
     vec2 uvr = parallax_uv(disp_map, uv, vt, p_fade);
 
@@ -280,15 +287,28 @@ vec3 lit_material(sampler2D diff_map, sampler2D norm_map, sampler2D arm_map, sam
 
     vec3 nm = bomb_normal(norm_map, uvr);
     vec3 N = normalize(T * nm.x + B * nm.y + n_geom * nm.z);
+    float shininess = mix(4.0, 128.0, 1.0 - roughness);
 
     vec3 hh = normalize(L + V);
     float diffuse = max(dot(N, L), 0.0);
-    float shininess = mix(4.0, 128.0, 1.0 - roughness);
     float spec = pow(max(dot(N, hh), 0.0), shininess) * (1.0 - roughness);
 
-    // The shadow darkens only the sun's direct diffuse and specular; the cool
-    // sky-ambient fill still lights shadowed slopes so they don't go black.
-    return albedo * (SKY_AMBIENT * ao + SUN_COLOR * diffuse * shadow) + SUN_COLOR * spec * diffuse * shadow * 0.4;
+    // Moonlight: a second, cooler directional term. Self-gating (its N.L is zero
+    // when the moon is below the horizon by day) and very dim, so it reads as a
+    // dark night key light. The shadow maps cast from whichever light is up, so it
+    // is shadowed just like the sun (only one of the two is ever lit at a time).
+    vec3 hm = normalize(Lm + V);
+    float moon_diffuse = max(dot(N, Lm), 0.0);
+    float moon_spec = pow(max(dot(N, hm), 0.0), shininess) * (1.0 - roughness);
+
+    // The shadow darkens the active light's direct diffuse and specular; only the
+    // cool sky-ambient fill stays unshadowed so slopes don't go black. Each light's
+    // direct term is also faded to zero as it drops below the horizon.
+    float sun = shadow * u_sun_intensity;
+    float moon = shadow * u_moon_intensity;
+    return albedo * (SKY_AMBIENT * ao + SUN_COLOR * diffuse * sun + MOON_COLOR * moon_diffuse * moon)
+         + SUN_COLOR * spec * diffuse * sun * 0.4
+         + MOON_COLOR * moon_spec * moon_diffuse * moon * 0.4;
 }
 
 void main() {
@@ -298,6 +318,7 @@ void main() {
 
     vec3 n_geom = normalize(v_normal);
     vec3 L = normalize(u_sun_eye_dir);
+    vec3 Lm = normalize(u_moon_eye_dir);
     vec3 V = normalize(-v_view_pos);
 
     // --- Two textured surfaces: rocky open ground, gravelly-sand path ------
@@ -311,14 +332,16 @@ void main() {
     // u_parallax_far. Beyond that the march is skipped entirely (see parallax_uv).
     float p_fade = 1.0 - smoothstep(u_parallax_near, u_parallax_far, length(v_view_pos));
 
-    // Sun visibility from the terrain + wagon shadow maps (geometric N.L drives
-    // the bias). Shared by both materials -- it depends on the surface, not the map.
-    float shadow = sun_shadow(v_view_pos, max(dot(n_geom, L), 0.0));
+    // Shadow from the terrain + wagon maps, which cast from whichever light is up;
+    // the bias is driven by the geometric N.L against that active caster. Shared by
+    // both materials -- it depends on the surface, not the map.
+    vec3 cast_L = u_sun_intensity >= u_moon_intensity ? L : Lm;
+    float shadow = sun_shadow(v_view_pos, max(dot(n_geom, cast_L), 0.0));
 
     vec3 lit_rock = lit_material(u_rock_diffuse_map, u_rock_normal_map, u_rock_arm_map, u_rock_disp_map,
-                               uv, T, B, n_geom, L, V, p_fade, shadow);
+                               uv, T, B, n_geom, L, Lm, V, p_fade, shadow);
     vec3 lit_path = lit_material(u_diffuse_map, u_normal_map, u_arm_map, u_disp_map,
-                               uv, T, B, n_geom, L, V, p_fade, shadow);
+                               uv, T, B, n_geom, L, Lm, V, p_fade, shadow);
 
     // --- Open ground <-> path transition (unchanged edge logic) ------------
     // v_path_dist is the per-vertex normalized distance to the nearest path; we
