@@ -32,8 +32,8 @@ uniform vec2 u_wagon_shadow_bias;
 // 3x3 percentage-closer filter over one depth map (see terrain.frag).
 float pcf(sampler2D smap, vec2 uv, float ref, float texel) {
     float sum = 0.0;
-    for (int dy = -1; dy <= 1; dy++) {
-        for (int dx = -1; dx <= 1; dx++) {
+    for(int dy = -1; dy <= 1; dy++) {
+        for(int dx = -1; dx <= 1; dx++) {
             float d = texture2D(smap, uv + vec2(float(dx), float(dy)) * texel).r;
             sum += ref <= d ? 1.0 : 0.0;
         }
@@ -46,7 +46,8 @@ float sample_shadow(sampler2D smap, mat4 m, vec3 view_pos, float bias, float tex
     vec4 lp = m * vec4(view_pos, 1.0);
     vec3 uvz = (lp.xyz / lp.w) * 0.5 + 0.5;
     float b = 2.0 * texel;
-    if (uvz.x < b || uvz.x > 1.0 - b || uvz.y < b || uvz.y > 1.0 - b || uvz.z > 1.0) return -1.0;
+    if(uvz.x < b || uvz.x > 1.0 - b || uvz.y < b || uvz.y > 1.0 - b || uvz.z > 1.0)
+        return -1.0;
     return pcf(smap, uvz.xy, uvz.z - bias, texel);
 }
 
@@ -56,21 +57,20 @@ float slope_bias(vec2 band, float ndl) {
 
 // Terrain self-shadow: prefer the sharp near map, fall back to the whole map.
 float terrain_shadow(vec3 view_pos, float ndl) {
-    float ns = sample_shadow(u_terrain_near_shadow_map, u_terrain_near_light_vp, view_pos,
-                             slope_bias(u_terrain_near_shadow_bias, ndl), u_terrain_near_shadow_texel);
-    if (ns >= 0.0) return ns;
-    float fs = sample_shadow(u_terrain_shadow_map, u_terrain_light_vp, view_pos,
-                             slope_bias(u_terrain_shadow_bias, ndl), u_terrain_shadow_texel);
+    float ns = sample_shadow(u_terrain_near_shadow_map, u_terrain_near_light_vp, view_pos, slope_bias(u_terrain_near_shadow_bias, ndl), u_terrain_near_shadow_texel);
+    if(ns >= 0.0)
+        return ns;
+    float fs = sample_shadow(u_terrain_shadow_map, u_terrain_light_vp, view_pos, slope_bias(u_terrain_shadow_bias, ndl), u_terrain_shadow_texel);
     return fs < 0.0 ? 1.0 : fs;
 }
 
 // Sun visibility: the darker of the terrain shadow and the wagon's own map (the
 // wagon map holds the hay too, so the bale shadows itself and the wagon body).
 float sun_shadow(vec3 view_pos, float ndl) {
-    if (!u_shadow_enabled) return 1.0;
+    if(!u_shadow_enabled)
+        return 1.0;
     float terrain_s = terrain_shadow(view_pos, ndl);
-    float wagon_s = sample_shadow(u_wagon_shadow_map, u_wagon_light_vp, view_pos,
-                                  slope_bias(u_wagon_shadow_bias, ndl), u_wagon_shadow_texel);
+    float wagon_s = sample_shadow(u_wagon_shadow_map, u_wagon_light_vp, view_pos, slope_bias(u_wagon_shadow_bias, ndl), u_wagon_shadow_texel);
     return min(terrain_s, wagon_s < 0.0 ? 1.0 : wagon_s);
 }
 
