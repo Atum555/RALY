@@ -240,11 +240,11 @@ export class Roof extends CGFobject {
             this.texCoords.push(this.thickness * 4, 1);
 
             if (isLeft) {
-                this.indices.push(startIdx, startIdx + 1, startIdx + 2);
-                this.indices.push(startIdx + 1, startIdx + 3, startIdx + 2);
-            } else {
                 this.indices.push(startIdx, startIdx + 2, startIdx + 1);
                 this.indices.push(startIdx + 1, startIdx + 2, startIdx + 3);
+            } else {
+                this.indices.push(startIdx, startIdx + 1, startIdx + 2);
+                this.indices.push(startIdx + 1, startIdx + 3, startIdx + 2);
             }
         };
 
