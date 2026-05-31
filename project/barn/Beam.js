@@ -1,6 +1,8 @@
 import { CGFobject } from "../../lib/CGF.js";
-import { BarnWoodMaterial } from "./materials/BarnWoodMaterial.js";
 
+// A single barn support beam, drawn many times by the Barn. Pure geometry: the
+// Barn drives the shared wood shader, so this just emits the mesh and draws the
+// same in the lit pass and the shadow depth pass.
 export class Beam extends CGFobject {
     // =====================================================
     // Init
@@ -11,18 +13,8 @@ export class Beam extends CGFobject {
 
         this.length = length;
         this.thickness = thickness;
-        this.material = new BarnWoodMaterial(scene);
 
         this.initBuffers();
-    }
-
-    // =====================================================
-    // Display
-    // =====================================================
-
-    display() {
-        this.material.apply();
-        super.display();
     }
 
     // =====================================================

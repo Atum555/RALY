@@ -30,3 +30,9 @@ export const PARALLAX_SCALE = 0.015;
 export const PARALLAX_NEAR = 5;
 // Parallax fully faded out (and skipped) beyond this.
 export const PARALLAX_FAR = 100;
+
+// -- Barn contact AO (soft sky-occlusion the barn casts onto the ground) --
+// How far the darkening reaches past the barn's footprint (world units), and how
+// deep it gets right at the walls (fraction the sky-ambient fill is cut by).
+export const BARN_AO_RADIUS = 45;
+export const BARN_AO_STRENGTH = 0.7;

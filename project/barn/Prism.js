@@ -1,5 +1,8 @@
-import { CGFobject, CGFshader, CGFtexture } from "../../../lib/CGF.js";
+import { CGFobject } from "../../../lib/CGF.js";
 
+// Barn gable end (the triangular wall the roof sits on). Pure geometry: the Barn
+// drives the shared wood shader, so this just emits the mesh and draws the same
+// in the lit pass and the shadow depth pass.
 export class Prism extends CGFobject {
     // =====================================================
     // Init
@@ -10,36 +13,7 @@ export class Prism extends CGFobject {
         this.width = width;
         this.height = height;
         this.length = length;
-        this.woodTex = new CGFtexture(this.scene, "barn/textures/wood.jpg");
         this.initBuffers();
-        this.initShaders();
-    }
-
-    // =====================================================
-    // Shaders
-    // =====================================================
-
-    initShaders() {
-        this.shader = new CGFshader(
-            this.scene.gl,
-            "barn/shaders/barn.vert",
-            "barn/shaders/barn.frag",
-        );
-        this.shader.setUniformsValues({ uSampler2: 1, uSampler3: 2, uSampler4: 3 });
-        this.shader.setUniformsValues({ uWoodTint: [0.6, 0.5, 0.4], uUseMask: 0 });
-    }
-
-    // =====================================================
-    // Display
-    // =====================================================
-
-    display() {
-        this.woodTex.bind(0);
-        this.scene.setActiveShader(this.shader);
-        this.scene.gl.texParameteri(this.scene.gl.TEXTURE_2D, this.scene.gl.TEXTURE_MAG_FILTER, this.scene.gl.NEAREST);
-        this.scene.gl.texParameteri(this.scene.gl.TEXTURE_2D, this.scene.gl.TEXTURE_MIN_FILTER, this.scene.gl.NEAREST);
-        super.display();
-        this.scene.setActiveShader(this.scene.defaultShader);
     }
 
     // =====================================================

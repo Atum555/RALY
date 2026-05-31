@@ -14,6 +14,8 @@ import {
     PARALLAX_SCALE,
     PARALLAX_NEAR,
     PARALLAX_FAR,
+    BARN_AO_RADIUS,
+    BARN_AO_STRENGTH,
 } from "./constants.js";
 
 export class Terrain extends CGFGroup {
@@ -654,6 +656,26 @@ export class Terrain extends CGFGroup {
             u_fog_near: this.fog_start,
             u_fog_far: this.fog_end,
         });
+
+        // Barn contact AO: dim the sky-ambient fill in a band around the barn's
+        // footprint. The shader rebuilds each fragment's model position from its
+        // terrain UV (hence the extent), then measures it against the footprint.
+        // The barn is modelled in world XZ; world z maps to -model y (see
+        // getHeightAt), so its centre lands at (pos_x, -pos_z).
+        const barn = this.scene.barn;
+        if (barn) {
+            this.shader.setUniformsValues({
+                u_barn_ao_enabled: true,
+                u_barn_center: [barn.pos_x, -barn.pos_z],
+                u_barn_half: [(barn.width / 2) * barn.barn_scale, (barn.length / 2) * barn.barn_scale],
+                u_barn_ao_radius: BARN_AO_RADIUS,
+                u_barn_ao_strength: BARN_AO_STRENGTH,
+                u_terrain_half: this.half_extent,
+                u_terrain_size: this.effective_size,
+            });
+        } else {
+            this.shader.setUniformsValues({ u_barn_ao_enabled: false });
+        }
 
         // Bind both materials to the sampler units the shader expects.
         this.rock_diffuse_map.bind(0);

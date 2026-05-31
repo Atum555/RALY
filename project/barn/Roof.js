@@ -1,6 +1,7 @@
 import { CGFobject } from "../../../lib/CGF.js";
-import { BarnWoodMaterial } from "./materials/BarnWoodMaterial.js";
 
+// Barn roof shell. Pure geometry: the Barn drives the shared wood shader, so this
+// just emits the mesh and draws the same in the lit pass and the shadow depth pass.
 export class Roof extends CGFobject {
     // =====================================================
     // Init
@@ -22,17 +23,7 @@ export class Roof extends CGFobject {
         this.thickness = thickness;
         this.overhangSide = overhangSide;
         this.overhangLength = overhangLength;
-        this.material = new BarnWoodMaterial(this.scene);
         this.initBuffers();
-    }
-
-    // =====================================================
-    // Display
-    // =====================================================
-
-    display() {
-        this.material.apply();
-        super.display();
     }
 
     // =====================================================
