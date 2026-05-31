@@ -144,6 +144,9 @@ export class Scene extends CGFscene {
         this.applyWagonInput();
         this.wagon.update(this.delta_time / 1000.0);
         this.updateCamera();
+
+        // Bob the hay-bale proximity arrows.
+        this.haybales.update(this.delta_time / 1000.0);
     }
 
     applyWagonInput() {
@@ -352,6 +355,9 @@ export class Scene extends CGFscene {
 
         // Hay bales scattered along the paths (drawn in world space, like the wagon)
         this.haybales.display();
+
+        // Proximity markers hovering over the bales nearest the wagon.
+        this.haybales.displayArrows();
 
         // Scattered rocks on the grass and path shoulders. Drawn with the other
         // ground obstacles, in world space (the terrain's -90deg X rotation has
