@@ -108,9 +108,12 @@ float fbm(vec2 p) {
 // gets a random rotation, scale and offset, so its patch of the material differs
 // from its neighbors and the lattice dissolves. The four cells around a fragment
 // are bilinearly blended (with a narrowed transition band) so there are no seams.
-const float UNTILE_CELL = 3.0;       // cell size in texture tiles; smaller = more variety
+const float UNTILE_CELL = 1.5;       // cell size in texture tiles; smaller = more variety
 const float UNTILE_ROTATION = 6.2831853; // per-cell rotation range, radians (2*PI = full)
 const float UNTILE_SCALE = 0.2;      // per-cell scale jitter, +/- fraction
+const float UNTILE_BRIGHT = 0.11;    // brightness variation, +/- fraction
+const float UNTILE_HUE = 0.04;       // warm/cool tint variation, +/- fraction
+const float UNTILE_BRIGHT_FREQ = 0.9; // frequency of both, in texture tiles (higher = smaller patches)
 
 vec3 cell_hash(vec2 cell) {
     float n = dot(cell, vec2(127.1, 311.7));
@@ -159,6 +162,15 @@ void bomb_material(sampler2D diff_tex, sampler2D arm_tex, sampler2D norm_tex, ve
             out_nm += nm * w;
         }
     }
+
+    // Mottle the tone with continuous noise fields that are unrelated to the cell
+    // lattice, so the repeating light/dark blotches break up without introducing a
+    // grid of their own (which a per-cell jitter would). Brightness is one field; a
+    // second, decorrelated field drifts the patch warm or cool along a red<->blue
+    // axis, so colour repeats too instead of only luminance.
+    out_albedo *= 1.0 + (fbm(uv * UNTILE_BRIGHT_FREQ) - 0.5) * 2.0 * UNTILE_BRIGHT;
+    float tint = (fbm(uv * UNTILE_BRIGHT_FREQ + 31.0) - 0.5) * 2.0 * UNTILE_HUE;
+    out_albedo *= 1.0 + tint * vec3(1.0, 0.0, -1.0);
 }
 
 // Parallax-occlusion mapping. March the view ray through the heightfield instead
