@@ -328,6 +328,11 @@ export class ShadowMap {
         scene.popMatrix();
         gl.enable(gl.CULL_FACE);
 
+        // The barn casts into the whole-terrain (big) map too, so its shadow falls
+        // across the distant ground the near map doesn't reach. Drawn in world space
+        // (Y up), like the wagon -- not the terrain's rotated model frame.
+        this.castBarn();
+
         // World-space -> terrain light clip (proj · view).
         mat4.multiply(this.terrain_frozen, cam.getProjectionMatrix(this.terrain_size, this.terrain_size), view);
     }
@@ -376,6 +381,11 @@ export class ShadowMap {
         terrain.drawQuadDepth(-terrain.half_extent, terrain.half_extent, terrain.effective_size, 0, this.nearCullBox(terrain, reach), null);
         scene.popMatrix();
         gl.enable(gl.CULL_FACE);
+
+        // The barn also casts into the near (small) map, so its shadow is sharp
+        // wherever the wagon-following footprint covers it. Outside the footprint
+        // it is simply clipped by the light frustum.
+        this.castBarn();
 
         mat4.multiply(this.near_frozen, cam.getProjectionMatrix(this.near_size, this.near_size), cam.getViewMatrix());
     }
@@ -455,6 +465,27 @@ export class ShadowMap {
         gl.cullFace(gl.BACK);
 
         mat4.multiply(this.wagon_frozen, cam.getProjectionMatrix(this.wagon_size, this.wagon_size), cam.getViewMatrix());
+    }
+
+    // Emit the barn's timber into whichever terrain map is currently bound, under
+    // the active depth shader and the current light camera. Called from both
+    // terrain passes so the barn casts into the big and small global maps; the
+    // surface shaders (terrain, wagon, barn) then read those maps and show its
+    // shadow with no per-shader work.
+    //
+    // Front-face culled, like the wagon (second-depth): the maps store the barn's
+    // back faces, so its large flat walls don't self-shadow-acne when they sample
+    // these same maps. The silhouette -- hence the ground shadow -- is unchanged.
+    castBarn() {
+        const barn = this.scene.barn;
+        if (!barn) return;
+        const gl = this.gl;
+
+        gl.cullFace(gl.FRONT);
+        barn._depth_pass = true;
+        barn.display();
+        barn._depth_pass = false;
+        gl.cullFace(gl.BACK);
     }
 
     // m (column-major mat4) applied to point (x, y, z) -> out.

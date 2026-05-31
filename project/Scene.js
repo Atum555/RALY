@@ -5,6 +5,7 @@ import { Terrain } from "./terrain/Terrain.js";
 import { Barn } from "./barn/Barn.js";
 import { ShadowMap } from "./lighting/ShadowMap.js";
 import { FpsCounter } from "./core/FpsCounter.js";
+import { patchCGFShaders } from "./core/patchCGFShaders.js";
 import { lerpAngle } from "./utils.js";
 
 export class Scene extends CGFscene {
@@ -18,6 +19,10 @@ export class Scene extends CGFscene {
 
     init(application) {
         super.init(application);
+
+        // Replace CGF's per-shader-switch gl.getUniform readback (a synchronous
+        // GPU pipeline stall, ~90% of the frame) with a JS-side uniform cache.
+        patchCGFShaders();
 
         this.gl.clearColor(1.0, 1.0, 1.0, 1.0);
         this.gl.clearDepth(1.0);
@@ -101,8 +106,6 @@ export class Scene extends CGFscene {
 
         // Wagon
         this.wagon = new Wagon(this);
-
-        // Objects
         this.barn = new Barn(this);
 
         // Sun/moon shadow maps for the terrain and the wagon. Scene-owned: it
@@ -110,7 +113,7 @@ export class Scene extends CGFscene {
         // wagon sample the same maps. Built after the casters it renders.
         this.shadow_map = new ShadowMap(this);
 
-        this.all_objects = [this.sky_sphere, this.terrain, this.wagon];
+        this.all_objects = [this.sky_sphere, this.terrain, this.wagon, this.barn];
     }
 
     // =====================================================
@@ -333,8 +336,8 @@ export class Scene extends CGFscene {
         // Player wagon (drivable with W/A/S/D)
         this.wagon.display();
 
-        // Barn (placement is set from the UI via the barn's own pos/scale fields)
-        // this.barn.display();
+        // Barn
+        this.barn.display();
     }
 
     // =====================================================

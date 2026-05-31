@@ -122,11 +122,7 @@ export class SkySphere extends CGFobject {
     }
 
     initShaders() {
-        this.sphere_shader = new CGFshader(
-            this.scene.gl,
-            "sky/shaders/sky_sphere.vert",
-            "sky/shaders/sky_sphere.frag",
-        );
+        this.sphere_shader = new CGFshader(this.scene.gl, "sky/shaders/sky_sphere.vert", "sky/shaders/sky_sphere.frag");
     }
 
     // =====================================================
@@ -144,7 +140,7 @@ export class SkySphere extends CGFobject {
         const sun_y = Math.sin(sun_pitch);
 
         // sun_y map from [-0.1, 0.2] to [0, 1]
-        this.day_factor = Math.max(0, Math.min(1, (sun_y + 0.1) / (0.3)));
+        this.day_factor = Math.max(0, Math.min(1, (sun_y + 0.1) / 0.3));
         this.day_factor = this.day_factor * this.day_factor;
 
         const radius = 200.0;
@@ -191,7 +187,5 @@ export class SkySphere extends CGFobject {
             day_factor: this.day_factor,
         });
         super.display();
-
-        this.scene.setActiveShader(this.scene.defaultShader);
     }
 }

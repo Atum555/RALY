@@ -14,6 +14,8 @@ import {
     PARALLAX_SCALE,
     PARALLAX_NEAR,
     PARALLAX_FAR,
+    BARN_AO_RADIUS,
+    BARN_AO_STRENGTH,
 } from "./constants.js";
 
 export class Terrain extends CGFGroup {
@@ -655,6 +657,33 @@ export class Terrain extends CGFGroup {
             u_fog_far: this.fog_end,
         });
 
+        // Barn contact AO: dim the sky-ambient fill in a band around the barn's
+        // footprint. The shader rebuilds each fragment's model position from its
+        // terrain UV (hence the extent), then measures it against the footprint.
+        // The barn is modelled in world XZ; world z maps to -model y (see
+        // getHeightAt), so its centre lands at (pos_x, -pos_z).
+        const barn = this.scene.barn;
+        if (barn) {
+            // Pickup marker: the barn's pickup spot is defined in barn-local XZ,
+            // so lift it into world space (translate + uniform scale) and map world
+            // z to -model y, matching the AO centre and getHeightAt's frame.
+            const s = barn.barn_scale;
+            this.shader.setUniformsValues({
+                u_barn_ao_enabled: true,
+                u_barn_center: [barn.pos_x, -barn.pos_z],
+                u_barn_half: [(barn.width / 2) * barn.barn_scale, (barn.length / 2) * barn.barn_scale],
+                u_barn_ao_radius: BARN_AO_RADIUS,
+                u_barn_ao_strength: BARN_AO_STRENGTH,
+                u_terrain_half: this.half_extent,
+                u_terrain_size: this.effective_size,
+                u_marker_enabled: true,
+                u_marker_center: [barn.pos_x + barn.pickup.x * s, -(barn.pos_z + barn.pickup.z * s)],
+                u_marker_radius: barn.pickup.r * s,
+            });
+        } else {
+            this.shader.setUniformsValues({ u_barn_ao_enabled: false, u_marker_enabled: false });
+        }
+
         // Bind both materials to the sampler units the shader expects.
         this.rock_diffuse_map.bind(0);
         this.rock_normal_map.bind(1);
@@ -677,7 +706,7 @@ export class Terrain extends CGFGroup {
         // corner is (-half_extent, +half_extent).
         this.drawQuad(-this.half_extent, this.half_extent, this.effective_size, 0);
         this.evictNodeCache();
-
-        this.scene.setActiveShader(this.scene.defaultShader);
+        // No reset to the default shader: the wagon (drawn next) sets its body
+        // shader before drawing anything, so resetting here is a dead switch.
     }
 }

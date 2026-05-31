@@ -12,6 +12,28 @@ varying float v_path_dist; // normalized distance to nearest path: 0 = centre, 1
 uniform float u_tex_repeat;     // base frequency of the material tiling
 uniform float u_path_dirt_edge; // normalized distance at which solid path ends and the transition begins
 
+// --- Barn contact AO --------------------------------------------------------
+// The barn blocks the sky dome near its base, so the ground's open sky-ambient
+// fill is dimmed in a band hugging its footprint. The footprint and the fragment
+// are compared in terrain *model* space, which the fragment reconstructs from its
+// 0..1 terrain UV (u_terrain_half/size are the terrain's half- and full extent).
+uniform bool u_barn_ao_enabled;
+uniform vec2 u_barn_center;     // barn footprint centre, terrain model coords
+uniform vec2 u_barn_half;       // barn footprint half-extents, model units
+uniform float u_barn_ao_radius; // how far the darkening reaches past the footprint
+uniform float u_barn_ao_strength; // fraction the sky-ambient fill is cut at the walls
+uniform float u_terrain_half;   // terrain half-extent, for the UV -> model mapping
+uniform float u_terrain_size;   // terrain full extent
+
+// --- Barn pickup marker -----------------------------------------------------
+// The emissive disc marking the barn's pickup spot, painted straight onto the
+// ground instead of as a separate flat decal. Same model-space frame as the AO
+// above: the fragment rebuilds its position from its terrain UV and is inside the
+// marker when within u_marker_radius of u_marker_center.
+uniform bool u_marker_enabled;
+uniform vec2 u_marker_center;  // marker centre, terrain model coords
+uniform float u_marker_radius; // marker radius, model units
+
 // --- Two tiled PBR materials ------------------------------------------------
 // The open ground is rocky terrain; the dirt paths are gravelly sand. Each set
 // is: diffuse albedo, an OpenGL-convention tangent-space normal map, the packed
@@ -72,6 +94,8 @@ uniform bool u_wagon_shadow_on;
 const vec3 SUN_COLOR = vec3(1.0, 0.96, 0.88);     // warm sunlight (used on the dirt)
 const vec3 MOON_COLOR = vec3(0.12, 0.16, 0.26);   // very dim, dark-cool moonlight
 const vec3 SKY_AMBIENT = vec3(0.22, 0.25, 0.32);  // cool fill for shadowed dirt slopes
+const vec3 MARKER_COLOR = vec3(0.95, 0.92, 0.82);  // warm cream glow of the pickup disc
+const float MARKER_GLOW = 0.45;                     // how strongly the disc lights the ground
 
 // --- Value noise + fBm, so the grass varies without any image texture ---
 float hash(vec2 p) {
@@ -275,6 +299,32 @@ float sun_shadow(vec3 view_pos, float ndl) {
     return min(terrain_s, wagon_s < 0.0 ? 1.0 : wagon_s);
 }
 
+// Soft sky-occlusion the barn casts onto the ground: 1 in the open, dipping to
+// (1 - u_barn_ao_strength) at the walls and easing back out over u_barn_ao_radius.
+// The fragment's model-space position is rebuilt from its terrain UV, then a box
+// SDF gives its exterior distance to the footprint (0 within it). Multiplies the
+// ambient term only -- the barn's sun shadow already lives in the shadow maps.
+float barn_contact_ao() {
+    if(!u_barn_ao_enabled)
+        return 1.0;
+    vec2 m = vec2(v_terrain_uv.x * u_terrain_size - u_terrain_half, u_terrain_half - v_terrain_uv.y * u_terrain_size);
+    vec2 d = abs(m - u_barn_center) - u_barn_half;
+    float outside = length(max(d, vec2(0.0)));
+    return mix(1.0 - u_barn_ao_strength, 1.0, smoothstep(0.0, u_barn_ao_radius, outside));
+}
+
+// Coverage of the emissive pickup disc at this fragment: 1 inside the radius,
+// easing to 0 over a thin edge band so the rim antialiases. Reuses the same
+// UV -> model reconstruction as the contact AO above.
+float pickup_marker() {
+    if(!u_marker_enabled)
+        return 0.0;
+    vec2 m = vec2(v_terrain_uv.x * u_terrain_size - u_terrain_half, u_terrain_half - v_terrain_uv.y * u_terrain_size);
+    float dist = length(m - u_marker_center);
+    float edge = u_marker_radius * 0.02;
+    return 1.0 - smoothstep(u_marker_radius - edge, u_marker_radius, dist);
+}
+
 // Sample and fully light one tiled PBR set at the current fragment. T/B/n_geom
 // are the eye-space tangent frame, L the light and V the view direction. The
 // displacement map drives parallax-occlusion mapping, then albedo/ARM/normal are
@@ -293,7 +343,8 @@ vec3 lit_material(
     vec3 Lm,
     vec3 V,
     float p_fade,
-    float shadow
+    float shadow,
+    float occ
 ) {
     vec3 vt = vec3(dot(V, T), dot(V, B), dot(V, n_geom));
     vec2 uvr = parallax_uv(disp_map, uv, vt, p_fade);
@@ -322,7 +373,7 @@ vec3 lit_material(
     // direct term is also faded to zero as it drops below the horizon.
     float sun = shadow * u_sun_intensity;
     float moon = shadow * u_moon_intensity;
-    return albedo * (SKY_AMBIENT * ao + SUN_COLOR * diffuse * sun + MOON_COLOR * moon_diffuse * moon) + SUN_COLOR * spec * diffuse * sun * 0.4 + MOON_COLOR * moon_spec * moon_diffuse * moon * 0.4;
+    return albedo * (SKY_AMBIENT * ao * occ + SUN_COLOR * diffuse * sun + MOON_COLOR * moon_diffuse * moon) + SUN_COLOR * spec * diffuse * sun * 0.4 + MOON_COLOR * moon_spec * moon_diffuse * moon * 0.4;
 }
 
 void main() {
@@ -352,6 +403,10 @@ void main() {
     vec3 cast_L = u_sun_intensity >= u_moon_intensity ? L : Lm;
     float shadow = sun_shadow(v_view_pos, max(dot(n_geom, cast_L), 0.0));
 
+    // Sky-occlusion from the barn, dimming the ambient fill near its base. Shared
+    // by both materials -- it depends on the ground position, not the map.
+    float occ = barn_contact_ao();
+
     // --- Open ground <-> path transition (unchanged edge logic) ------------
     // v_path_dist is the per-vertex normalized distance to the nearest path; we
     // perturb it with tuft-scale, rotated multi-octave fBm and threshold it so
@@ -367,15 +422,19 @@ void main() {
     // the other's parallax march and texture taps entirely.
     vec3 lit_color;
     if(path_amount <= 0.001) {
-        lit_color = lit_material(u_rock_diffuse_map, u_rock_normal_map, u_rock_arm_map, u_rock_disp_map, uv, T, B, n_geom, L, Lm, V, p_fade, shadow);
+        lit_color = lit_material(u_rock_diffuse_map, u_rock_normal_map, u_rock_arm_map, u_rock_disp_map, uv, T, B, n_geom, L, Lm, V, p_fade, shadow, occ);
     } else if(path_amount >= 0.999) {
-        lit_color = lit_material(u_diffuse_map, u_normal_map, u_arm_map, u_disp_map, uv, T, B, n_geom, L, Lm, V, p_fade, shadow);
+        lit_color = lit_material(u_diffuse_map, u_normal_map, u_arm_map, u_disp_map, uv, T, B, n_geom, L, Lm, V, p_fade, shadow, occ);
     } else {
-        vec3 lit_rock = lit_material(u_rock_diffuse_map, u_rock_normal_map, u_rock_arm_map, u_rock_disp_map, uv, T, B, n_geom, L, Lm, V, p_fade, shadow);
-        vec3 lit_path = lit_material(u_diffuse_map, u_normal_map, u_arm_map, u_disp_map, uv, T, B, n_geom, L, Lm, V, p_fade, shadow);
+        vec3 lit_rock = lit_material(u_rock_diffuse_map, u_rock_normal_map, u_rock_arm_map, u_rock_disp_map, uv, T, B, n_geom, L, Lm, V, p_fade, shadow, occ);
+        vec3 lit_path = lit_material(u_diffuse_map, u_normal_map, u_arm_map, u_disp_map, uv, T, B, n_geom, L, Lm, V, p_fade, shadow, occ);
         // Blend the two fully-lit surfaces along the noisy path edge.
         lit_color = mix(lit_rock, lit_path, path_amount);
     }
+
+    // Light up the pickup disc: add a warm cream glow on top of the lit ground
+    // rather than replacing it, so the rock/path texture still reads through.
+    lit_color += MARKER_COLOR * (MARKER_GLOW * pickup_marker());
 
     // Distance fog: fade the lit colour into the horizon colour over the
     // near..far band, so distant terrain dissolves into the sky.

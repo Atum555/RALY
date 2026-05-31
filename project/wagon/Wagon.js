@@ -449,13 +449,18 @@ export class Wagon extends CGFGroup {
         // shift back by that after the turn to keep it centred across the wagon.
         const bale_half_length = 1.5;
 
+        // Both bales share one material: activate it (and re-upload the shadow
+        // uniforms) once, then emit each bale's geometry under it — no per-bale
+        // shader switch.
+        this.haybale.beginBatch();
+
         for (const y of heights) {
             this.scene.pushMatrix();
             this.scene.translate(x, y, z);
             this.scene.rotate(Math.PI / 2, 0, 1, 0);
             this.scene.scale(scale, scale, scale);
             this.scene.translate(0, 0, -bale_half_length);
-            this.haybale.display();
+            this.haybale.displayShape();
             this.scene.popMatrix();
         }
     }

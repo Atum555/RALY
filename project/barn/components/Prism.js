@@ -1,102 +1,109 @@
 import { CGFobject } from "../../../lib/CGF.js";
 
-/**
- * Prism
- * @constructor
- * @param scene - Reference to MyScene object
- */
+// Barn gable end (the triangular wall the roof sits on). Pure geometry: the Barn
+// drives the shared wood shader, so this just emits the mesh and draws the same
+// in the lit pass and the shadow depth pass.
 export class Prism extends CGFobject {
-    constructor(scene, slices, stacks) {
+    // =====================================================
+    // Init
+    // =====================================================
+
+    constructor(scene, width, height, length) {
         super(scene);
-
-        this.slices = slices;
-        this.stacks = stacks;
-
+        this.width = width;
+        this.height = height;
+        this.length = length;
         this.initBuffers();
     }
+
+    // =====================================================
+    // Buffers
+    // =====================================================
 
     initBuffers() {
         this.vertices = [];
         this.indices = [];
         this.normals = [];
+        this.texCoords = [];
 
-        var ang = 0;
-        var alphaAng = (2 * Math.PI) / this.slices;
-        var z = 0;
-        var stackZ = 1 / this.stacks;
-        for (var j = 0; j < this.stacks; j++) {
-            for (var i = 0; i < this.slices; i++) {
-                var y1 = Math.sin(ang);
-                var y2 = Math.sin(ang + alphaAng);
-                var x1 = Math.cos(ang);
-                var x2 = Math.cos(ang + alphaAng);
+        const hw = this.width / 2;
+        const hl = this.length / 2;
 
-                this.vertices.push(0, 0, z);
-                this.vertices.push(x1, -y1, z);
-                this.vertices.push(x2, -y2, z);
-                this.vertices.push(0, 0, z + stackZ);
-                this.vertices.push(x1, -y1, z + stackZ);
-                this.vertices.push(x2, -y2, z + stackZ);
+        const profile = [
+            { x: -hw, y: 0 },
+            { x: -hw * 0.7, y: this.height * 0.45 },
+            { x: 0, y: this.height },
+            { x: hw * 0.7, y: this.height * 0.45 },
+            { x: hw, y: 0 },
+        ];
 
-                this.indices.push(
-                    this.slices * j * 6 + 6 * i,
-                    this.slices * j * 6 + 6 * i + 1,
-                    this.slices * j * 6 + 6 * i + 2,
-                ); // lower face
-                this.indices.push(
-                    this.slices * j * 6 + 6 * i + 5,
-                    this.slices * j * 6 + 6 * i + 4,
-                    this.slices * j * 6 + 6 * i + 3,
-                ); // upper face
-                this.indices.push(
-                    this.slices * j * 6 + 6 * i + 4,
-                    this.slices * j * 6 + 6 * i + 2,
-                    this.slices * j * 6 + 6 * i + 1,
-                ); // side tri 1
-                this.indices.push(
-                    this.slices * j * 6 + 6 * i + 4,
-                    this.slices * j * 6 + 6 * i + 5,
-                    this.slices * j * 6 + 6 * i + 2,
-                ); // side tri 2
-
-                // triangle normal computed by cross product of two edges
-                var normal = [y2 - y1, x2 - x1, 0];
-
-                // normalization
-                var nsize = Math.sqrt(normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]);
-                normal[0] /= nsize;
-                normal[1] /= nsize;
-                normal[2] /= nsize;
-
-                // push normal once for each vertex of this triangle
-                this.normals.push(0, 0, j == 0 ? -1 : 0);
-                this.normals.push(...normal);
-                this.normals.push(...normal);
-                this.normals.push(0, 0, j == this.stacks - 1 ? 1 : 0);
-                this.normals.push(...normal);
-                this.normals.push(...normal);
-
-                ang += alphaAng;
-            }
-            z += stackZ;
+        for (let i = 0; i < profile.length; i++) {
+            this.vertices.push(profile[i].x, profile[i].y, -hl);
+            this.normals.push(0, 0, -1);
+            this.texCoords.push(i / 4 * 4, 0);
         }
 
-        // The defined indices (and corresponding vertices)
-        // will be read in groups of three to draw triangles
+        for (let i = 0; i < profile.length; i++) {
+            this.vertices.push(profile[i].x, profile[i].y, hl);
+            this.normals.push(0, 0, 1);
+            this.texCoords.push(i / 4 * 4, 1);
+        }
+
+        for (let i = 0; i < profile.length - 1; i++) {
+            let b0 = i; // Back edge current point
+            let b1 = i + 1; // Back edge next point
+            let f0 = i + profile.length; // Front edge current point
+            let f1 = i + profile.length + 1; // Front edge next point
+
+            // Triangle 1
+            this.indices.push(b0, f0, b1);
+            // Triangle 1 inv
+            this.indices.push(b1, f0, b0);
+            // Triangle 2
+            this.indices.push(b1, f0, f1);
+            // Triangle 2 inv
+            this.indices.push(b1, f1, f0);
+        }
+
+        const backCapStart = this.vertices.length / 3;
+
+        for (let i = 0; i < profile.length; i++) {
+            this.vertices.push(profile[i].x, profile[i].y, -hl);
+            this.normals.push(0, 0, -1);
+
+            let u = (profile[i].x + hw) / this.width * 4;
+            let v = profile[i].y / this.height;
+            this.texCoords.push(u, v);
+        }
+
+        for (let i = 1; i < profile.length - 1; i++) {
+            this.indices.push(backCapStart, backCapStart + i + 1, backCapStart + i);
+            this.indices.push(backCapStart, backCapStart + i, backCapStart + i + 1);
+        }
+
+        const frontCapStart = this.vertices.length / 3;
+        for (let i = 0; i < profile.length; i++) {
+            this.vertices.push(profile[i].x, profile[i].y, hl);
+            this.normals.push(0, 0, 1);
+            let u = (profile[i].x + hw) / this.width * 4;
+            let v = profile[i].y / this.height;
+            this.texCoords.push(u, v);
+        }
+
+        for (let i = 1; i < profile.length - 1; i++) {
+            this.indices.push(
+                frontCapStart,
+                frontCapStart + i,
+                frontCapStart + i + 1,
+            );
+            this.indices.push(
+                frontCapStart,
+                frontCapStart + i + 1,
+                frontCapStart + i,
+            );
+        }
+
         this.primitiveType = this.scene.gl.TRIANGLES;
-
         this.initGLBuffers();
-    }
-
-    /**
-     * Called when user interacts with GUI to change object's complexity.
-     * @param {integer} complexity - changes number of slices
-     */
-    updateBuffers(complexity) {
-        this.slices = 3 + Math.round(9 * complexity); //complexity varies 0-1, so slices varies 3-12
-        //this.stacks = 1 + Math.round(9 * complexity); //complexity varies 0-1, so stacks varies 1-10
-        // reinitialize buffers
-        this.initBuffers();
-        this.initNormalVizBuffers();
     }
 }
