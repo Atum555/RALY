@@ -371,14 +371,13 @@ export class Scene extends CGFscene {
         // Barn
         this.barn.display();
 
-        // Flowers (Barn leaves the default shader active, but make it explicit).
+        // Flowers.
         this.displayFlowers();
     }
 
-    // Draw the flowers under the default shader, sitting on the terrain at their
-    // sampled ground height. The light set up in initFlowers() is refreshed onto
-    // the default shader (in the field too) so the flowers stay lit after the
-    // wagon/barn ran their own shaders.
+    // Draw the flowers sitting on the terrain at their sampled ground height. The
+    // showcase tulip uses the default shader (its CGFappearance light is refreshed
+    // here); the scattered field binds its own sun/shadow-aware shader internally.
     displayFlowers() {
         this.setActiveShader(this.defaultShader);
         this.lights[0].update();

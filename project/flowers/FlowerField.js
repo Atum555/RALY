@@ -1,3 +1,4 @@
+import { CGFshader } from "../../lib/CGF.js";
 import { Chrysantemum } from "./chrysantemum/Chrysantemum.js";
 import { Tulip } from "./tulip/Tulip.js";
 import { BakedMesh } from "./common/BakedMesh.js";
@@ -35,13 +36,23 @@ export class FlowerField {
 
         this.enabled = true;
 
+        // Set true by the shadow pass (ShadowMap.castFlowers): the field then emits
+        // only its baked geometry under the active depth shader, so the flowers cast
+        // into the wagon-following near map instead of lighting themselves.
+        this._depth_pass = false;
+
+        // Shadow-aware, untextured shader the field is lit with in the main pass.
+        // It receives the sun/moon and all three shadow maps (terrain, near, wagon)
+        // exactly like the terrain and wagon-cargo shaders, plus a per-group colour.
+        this.shadowShader = new CGFshader(scene.gl, "flowers/shaders/flower.vert", "flowers/shaders/flower.frag");
+
         // -- Scatter grid & density --
         // The field reads as broad flowering grass with denser bunches mixed in:
         // every grass cell grows at least base_per_cell flowers, and cells where
         // the density noise is high ramp up toward max_per_cell (a tight bunch).
-        this.cell_size = 30; // world units per scatter cell
-        this.base_per_cell = 3; // flowers every grass cell grows (broad coverage)
-        this.max_per_cell = 12; // flowers a fully-saturated cell spawns (bunch density)
+        this.cell_size = 40; // world units per scatter cell
+        this.base_per_cell = 2; // flowers every grass cell grows (broad coverage)
+        this.max_per_cell = 8; // flowers a fully-saturated cell spawns (bunch density)
         this.density_scale = 0.001; // noise frequency: smaller = larger bunches
         this.density_bias = 0.65; // noise above this starts ramping toward a bunch
         this.grass_threshold = 0.85; // terrain path_dist above this counts as open grass
@@ -53,7 +64,7 @@ export class FlowerField {
 
         // Safety cap on flowers drawn per frame. Cells are visited nearest-first
         // so the cap, if ever hit, only trims the most distant flowers.
-        this.draw_budget = 1000;
+        this.draw_budget = 800;
 
         // -- Size --
         this.base_scale = 1.7; // before per-flower jitter
@@ -167,10 +178,14 @@ export class FlowerField {
 
         // A primitive that never appears in the expansion (e.g. a leaf the
         // grammar didn't grow) leaves an empty group -- skip it, no draw.
+        //
+        // Keep just the material's flat colour (RGB of its diffuse): the field is
+        // lit by its own shadow shader, not the CGFappearance, so a group is one
+        // colour uniform + one draw rather than a full appearance apply.
         return groups
             .filter(g => g.indices.length > 0)
             .map(g => ({
-                material: g.material,
+                color: [g.material.diffuse[0], g.material.diffuse[1], g.material.diffuse[2]],
                 mesh: new BakedMesh(scene, g.vertices, g.normals, g.indices),
             }));
     }
@@ -207,10 +222,23 @@ export class FlowerField {
         if (!this.enabled) return;
 
         const scene = this.scene;
-        // Flowers are CGFappearance-based: draw them under the default shader with
-        // the scene's flower light (set up in Scene.initFlowers).
-        scene.setActiveShader(scene.defaultShader);
-        scene.lights[0].update();
+
+        // Main pass: bind the shadow-aware flower shader once and feed it the
+        // scene's sun/moon + shadow-map uniforms. These are identical for every
+        // flower, so they're set here once rather than per draw; only the per-group
+        // colour (and the per-instance matrices) change inside the draw loop.
+        //
+        // Depth pass (ShadowMap.castFlowers): leave the active depth shader in
+        // place and just emit the baked geometry, so the flowers cast into the
+        // near map. No shader/uniform work, no per-group colour.
+        if (!this._depth_pass) {
+            scene.setActiveShader(this.shadowShader);
+            const sm = scene.shadow_map;
+            if (sm) {
+                if (sm.enabled) sm.applyUniforms(this.shadowShader);
+                else sm.disable(this.shadowShader);
+            }
+        }
 
         // Centre the field on the wagon, like the terrain (the chase camera
         // follows it). World XZ; the terrain's model frame is (x, -z).
@@ -301,10 +329,11 @@ export class FlowerField {
             scene.translate(px, y, pz);
             scene.rotate(hr * Math.PI * 2, 0, 1, 0);
             scene.scale(scl, scl, scl);
-            // Baked: one material apply + one draw per group (~3 total) instead
-            // of replaying the whole L-system.
+            // Baked: ~3 draws per flower (stem, leaf, bloom) instead of replaying
+            // the whole L-system. The main pass sets each group's flat colour on
+            // the already-bound flower shader; the depth pass just emits geometry.
             for (const b of baked) {
-                b.material.apply();
+                if (!this._depth_pass) this.shadowShader.setUniformsValues({ u_flower_color: b.color });
                 b.mesh.display();
             }
             scene.popMatrix();
