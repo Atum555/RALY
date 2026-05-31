@@ -2,19 +2,29 @@
 precision highp float;
 #endif
 
+// Textured-wagon shader: samples the wood or fabric texture, lit by the abstract
+// sun (or dim moonlight), shadowed by the terrain + wagon shadow maps, and faded
+// into the distance fog — exactly like the hay-bale and terrain shaders.
+varying vec2 v_uv;
 varying vec3 v_normal;
 varying vec3 v_view_pos;
+varying float v_fog_depth;
 
-uniform vec3 u_wagon_color;  // soft solid base colour
-uniform vec3 u_sun_eye_dir;  // sun direction in eye space (the abstract sun)
-uniform vec3 u_moon_eye_dir; // moon direction in eye space (cool night fill)
-uniform float u_sun_intensity;  // direct sun strength: 1 by day, lifted as it sets, faded to 0 below the horizon
-uniform vec3 u_sun_tint;        // warm multiplier on the sunlight, white by day, orange as it sets
-uniform float u_moon_intensity; // 0..1, faded to 0 over the 0 -> -2 deg horizon band
+uniform sampler2D u_wagon_texture; // mipmapped wood or fabric diffuse
+uniform vec3 u_sun_eye_dir;        // sun direction in eye space (the abstract sun)
+uniform vec3 u_moon_eye_dir;       // moon direction in eye space (cool night fill)
+uniform float u_sun_intensity;     // direct sun strength: 1 by day, lifted as it sets, faded to 0 below the horizon
+uniform vec3 u_sun_tint;           // warm multiplier on the sunlight, white by day, orange as it sets
+uniform float u_moon_intensity;    // 0..1, faded to 0 over the 0 -> -2 deg horizon band
+
+uniform bool u_fog_enabled;        // distance-fog toggle (shared with the terrain)
+uniform vec3 u_fog_color;          // horizon colour the distance fades into
+uniform float u_fog_near;          // view depth where the fog begins
+uniform float u_fog_far;           // view depth where the fog is full
 
 const vec3 MOON_COLOR = vec3(0.12, 0.16, 0.26); // very dim, dark-cool moonlight
 
-// --- Sun shadows (same maps and uniforms as the terrain shader) -------------
+// --- Sun shadows (same maps and uniforms as the terrain/wagon shaders) -------
 uniform bool u_shadow_enabled;
 uniform sampler2D u_terrain_shadow_map;
 uniform sampler2D u_terrain_near_shadow_map;
@@ -67,8 +77,8 @@ float terrain_shadow(vec3 view_pos, float ndl) {
     return fs < 0.0 ? 1.0 : fs;
 }
 
-// Sun visibility: the darker of the terrain shadow and the wagon's own map (so
-// the body shadows itself and is shadowed by the terrain).
+// Sun visibility: the darker of the terrain shadow and the wagon's own map (the
+// wagon map holds the hay too, so the body shadows itself and the cargo).
 float sun_shadow(vec3 view_pos, float ndl) {
     if(!u_shadow_enabled)
         return 1.0;
@@ -78,6 +88,8 @@ float sun_shadow(vec3 view_pos, float ndl) {
 }
 
 void main() {
+    vec3 texel = texture2D(u_wagon_texture, v_uv).rgb;
+
     vec3 N = normalize(v_normal);
     vec3 L = normalize(u_sun_eye_dir);
     vec3 Lm = normalize(u_moon_eye_dir);
@@ -91,21 +103,28 @@ void main() {
 
     // Small normal-offset bias. The wagon depth map stores back faces (front-face
     // culling), so self-shadow acne is already prevented geometrically and the
-    // offset can stay tiny -- keeping component-to-component shadows crisp. A faint
+    // offset can stay tiny — keeping component-to-component shadows crisp. A faint
     // grazing term still guards against terrain shadows acne-ing on the body.
     vec3 sample_pos = v_view_pos + N * (0.02 + 0.05 * (1.0 - ndl_cast));
 
     float shadow = sun_shadow(sample_pos, ndl_cast);
 
-    // True Lambert: each face's brightness tracks its own normal, so the flat
-    // facets read crisply (faces turned away from the light go dark, with a real
-    // terminator). A solid ambient fill keeps shadowed faces from going black.
-    vec3 ambient = u_wagon_color * 0.3;
-    vec3 diffuse = u_wagon_color * u_sun_tint * ndl * shadow * 0.7 * u_sun_intensity;
+    // Texture-based Lambert: each face's brightness tracks its own normal, so the
+    // flat facets read crisply — like the solid-colour wagon shader, but sampled
+    // from the wood (or fabric) texture. A cool ambient fill keeps shadowed faces
+    // from going black, and the moon adds a dim second directional term at night.
+    vec3 ambient = texel * 0.3;
+    vec3 diffuse = texel * u_sun_tint * ndl * shadow * 0.7 * u_sun_intensity;
+    vec3 moon = texel * MOON_COLOR * moon_ndl * shadow * 0.7 * u_moon_intensity;
+    vec3 color = ambient + diffuse + moon;
 
-    // Cool moonlight: a second, very dim directional term that self-gates by its
-    // own N.L (zero by day, when the moon is below the horizon), fades off below the
-    // horizon via u_moon_intensity, and is shadowed by the same maps as the sun.
-    vec3 moon = u_wagon_color * MOON_COLOR * moon_ndl * shadow * 0.7 * u_moon_intensity;
-    gl_FragColor = vec4(ambient + diffuse + moon, 1.0);
+    // Distance fog: fade into the horizon colour over the near..far band, exactly
+    // as the terrain shader does (same uniforms, same -view_pos.z depth), so the
+    // wagon dissolves into the same haze as the ground it rides on.
+    if(u_fog_enabled) {
+        float fog = smoothstep(u_fog_near, u_fog_far, v_fog_depth);
+        color = mix(color, u_fog_color, fog);
+    }
+
+    gl_FragColor = vec4(color, 1.0);
 }
