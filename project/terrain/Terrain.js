@@ -625,6 +625,19 @@ export class Terrain extends CGFGroup {
         ];
     }
 
+    // Feed the distance-fog uniforms (toggle, horizon colour, near/far band) to
+    // `shader`. Shared so the textured obstacle shaders (hay bales, rocks) fade
+    // into the same horizon haze, over the same depths, as the terrain itself --
+    // setUniformsValues only touches uniforms a shader actually declares.
+    uploadFogUniforms(shader) {
+        shader.setUniformsValues({
+            u_fog_enabled: this.fog_enabled,
+            u_fog_color: this.fogColor(),
+            u_fog_near: this.fog_start,
+            u_fog_far: this.fog_end,
+        });
+    }
+
     // =====================================================
     // Display
     // =====================================================
@@ -649,13 +662,7 @@ export class Terrain extends CGFGroup {
         this.scene.setActiveShader(this.shader);
         this.configureTextureFiltering();
 
-        const fog = this.fogColor();
-        this.shader.setUniformsValues({
-            u_fog_enabled: this.fog_enabled,
-            u_fog_color: fog,
-            u_fog_near: this.fog_start,
-            u_fog_far: this.fog_end,
-        });
+        this.uploadFogUniforms(this.shader);
 
         // Barn contact AO: dim the sky-ambient fill in a band around the barn's
         // footprint. The shader rebuilds each fragment's model position from its

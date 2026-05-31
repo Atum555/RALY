@@ -5,6 +5,7 @@ precision highp float;
 varying vec2 v_uv;
 varying vec3 v_normal;
 varying vec3 v_view_pos;
+varying float v_fog_depth; // distance in front of the camera, for distance fog
 
 uniform sampler2D u_hay_texture; // mipmapped hay diffuse
 uniform vec3 u_sun_eye_dir;      // sun direction in eye space (the abstract sun)
@@ -12,6 +13,11 @@ uniform vec3 u_moon_eye_dir;     // moon direction in eye space (cool night fill
 uniform float u_sun_intensity;   // direct sun strength: 1 by day, lifted as it sets, faded to 0 below the horizon
 uniform vec3 u_sun_tint;         // warm multiplier on the sunlight, white by day, orange as it sets
 uniform float u_moon_intensity;  // 0..1, faded to 0 over the 0 -> -2 deg horizon band
+
+uniform bool u_fog_enabled;      // distance-fog toggle (shared with the terrain)
+uniform vec3 u_fog_color;        // horizon colour the distance fades into
+uniform float u_fog_near;        // view depth where the fog begins
+uniform float u_fog_far;         // view depth where the fog is full
 
 const vec3 MOON_COLOR = vec3(0.12, 0.16, 0.26); // very dim, dark-cool moonlight
 
@@ -113,5 +119,15 @@ void main() {
     // own N.L (zero by day, when the moon is below the horizon), fades off below the
     // horizon via u_moon_intensity, and is shadowed by the same maps as the sun.
     vec3 moon = base * MOON_COLOR * moon_ndl * shadow * 0.7 * u_moon_intensity;
-    gl_FragColor = vec4(ambient + diffuse + moon, 1.0);
+    vec3 color = ambient + diffuse + moon;
+
+    // Distance fog: fade into the horizon colour over the near..far band, exactly
+    // as the terrain shader does (same uniforms, same -view_pos.z depth), so the
+    // bales dissolve into the same haze as the ground they sit on.
+    if(u_fog_enabled) {
+        float fog = smoothstep(u_fog_near, u_fog_far, v_fog_depth);
+        color = mix(color, u_fog_color, fog);
+    }
+
+    gl_FragColor = vec4(color, 1.0);
 }
