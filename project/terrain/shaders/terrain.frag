@@ -132,45 +132,33 @@ vec2 cell_uv(vec2 uv, vec2 cell, out float angle) {
     return rot2(uv, -angle) * scale + offset;
 }
 
-// Bilinear blend of one map over the four cells around the fragment. The
-// transition band is narrowed with smoothstep so blurry cross-fades stay thin.
-vec4 bomb_sample(sampler2D tex, vec2 uv) {
+// Bilinear blend of a material's three maps over the four cells around the
+// fragment, in a single pass. The per-cell rotation/scale/offset (the trig-heavy
+// cell_uv) and the blend weights are computed once per cell and shared by all
+// three fetches. The transition band is narrowed with smoothstep so blurry
+// cross-fades stay thin. Each cell's normal.xy is rotated by that cell's angle so
+// the bumps stay aligned with the rotated patch; `out_nm` is the unnormalized
+// tangent-space normal and the caller builds the world normal.
+void bomb_material(sampler2D diff_tex, sampler2D arm_tex, sampler2D norm_tex, vec2 uv, out vec3 out_albedo, out vec3 out_arm, out vec3 out_nm) {
     vec2 cc = uv / UNTILE_CELL;
     vec2 ci = floor(cc);
     vec2 cf = smoothstep(0.35, 0.65, fract(cc));
-    vec4 sum = vec4(0.0);
+    out_albedo = vec3(0.0);
+    out_arm = vec3(0.0);
+    out_nm = vec3(0.0);
     for(int j = 0; j <= 1; j++) {
         for(int i = 0; i <= 1; i++) {
             vec2 cell = ci + vec2(float(i), float(j));
             float a;
             vec2 luv = cell_uv(uv, cell, a);
             float w = (i == 0 ? 1.0 - cf.x : cf.x) * (j == 0 ? 1.0 - cf.y : cf.y);
-            sum += texture2D(tex, luv) * w;
-        }
-    }
-    return sum;
-}
-
-// Same blend for a tangent-space normal map: each cell's normal.xy is rotated by
-// that cell's angle so the bumps stay aligned with the rotated patch. Result is
-// the unnormalized tangent-space normal; the caller builds the world normal.
-vec3 bomb_normal(sampler2D tex, vec2 uv) {
-    vec2 cc = uv / UNTILE_CELL;
-    vec2 ci = floor(cc);
-    vec2 cf = smoothstep(0.35, 0.65, fract(cc));
-    vec3 sum = vec3(0.0);
-    for(int j = 0; j <= 1; j++) {
-        for(int i = 0; i <= 1; i++) {
-            vec2 cell = ci + vec2(float(i), float(j));
-            float a;
-            vec2 luv = cell_uv(uv, cell, a);
-            vec3 nm = texture2D(tex, luv).rgb * 2.0 - 1.0;
+            out_albedo += texture2D(diff_tex, luv).rgb * w;
+            out_arm += texture2D(arm_tex, luv).rgb * w;
+            vec3 nm = texture2D(norm_tex, luv).rgb * 2.0 - 1.0;
             nm.xy = rot2(nm.xy, a);
-            float w = (i == 0 ? 1.0 - cf.x : cf.x) * (j == 0 ? 1.0 - cf.y : cf.y);
-            sum += nm * w;
+            out_nm += nm * w;
         }
     }
-    return sum;
 }
 
 // Parallax-occlusion mapping. March the view ray through the heightfield instead
@@ -298,12 +286,10 @@ vec3 lit_material(
     vec3 vt = vec3(dot(V, T), dot(V, B), dot(V, n_geom));
     vec2 uvr = parallax_uv(disp_map, uv, vt, p_fade);
 
-    vec3 albedo = bomb_sample(diff_map, uvr).rgb;
-    vec3 arm = bomb_sample(arm_map, uvr).rgb;
+    vec3 albedo, arm, nm;
+    bomb_material(diff_map, arm_map, norm_map, uvr, albedo, arm, nm);
     float ao = arm.r;
     float roughness = clamp(arm.g, 0.04, 1.0);
-
-    vec3 nm = bomb_normal(norm_map, uvr);
     vec3 N = normalize(T * nm.x + B * nm.y + n_geom * nm.z);
     float shininess = mix(4.0, 128.0, 1.0 - roughness);
 
