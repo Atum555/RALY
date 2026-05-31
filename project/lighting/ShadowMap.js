@@ -63,6 +63,14 @@ export class ShadowMap {
         this.scene = scene;
         this.gl = scene.gl;
 
+        // Per-map enables, driven by the UI. Each gates both its depth pass (in
+        // render) and its lookup in the surface shaders (via applyUniforms), so a
+        // map can be toggled on its own. `enabled` (any one on) is the master the
+        // frame uses to decide whether to run the depth pass at all.
+        this.terrain_shadows = true;        // whole-terrain map (distant shadows)
+        this.terrain_detail_shadows = true; // near map that follows the wagon
+        this.wagon_shadows = true;          // the wagon's own silhouette
+
         // Depth-only shader for both light passes.
         this.depth_shader = new CGFshader(this.gl, "terrain/shaders/depth.vert", "terrain/shaders/depth.frag");
 
@@ -139,6 +147,12 @@ export class ShadowMap {
         // shaders share these uniforms but have different locations).
         this._loc_by_prog = new Map();
         this._p = vec3.create(); // scratch for point transforms
+    }
+
+    // True while any of the three maps is on. The frame skips the whole depth
+    // pass (and the surface shaders skip the lookup) when this is false.
+    get enabled() {
+        return this.terrain_shadows || this.terrain_detail_shadows || this.wagon_shadows;
     }
 
     // Allocate a depth texture + depth-only framebuffer. WebGL2 gives sampleable
@@ -225,10 +239,12 @@ export class ShadowMap {
         scene.pushMatrix(); // save the main view·rotation matrix once
         scene.setActiveShader(this.depth_shader);
 
-        this.renderTerrain(terrain);
+        // Only the enabled maps are re-rendered; a disabled map keeps its stale
+        // depth but is never sampled (its enable uniform gates it off below).
+        if (this.terrain_shadows) this.renderTerrain(terrain);
         if (wagon) {
-            this.renderTerrainNear(terrain, wagon);
-            this.renderWagon(wagon);
+            if (this.terrain_detail_shadows) this.renderTerrainNear(terrain, wagon);
+            if (this.wagon_shadows) this.renderWagon(wagon);
         }
 
         scene.camera = real_cam;
@@ -508,6 +524,11 @@ export class ShadowMap {
         gl.uniform1f(this.loc("u_sun_intensity"), this.sun_intensity);
         gl.uniform1f(this.loc("u_moon_intensity"), this.moon_intensity);
         gl.uniform1i(this.loc("u_shadow_enabled"), 1);
+        // Per-map gates: a fragment skips a map whose toggle is off, so the
+        // remaining maps still shadow it (e.g. wagon off but terrain on).
+        gl.uniform1i(this.loc("u_terrain_shadow_on"), this.terrain_shadows ? 1 : 0);
+        gl.uniform1i(this.loc("u_terrain_near_shadow_on"), this.terrain_detail_shadows ? 1 : 0);
+        gl.uniform1i(this.loc("u_wagon_shadow_on"), this.wagon_shadows ? 1 : 0);
         gl.activeTexture(gl.TEXTURE0);
     }
 

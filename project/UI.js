@@ -218,6 +218,20 @@ export class UI extends CGFinterface {
             fog_controls.add(terrain, "fog_end", 0, 20000).step(200).name("End");
         }
 
+        // == Lighting =========================================
+        {
+            // Sun/moon shadow maps. Each toggle gates one map independently: a
+            // disabled map skips its depth pass and is treated as lit, so the
+            // surfaces still light from the sun/moon. Off across the board skips
+            // the whole depth pass.
+            const shadow_map = this.scene.shadow_map;
+            const lighting_controls = this.gui.addFolder("Lighting");
+            const shadow_controls = lighting_controls.addFolder("Shadows");
+            shadow_controls.add(shadow_map, "terrain_shadows").name("Terrain");
+            shadow_controls.add(shadow_map, "terrain_detail_shadows").name("Terrain Detail");
+            shadow_controls.add(shadow_map, "wagon_shadows").name("Wagon");
+        }
+
         // == Barn =============================================
         {
             const barn = this.scene.barn;

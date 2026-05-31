@@ -28,6 +28,9 @@ uniform float u_wagon_shadow_texel;
 uniform vec2 u_terrain_shadow_bias;
 uniform vec2 u_terrain_near_shadow_bias;
 uniform vec2 u_wagon_shadow_bias;
+uniform bool u_terrain_shadow_on;      // per-map toggles (UI); off => map skipped, treated as lit
+uniform bool u_terrain_near_shadow_on;
+uniform bool u_wagon_shadow_on;
 
 // 3x3 percentage-closer filter over one depth map (see terrain.frag).
 float pcf(sampler2D smap, vec2 uv, float ref, float texel) {
@@ -57,10 +60,10 @@ float slope_bias(vec2 band, float ndl) {
 
 // Terrain self-shadow: prefer the sharp near map, fall back to the whole map.
 float terrain_shadow(vec3 view_pos, float ndl) {
-    float ns = sample_shadow(u_terrain_near_shadow_map, u_terrain_near_light_vp, view_pos, slope_bias(u_terrain_near_shadow_bias, ndl), u_terrain_near_shadow_texel);
+    float ns = u_terrain_near_shadow_on ? sample_shadow(u_terrain_near_shadow_map, u_terrain_near_light_vp, view_pos, slope_bias(u_terrain_near_shadow_bias, ndl), u_terrain_near_shadow_texel) : -1.0;
     if(ns >= 0.0)
         return ns;
-    float fs = sample_shadow(u_terrain_shadow_map, u_terrain_light_vp, view_pos, slope_bias(u_terrain_shadow_bias, ndl), u_terrain_shadow_texel);
+    float fs = u_terrain_shadow_on ? sample_shadow(u_terrain_shadow_map, u_terrain_light_vp, view_pos, slope_bias(u_terrain_shadow_bias, ndl), u_terrain_shadow_texel) : -1.0;
     return fs < 0.0 ? 1.0 : fs;
 }
 
@@ -70,7 +73,7 @@ float sun_shadow(vec3 view_pos, float ndl) {
     if(!u_shadow_enabled)
         return 1.0;
     float terrain_s = terrain_shadow(view_pos, ndl);
-    float wagon_s = sample_shadow(u_wagon_shadow_map, u_wagon_light_vp, view_pos, slope_bias(u_wagon_shadow_bias, ndl), u_wagon_shadow_texel);
+    float wagon_s = u_wagon_shadow_on ? sample_shadow(u_wagon_shadow_map, u_wagon_light_vp, view_pos, slope_bias(u_wagon_shadow_bias, ndl), u_wagon_shadow_texel) : -1.0;
     return min(terrain_s, wagon_s < 0.0 ? 1.0 : wagon_s);
 }
 

@@ -65,6 +65,9 @@ uniform float u_wagon_shadow_texel;
 uniform vec2 u_terrain_shadow_bias;   // (min, max) slope-scaled depth bias
 uniform vec2 u_terrain_near_shadow_bias;
 uniform vec2 u_wagon_shadow_bias;
+uniform bool u_terrain_shadow_on;      // per-map toggles (UI); off => map skipped, treated as lit
+uniform bool u_terrain_near_shadow_on;
+uniform bool u_wagon_shadow_on;
 
 const vec3 SUN_COLOR = vec3(1.0, 0.96, 0.88);     // warm sunlight (used on the dirt)
 const vec3 MOON_COLOR = vec3(0.12, 0.16, 0.26);   // very dim, dark-cool moonlight
@@ -91,7 +94,7 @@ float value_noise(vec2 p) {
 float fbm(vec2 p) {
     float v = 0.0;
     float amp = 0.5;
-    for (int i = 0; i < 5; i++) {
+    for(int i = 0; i < 5; i++) {
         v += amp * value_noise(p);
         p *= 2.0;
         amp *= 0.5;
@@ -136,8 +139,8 @@ vec4 bomb_sample(sampler2D tex, vec2 uv) {
     vec2 ci = floor(cc);
     vec2 cf = smoothstep(0.35, 0.65, fract(cc));
     vec4 sum = vec4(0.0);
-    for (int j = 0; j <= 1; j++) {
-        for (int i = 0; i <= 1; i++) {
+    for(int j = 0; j <= 1; j++) {
+        for(int i = 0; i <= 1; i++) {
             vec2 cell = ci + vec2(float(i), float(j));
             float a;
             vec2 luv = cell_uv(uv, cell, a);
@@ -156,8 +159,8 @@ vec3 bomb_normal(sampler2D tex, vec2 uv) {
     vec2 ci = floor(cc);
     vec2 cf = smoothstep(0.35, 0.65, fract(cc));
     vec3 sum = vec3(0.0);
-    for (int j = 0; j <= 1; j++) {
-        for (int i = 0; i <= 1; i++) {
+    for(int j = 0; j <= 1; j++) {
+        for(int i = 0; i <= 1; i++) {
             vec2 cell = ci + vec2(float(i), float(j));
             float a;
             vec2 luv = cell_uv(uv, cell, a);
@@ -179,7 +182,8 @@ vec3 bomb_normal(sampler2D tex, vec2 uv) {
 vec2 parallax_uv(sampler2D disp_map, vec2 uv, vec3 vt, float fade) {
     // Far fragments skip the whole march: the relief is invisible at distance and
     // it is by far the most expensive part of the shader.
-    if (fade <= 0.0) return uv;
+    if(fade <= 0.0)
+        return uv;
 
     const int MAX_LAYERS = 32;
     // Fewer layers head-on (cheap, little to resolve), more at grazing angles
@@ -197,8 +201,9 @@ vec2 parallax_uv(sampler2D disp_map, vec2 uv, vec3 vt, float fade) {
     float cur_depth = 0.0;
     vec2 cur_uv = uv;
     float cur_height = 1.0 - texture2D(disp_map, cur_uv).r;
-    for (int i = 0; i < MAX_LAYERS; i++) {
-        if (cur_depth >= cur_height) break;
+    for(int i = 0; i < MAX_LAYERS; i++) {
+        if(cur_depth >= cur_height)
+            break;
         cur_uv -= delta_uv;
         cur_height = 1.0 - texture2D(disp_map, cur_uv).r;
         cur_depth += layer_depth;
@@ -220,8 +225,8 @@ vec2 parallax_uv(sampler2D disp_map, vec2 uv, vec3 vt, float fade) {
 // `ref` is the fragment's depth in that map, in [0, 1]; `texel` is 1/resolution.
 float pcf(sampler2D smap, vec2 uv, float ref, float texel) {
     float sum = 0.0;
-    for (int dy = -1; dy <= 1; dy++) {
-        for (int dx = -1; dx <= 1; dx++) {
+    for(int dy = -1; dy <= 1; dy++) {
+        for(int dx = -1; dx <= 1; dx++) {
             float d = texture2D(smap, uv + vec2(float(dx), float(dy)) * texel).r;
             sum += ref <= d ? 1.0 : 0.0;
         }
@@ -238,7 +243,8 @@ float sample_shadow(sampler2D smap, mat4 m, vec3 view_pos, float bias, float tex
     vec3 uvz = (lp.xyz / lp.w) * 0.5 + 0.5; // ortho clip -> [0, 1]
 
     float b = 2.0 * texel; // one PCF tap of slack at the border
-    if (uvz.x < b || uvz.x > 1.0 - b || uvz.y < b || uvz.y > 1.0 - b || uvz.z > 1.0) return -1.0;
+    if(uvz.x < b || uvz.x > 1.0 - b || uvz.y < b || uvz.y > 1.0 - b || uvz.z > 1.0)
+        return -1.0;
 
     return pcf(smap, uvz.xy, uvz.z - bias, texel);
 }
@@ -252,21 +258,20 @@ float slope_bias(vec2 band, float ndl) {
 // Terrain self-shadow: prefer the sharp near map; where the fragment is outside
 // it, fall back to the whole-terrain map; lit if outside both.
 float terrain_shadow(vec3 view_pos, float ndl) {
-    float ns = sample_shadow(u_terrain_near_shadow_map, u_terrain_near_light_vp, view_pos,
-                             slope_bias(u_terrain_near_shadow_bias, ndl), u_terrain_near_shadow_texel);
-    if (ns >= 0.0) return ns;
-    float fs = sample_shadow(u_terrain_shadow_map, u_terrain_light_vp, view_pos,
-                             slope_bias(u_terrain_shadow_bias, ndl), u_terrain_shadow_texel);
+    float ns = u_terrain_near_shadow_on ? sample_shadow(u_terrain_near_shadow_map, u_terrain_near_light_vp, view_pos, slope_bias(u_terrain_near_shadow_bias, ndl), u_terrain_near_shadow_texel) : -1.0;
+    if(ns >= 0.0)
+        return ns;
+    float fs = u_terrain_shadow_on ? sample_shadow(u_terrain_shadow_map, u_terrain_light_vp, view_pos, slope_bias(u_terrain_shadow_bias, ndl), u_terrain_shadow_texel) : -1.0;
     return fs < 0.0 ? 1.0 : fs;
 }
 
 // Sun visibility at this fragment: the darker of the terrain self-shadow and the
 // wagon's cast shadow, so a fragment is shadowed if either occludes the sun.
 float sun_shadow(vec3 view_pos, float ndl) {
-    if (!u_shadow_enabled) return 1.0;
+    if(!u_shadow_enabled)
+        return 1.0;
     float terrain_s = terrain_shadow(view_pos, ndl);
-    float wagon_s = sample_shadow(u_wagon_shadow_map, u_wagon_light_vp, view_pos,
-                                  slope_bias(u_wagon_shadow_bias, ndl), u_wagon_shadow_texel);
+    float wagon_s = u_wagon_shadow_on ? sample_shadow(u_wagon_shadow_map, u_wagon_light_vp, view_pos, slope_bias(u_wagon_shadow_bias, ndl), u_wagon_shadow_texel) : -1.0;
     return min(terrain_s, wagon_s < 0.0 ? 1.0 : wagon_s);
 }
 
@@ -275,8 +280,21 @@ float sun_shadow(vec3 view_pos, float ndl) {
 // displacement map drives parallax-occlusion mapping, then albedo/ARM/normal are
 // read at the parallaxed UVs and lit with a warm sun plus cool ambient fill and
 // a roughness-shaped specular highlight.
-vec3 lit_material(sampler2D diff_map, sampler2D norm_map, sampler2D arm_map, sampler2D disp_map,
-                 vec2 uv, vec3 T, vec3 B, vec3 n_geom, vec3 L, vec3 Lm, vec3 V, float p_fade, float shadow) {
+vec3 lit_material(
+    sampler2D diff_map,
+    sampler2D norm_map,
+    sampler2D arm_map,
+    sampler2D disp_map,
+    vec2 uv,
+    vec3 T,
+    vec3 B,
+    vec3 n_geom,
+    vec3 L,
+    vec3 Lm,
+    vec3 V,
+    float p_fade,
+    float shadow
+) {
     vec3 vt = vec3(dot(V, T), dot(V, B), dot(V, n_geom));
     vec2 uvr = parallax_uv(disp_map, uv, vt, p_fade);
 
@@ -306,9 +324,7 @@ vec3 lit_material(sampler2D diff_map, sampler2D norm_map, sampler2D arm_map, sam
     // direct term is also faded to zero as it drops below the horizon.
     float sun = shadow * u_sun_intensity;
     float moon = shadow * u_moon_intensity;
-    return albedo * (SKY_AMBIENT * ao + SUN_COLOR * diffuse * sun + MOON_COLOR * moon_diffuse * moon)
-         + SUN_COLOR * spec * diffuse * sun * 0.4
-         + MOON_COLOR * moon_spec * moon_diffuse * moon * 0.4;
+    return albedo * (SKY_AMBIENT * ao + SUN_COLOR * diffuse * sun + MOON_COLOR * moon_diffuse * moon) + SUN_COLOR * spec * diffuse * sun * 0.4 + MOON_COLOR * moon_spec * moon_diffuse * moon * 0.4;
 }
 
 void main() {
@@ -338,10 +354,8 @@ void main() {
     vec3 cast_L = u_sun_intensity >= u_moon_intensity ? L : Lm;
     float shadow = sun_shadow(v_view_pos, max(dot(n_geom, cast_L), 0.0));
 
-    vec3 lit_rock = lit_material(u_rock_diffuse_map, u_rock_normal_map, u_rock_arm_map, u_rock_disp_map,
-                               uv, T, B, n_geom, L, Lm, V, p_fade, shadow);
-    vec3 lit_path = lit_material(u_diffuse_map, u_normal_map, u_arm_map, u_disp_map,
-                               uv, T, B, n_geom, L, Lm, V, p_fade, shadow);
+    vec3 lit_rock = lit_material(u_rock_diffuse_map, u_rock_normal_map, u_rock_arm_map, u_rock_disp_map, uv, T, B, n_geom, L, Lm, V, p_fade, shadow);
+    vec3 lit_path = lit_material(u_diffuse_map, u_normal_map, u_arm_map, u_disp_map, uv, T, B, n_geom, L, Lm, V, p_fade, shadow);
 
     // --- Open ground <-> path transition (unchanged edge logic) ------------
     // v_path_dist is the per-vertex normalized distance to the nearest path; we
@@ -349,9 +363,7 @@ void main() {
     // the band between path and open ground breaks into natural fingers.
     float dist = v_path_dist;
     mat2 rot = mat2(0.80, -0.60, 0.60, 0.80);
-    float breakup = fbm(uv * 5.0 + 53.0) * 0.5
-                  + fbm(rot * uv * 13.0 + 17.0) * 0.3
-                  + fbm(rot * rot * uv * 30.0 + 91.0) * 0.2;
+    float breakup = fbm(uv * 5.0 + 53.0) * 0.5 + fbm(rot * uv * 13.0 + 17.0) * 0.3 + fbm(rot * rot * uv * 30.0 + 91.0) * 0.2;
     float edge = dist + (breakup - 0.5) * 0.22;
     float path_amount = 1.0 - smoothstep(u_path_dirt_edge, 1.0, edge);
 
@@ -360,7 +372,7 @@ void main() {
 
     // Distance fog: fade the lit colour into the horizon colour over the
     // near..far band, so distant terrain dissolves into the sky.
-    if (u_fog_enabled) {
+    if(u_fog_enabled) {
         float fog = smoothstep(u_fog_near, u_fog_far, v_fog_depth);
         lit_color = mix(lit_color, u_fog_color, fog);
     }

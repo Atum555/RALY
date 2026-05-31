@@ -279,13 +279,13 @@ export class Wagon extends CGFGroup {
     }
 
     // Activate the body shader and feed it the sun + shadow uniforms from the
-    // terrain's shadow maps, so the body lights softly and takes terrain and self
+    // scene's shadow maps, so the body lights softly and takes terrain and self
     // shadows. Falls back to a plain unshadowed look if shadows are off.
     applyBodyShader() {
         this.scene.setActiveShader(this.body_shader);
-        const sm = this.scene.terrain && this.scene.terrain.shadow_map;
+        const sm = this.scene.shadow_map;
         if (!sm) return;
-        if (this.scene.terrain.shadows_enabled) sm.applyUniforms(this.body_shader);
+        if (sm.enabled) sm.applyUniforms(this.body_shader);
         else sm.disable(this.body_shader);
     }
 

@@ -3,7 +3,6 @@ import { ValueNoise } from "./Noise.js";
 import { PathNetwork } from "./Path.js";
 import { TerrainTile } from "./TerrainTile.js";
 import { CGFGroup } from "../core/CGFGroup.js";
-import { ShadowMap } from "./ShadowMap.js";
 import { hexToRGB } from "../utils.js";
 import {
     MAX_COMPONENT_SUBDIVISIONS,
@@ -103,13 +102,6 @@ export class Terrain extends CGFGroup {
         this.effective_size = this.terrain_size; // actual extent the single root tile spans
         this.effective_tile_subdivisions = 1; // per-node grid from terrain_lod_detail_density + terrain_lod_tile_size
         this.effective_path_count = 0; // POI count from terrain_path_node_density + terrain area
-
-        // -- Sun-cast shadows --
-        // The terrain and wagon cast and receive shadows from the sun, which
-        // tracks the day/night cycle. Three depth maps (whole terrain, a near map
-        // and the wagon's own), all re-rendered every frame, give the sharpest
-        // shadows around the wagon and coarser ones toward the horizon.
-        this.shadows_enabled = true;
 
         this.initHeightField();
         this.initTextures();
@@ -337,9 +329,6 @@ export class Terrain extends CGFGroup {
             u_disp_map: 7,
         });
 
-        // Cascaded shadow maps for the sun. Built once; the cascades refit to the
-        // wagon every frame in display().
-        this.shadow_map = new ShadowMap(this.scene);
     }
 
     // =====================================================
@@ -638,11 +627,13 @@ export class Terrain extends CGFGroup {
     // Display
     // =====================================================
 
-    display() {
+    // Refresh the per-frame state both the shadow depth pass and the main pass
+    // walk the quadtree against. Called by the scene before the shadow pass (which
+    // re-renders the near map at the wagon-centred LOD) so both see the same frame.
+    beginFrame() {
         // Wagon position in model space (world x -> model x, world z -> -model
         // y, matching getHeightAt's frame), stored so the quadtree refinement and
-        // the neighbor-depth queries (leafDepthAt) both see the same frame. Set
-        // before either pass walks the tree.
+        // the neighbor-depth queries (leafDepthAt) both see the same frame.
         const wagon = this.scene.wagon;
         this._wmx = wagon ? wagon.position_x : 0;
         this._wmy = wagon ? -wagon.position_z : 0;
@@ -650,20 +641,10 @@ export class Terrain extends CGFGroup {
         // One frame stamp shared by both passes so tiles touched by the shadow
         // walk and the main walk are kept by the same eviction sweep.
         this.frame_stamp++;
+    }
 
-        // --- Shadow depth pass ---
-        // Keep the sun current (it drives the lighting in every surface shader)
-        // even when shadows are off, then render the terrain's depth from the sun
-        // into the maps; the render self-contains its camera/framebuffer/matrix
-        // changes.
-        this.shadow_map.updateSun();
-        if (this.shadows_enabled) this.shadow_map.render(this);
-
-        // --- Main pass ---
+    display() {
         this.scene.setActiveShader(this.shader);
-        // The depth pass swapped the projection to the light ortho; restore the
-        // camera's perspective for the visible draw.
-        if (this.shadows_enabled) this.scene.updateProjectionMatrix();
         this.configureTextureFiltering();
 
         const fog = this.fogColor();
@@ -684,10 +665,11 @@ export class Terrain extends CGFGroup {
         this.path_arm_map.bind(6);
         this.path_disp_map.bind(7);
 
-        // Bind the cascade depth textures (units 8+) and their matrices, so each
+        // Bind the shadow depth textures (units 8+) and their matrices, so each
         // fragment can test itself against the sun's shadow maps.
-        if (this.shadows_enabled) this.shadow_map.applyUniforms(this.shader);
-        else this.shadow_map.disable(this.shader);
+        const shadow_map = this.scene.shadow_map;
+        if (shadow_map.enabled) shadow_map.applyUniforms(this.shader);
+        else shadow_map.disable(this.shader);
 
         // Walk the single quadtree root, drawing every region at the depth its
         // distance to the wagon calls for, then retire node meshes that have

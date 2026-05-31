@@ -164,14 +164,14 @@ export class HayBale extends CGFobject {
     }
 
     // Activate the bale shader and feed it the sun + shadow uniforms from the
-    // terrain's shadow maps, then bind the (mipmapped) hay texture to unit 0.
+    // scene's shadow maps, then bind the (mipmapped) hay texture to unit 0.
     applyShader() {
         const scene = this.scene;
         scene.setActiveShader(this.shader);
 
-        const sm = scene.terrain && scene.terrain.shadow_map;
+        const sm = scene.shadow_map;
         if (sm) {
-            if (scene.terrain.shadows_enabled) sm.applyUniforms(this.shader);
+            if (sm.enabled) sm.applyUniforms(this.shader);
             else sm.disable(this.shader);
         }
 

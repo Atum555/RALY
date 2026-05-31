@@ -3,6 +3,7 @@ import { SkySphere } from "./sky/SkySphere.js";
 import { Wagon } from "./wagon/Wagon.js";
 import { Terrain } from "./terrain/Terrain.js";
 import { Barn } from "./barn/Barn.js";
+import { ShadowMap } from "./lighting/ShadowMap.js";
 import { FpsCounter } from "./core/FpsCounter.js";
 import { hexToRGB, lerpAngle } from "./utils.js";
 
@@ -137,6 +138,11 @@ export class Scene extends CGFscene {
 
         // Objects
         this.barn = new Barn(this);
+
+        // Sun/moon shadow maps for the terrain and the wagon. Scene-owned: it
+        // drives the depth pass each frame (display) and both the terrain and the
+        // wagon sample the same maps. Built after the casters it renders.
+        this.shadow_map = new ShadowMap(this);
 
         this.all_objects = [this.sky_sphere, this.terrain, this.wagon];
     }
@@ -342,6 +348,20 @@ export class Scene extends CGFscene {
         // stale matrix, so that pass alone leaves the moon's position wrong.
         this.lights[Scene.Lights.SUN].update();
         this.lights[Scene.Lights.MOON].update();
+
+        // Shadow depth pass: render the sun/moon shadow maps once for the whole
+        // frame, before the terrain and wagon sample them. The terrain's per-frame
+        // state is refreshed first, since the near map re-renders the terrain at
+        // the wagon-centred LOD. updateSun runs even with every map off, since it
+        // drives the lighting in every surface shader. render() self-contains its
+        // camera/framebuffer/matrix changes; it leaves the light ortho projection
+        // bound, so restore the perspective afterwards.
+        this.terrain.beginFrame();
+        this.shadow_map.updateSun();
+        if (this.shadow_map.enabled) {
+            this.shadow_map.render(this.terrain);
+            this.updateProjectionMatrix();
+        }
 
         // Ground
         this.pushMatrix();
