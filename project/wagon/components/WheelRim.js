@@ -39,7 +39,6 @@ export class WheelRim extends CGFobject {
             { dr: this.thickness, dz: this.width / 2 },
         ];
 
-
         let angle = 0;
         let step = (2 * Math.PI) / this.slices;
         for (let s = 0; s <= this.slices; s++) {
@@ -71,28 +70,40 @@ export class WheelRim extends CGFobject {
             angle += step;
         }
 
-for (let s = 0; s < this.slices; s++) {
-        let currentRing = s * 8;
-        let nextRing = ((s + 1) * 8);
+        for (let s = 0; s < this.slices; s++) {
+            let currentRing = s * 8;
+            let nextRing = (s + 1) * 8;
 
-        // outer edge
-        let o0 = currentRing, o1 = currentRing + 1, o2 = nextRing, o3 = nextRing + 1;
-        // inner edge
-        let i0 = currentRing + 2, i1 = currentRing + 3, i2 = nextRing + 2, i3 = nextRing + 3;
-        // left edge
-        let l0 = currentRing + 4, l1 = currentRing + 6, l2 = nextRing + 4, l3 = nextRing + 6;
-        // right edge
-        let r0 = currentRing + 5, r1 = currentRing + 7, r2 = nextRing + 5, r3 = nextRing + 7;
+            // outer edge
+            let o0 = currentRing,
+                o1 = currentRing + 1,
+                o2 = nextRing,
+                o3 = nextRing + 1;
+            // inner edge
+            let i0 = currentRing + 2,
+                i1 = currentRing + 3,
+                i2 = nextRing + 2,
+                i3 = nextRing + 3;
+            // left edge
+            let l0 = currentRing + 4,
+                l1 = currentRing + 6,
+                l2 = nextRing + 4,
+                l3 = nextRing + 6;
+            // right edge
+            let r0 = currentRing + 5,
+                r1 = currentRing + 7,
+                r2 = nextRing + 5,
+                r3 = nextRing + 7;
 
-        this.indices.push(o0,o1,o2);
-        this.indices.push(o1,o3,o2);
-        this.indices.push(i0, i2, i1);
-        this.indices.push(i1, i2, i3);
-        this.indices.push(l0,l2,l1);
-        this.indices.push(l1,l2,l3);
-        this.indices.push(r0, r1, r2);
-        this.indices.push(r1, r3, r2);
-    }
+            this.indices.push(o0, o1, o2);
+            this.indices.push(o1, o3, o2);
+            this.indices.push(i0, i2, i1);
+            this.indices.push(i1, i2, i3);
+            this.indices.push(l0, l2, l1);
+            this.indices.push(l1, l2, l3);
+            this.indices.push(r0, r1, r2);
+            this.indices.push(r1, r3, r2);
+        }
         this.primitiveType = this.scene.gl.TRIANGLES;
         this.initGLBuffers();
     }

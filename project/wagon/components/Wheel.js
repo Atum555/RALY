@@ -20,7 +20,7 @@ export class Wheel extends CGFGroup {
 
         this.hub = this.addPart(new Cylinder(scene, 12, 1));
         this.segment = this.addPart(new UnitCube(scene));
-        this.rim = this.addPart(new WheelRim(this.scene,2,0.15,0.3,48))
+        this.rim = this.addPart(new WheelRim(this.scene, 2, 0.15, 0.3, 48));
     }
 
     // =====================================================
@@ -53,7 +53,6 @@ export class Wheel extends CGFGroup {
             this.scene.scale(0.06, this.wheel_radius, 0.06);
             this.segment.display();
             this.scene.popMatrix();
-
         }
     }
 }

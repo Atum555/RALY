@@ -66,9 +66,15 @@ export class Direction extends CGFGroup {
             const ny = e1z * e2x - e1x * e2z;
             const nz = e1x * e2y - e1y * e2x;
 
-            normals[a] += nx; normals[a + 1] += ny; normals[a + 2] += nz;
-            normals[b] += nx; normals[b + 1] += ny; normals[b + 2] += nz;
-            normals[c] += nx; normals[c + 1] += ny; normals[c + 2] += nz;
+            normals[a] += nx;
+            normals[a + 1] += ny;
+            normals[a + 2] += nz;
+            normals[b] += nx;
+            normals[b + 1] += ny;
+            normals[b + 2] += nz;
+            normals[c] += nx;
+            normals[c + 1] += ny;
+            normals[c + 2] += nz;
         }
 
         for (let i = 0; i < normals.length; i += 3) {
@@ -102,20 +108,26 @@ export class Direction extends CGFGroup {
 
     display() {
         this.scene.pushMatrix();
-        // Steer the whole axle by the current steering angle
+        // Steer the whole axle by the current steering angle. The horses are
+        // drawn by Wagon in its own articulated frame (displayHorses), not here.
         this.scene.rotate(this.steering_angle, 0, 1, 0);
-        this.displayHorses();
         this.displayBeams();
         this.displayWheels();
 
         this.scene.popMatrix();
     }
 
+    // Draw the two side-by-side horses about their stance centre. Wagon places
+    // this frame on the terrain ahead of the wagon and tilts it to the local
+    // slope; the local layout (the x = ±2 spacing and the mount height) matches
+    // the offsets the chassis used to draw them at — UnderBody's
+    // translate(0, 1, 5.5) and the team's translate(2, 2, 10) — folded so the
+    // forward reach now lives in Wagon's frame and the centre sits at z = 0.
     displayHorses() {
         this.ensureHorseNormals();
 
         this.scene.pushMatrix();
-        this.scene.translate(2, 2, 10);
+        this.scene.translate(2, 3, 0);
         this.scene.scale(0.8, 0.8, 0.8);
 
         // Depth pass: just emit the geometry into the active depth shader so the
@@ -144,19 +156,12 @@ export class Direction extends CGFGroup {
     }
 
     displayBeams() {
-        // Longitudinal beam with a cross beam at each end (the axle frame)
+        // Longitudinal beam reaching forward from the rear axle cross beam
         this.scene.pushMatrix();
         this.scene.translate(0, 0, this.beam_length / 2);
         this.beam.display();
 
-        // Front cross beam
-        this.scene.pushMatrix();
-        this.scene.translate(0, 0, this.beam_length / 2);
-        this.scene.rotate(Math.PI / 2, 0, 1, 0);
-        this.beam.display();
-        this.scene.popMatrix();
-
-        // Back cross beam
+        // Back cross beam (the steering axle that carries the two front wheels)
         this.scene.pushMatrix();
         this.scene.translate(0, 0, -this.beam_length / 2);
         this.scene.rotate(Math.PI / 2, 0, 1, 0);

@@ -41,6 +41,15 @@ export class UnderBody extends CGFGroup {
     // Display
     // =====================================================
 
+    // The horse team is drawn by Wagon in its own articulated frame (so it can
+    // follow the terrain independently of the chassis pitch); expose the steering
+    // direction's horse pass on its own, forwarding the depth-pass flag so the
+    // textured horses cast shadows correctly.
+    displayHorses() {
+        this.direction._depth_pass = this._depth_pass;
+        this.direction.displayHorses();
+    }
+
     display() {
         this.scene.pushMatrix();
 
@@ -48,9 +57,8 @@ export class UnderBody extends CGFGroup {
         // relative to it.
         this.scene.translate(0, 1, 5.5);
 
-        // Steering direction (with its 2 front wheels and the horses). Pass the
-        // depth-pass flag through so the textured horses cast shadows correctly.
-        this.direction._depth_pass = this._depth_pass;
+        // Steering direction (with its 2 front wheels). The horse team is drawn
+        // separately by Wagon, in its own articulated frame.
         this.direction.display();
 
         // Lift to the support-beam layer

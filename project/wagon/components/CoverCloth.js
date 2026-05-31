@@ -67,11 +67,7 @@ export class CoverCloth extends CGFobject {
                     let pullDirectionX = pathPoint.x > 0 ? -0.2 : 0.2;
                     if (Math.abs(pathPoint.x) < 0.1) pullDirectionX = 0;
 
-                    let sagX =
-                        pullDirectionX *
-                        currentMaxSag *
-                        sagCurve *
-                        this.sagFactor;
+                    let sagX = pullDirectionX * currentMaxSag * sagCurve * this.sagFactor;
                     let sagY = -1.0 * currentMaxSag * sagCurve * this.sagFactor;
 
                     let finalX = baseX + sagX;
@@ -81,8 +77,7 @@ export class CoverCloth extends CGFobject {
                     this.vertices.push(finalX, finalY, finalZ);
 
                     let u = p / (archProfile.length - 1);
-                    let v =
-                        (currentZ + this.totalLength / 2) / this.totalLength;
+                    let v = (currentZ + this.totalLength / 2) / this.totalLength;
                     this.texCoords.push(u, v);
                 }
             }

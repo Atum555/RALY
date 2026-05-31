@@ -99,6 +99,33 @@ export class Wagon extends CGFGroup {
         this.pitch = 0; // nose up/down, about the local x (right) axis
         this.roll = 0; // lean left/right, about the local z (forward) axis
 
+        // -- Articulated horse team --
+        // The draught horses hang off the front of the wagon on the drawbar
+        // hinge, so they follow the terrain under their own feet rather than
+        // riding the chassis pitch: both wagon axles stay on the ground and so
+        // does the team. Their stance centre sits horse_reach ahead of the hitch
+        // (the steering pivot at horse_hitch_z; UnderBody mounts Direction there)
+        // and is swung by the steering angle so the team points where it is
+        // steered. horse_half_length / horse_track_half are the fore-aft and
+        // left-right spans used to read the local slope for the team's pitch and
+        // roll (the two horses stand at x = ±2). horse_hitch_z / horse_hitch_y are
+        // the front hitch (drawbar pivot) in wagon-local space, mirroring
+        // UnderBody's translate(0, 1, 5.5); horse_reach is the forward gap from
+        // the hitch to the team.
+        this.horse_hitch_z = 5.5;
+        this.horse_hitch_y = 1.0;
+        this.horse_reach = 7.5;
+        this.horse_half_length = 3.0;
+        this.horse_track_half = 2.0;
+
+        // Updated each frame by followTerrain(): the team's pitch and roll, the
+        // world height to drop them at, and their stance centre in world XZ.
+        this.horse_pitch = 0;
+        this.horse_roll = 0;
+        this.horse_anchor_y = 0;
+        this.horse_center_x = 0;
+        this.horse_center_z = 0;
+
         this.initComponents();
     }
 
@@ -297,6 +324,47 @@ export class Wagon extends CGFGroup {
         this.position_y = (fl + fr + rl + rr) / 4 + this.wheel_ground_offset;
         this.pitch = -Math.atan2(front - rear, this.axle_front_z - this.axle_rear_z);
         this.roll = Math.atan2(right - left, 2 * this.track_half);
+
+        // -- Articulated horse team --
+        // The horses hang off the front of the wagon on the drawbar hinge, so
+        // they follow the terrain under their own feet instead of riding the
+        // chassis pitch. Their stance centre sits horse_reach ahead of the hitch
+        // (horse_hitch_z), swung by the steering angle so the team points where
+        // it is steered; read the slope across horse_half_length for the team's
+        // own pitch and drop them onto the ground at that stance.
+        const sin_s = Math.sin(this.steering_angle);
+        const cos_s = Math.cos(this.steering_angle);
+
+        // The hitch (drawbar pivot at the wagon's front) swings back as the
+        // chassis pitches up a climb or down a descent, so track its actual
+        // fore-aft position rather than a fixed one: the team then keeps a steady
+        // gap to the moving front instead of drifting forward over the ground.
+        // The reach itself stays constant — foreshortening it by the pitch as
+        // well over-pulls at steep angles and parks the horses inside the wagon.
+        const cos_p = Math.cos(this.pitch);
+        const hitch_fwd = this.horse_hitch_y * Math.sin(this.pitch) + this.horse_hitch_z * cos_p;
+        const center_lx = this.horse_reach * sin_s;
+        const center_lz = hitch_fwd + this.horse_reach * cos_s;
+        const hl = this.horse_half_length;
+        const ht = this.horse_track_half;
+
+        // Steered forward (sin_s, cos_s) and right (cos_s, -sin_s) axes: sample
+        // the slope fore-aft for the team's pitch and left-right for its roll,
+        // exactly as the wagon does across its wheelbase and track.
+        const horse_front = sample(center_lx + hl * sin_s, center_lz + hl * cos_s);
+        const horse_back = sample(center_lx - hl * sin_s, center_lz - hl * cos_s);
+        const horse_right = sample(center_lx + ht * cos_s, center_lz - ht * sin_s);
+        const horse_left = sample(center_lx - ht * cos_s, center_lz + ht * sin_s);
+        const horse_ground = sample(center_lx, center_lz);
+
+        this.horse_pitch = -Math.atan2(horse_front - horse_back, 2 * hl);
+        this.horse_roll = Math.atan2(horse_right - horse_left, 2 * ht);
+        // Sit the team's stance the same height above its own terrain as the
+        // wagon body rides above its wheels, so the feet meet the ground exactly
+        // as they do on the flat (the front/rear axles use wheel_ground_offset).
+        this.horse_anchor_y = horse_ground + this.wheel_ground_offset;
+        this.horse_center_x = this.position_x + center_lx * cos_h + center_lz * sin_h;
+        this.horse_center_z = this.position_z - center_lx * sin_h + center_lz * cos_h;
     }
 
     // =====================================================
@@ -304,21 +372,21 @@ export class Wagon extends CGFGroup {
     // =====================================================
 
     display() {
-        this.scene.pushMatrix();
+        // Light the body + chassis with the soft, shadow-aware shader (skipped in
+        // the shadow depth pass, which keeps the active depth shader). The horses
+        // carry their own textured material, so forward the depth-pass flag for
+        // their shadow casting.
+        if (!this._depth_pass) this.applyBodyShader();
+        this.under_body._depth_pass = this._depth_pass;
 
-        // Drive the wagon around the world, riding on top of the terrain
+        // -- Wagon body + chassis: drive around the world, tilted on the terrain
+        //    so all four wheels track the ground.
+        this.scene.pushMatrix();
         this.scene.translate(this.position_x, this.position_y, this.position_z);
         this.scene.rotate(this.heading, 0, 1, 0);
         this.scene.rotate(this.pitch, 1, 0, 0);
         this.scene.rotate(this.roll, 0, 0, 1);
 
-        // Light the body + chassis with the soft, shadow-aware shader (skipped in
-        // the shadow depth pass, which keeps the active depth shader).
-        if (!this._depth_pass) this.applyBodyShader();
-
-        // Chassis. The horses on the steering axle carry their own textured
-        // material, so forward the depth-pass flag for their shadow casting.
-        this.under_body._depth_pass = this._depth_pass;
         this.under_body.display();
 
         // Body
@@ -332,8 +400,29 @@ export class Wagon extends CGFGroup {
         // cast into the wagon shadow map (and self-shadow) like the body.
         this.haybale._depth_pass = this._depth_pass;
         this.displayHayBales();
-        if (!this._depth_pass) this.scene.setActiveShader(this.scene.defaultShader);
+        this.scene.popMatrix();
 
+        // -- Horse team: articulated off the wagon's front, following the terrain
+        //    under their own feet (their own pitch + ground height) so the team
+        //    stays on the ground while the wagon's axles do too.
+        this.displayHorses();
+
+        if (!this._depth_pass) this.scene.setActiveShader(this.scene.defaultShader);
+    }
+
+    // Draw the draught horses as a unit hinged at the wagon's front (the
+    // drawbar). They share the wagon's heading and steering swing, but take their
+    // own pitch and ground height — sampled in followTerrain() from the terrain
+    // under their stance — so the team sits on the ground independently of how
+    // the chassis is pitched.
+    displayHorses() {
+        this.scene.pushMatrix();
+        this.scene.translate(this.horse_center_x, this.horse_anchor_y, this.horse_center_z);
+        this.scene.rotate(this.heading, 0, 1, 0);
+        this.scene.rotate(this.steering_angle, 0, 1, 0);
+        this.scene.rotate(this.horse_pitch, 1, 0, 0);
+        this.scene.rotate(this.horse_roll, 0, 0, 1);
+        this.under_body.displayHorses();
         this.scene.popMatrix();
     }
 
