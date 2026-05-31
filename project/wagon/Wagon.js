@@ -284,7 +284,8 @@ export class Wagon extends CGFGroup {
         // The axle pivots about its centre, so the two wheels arc in opposite
         // directions as the steering sweeps: the scrub subtracts on the right and
         // adds on the left, while both keep the shared forward roll.
-        this.frontWheelRotationRight = (this.frontWheelRotationRight + front_wheel_roll - steering_scrub) % (Math.PI * 2);
+        this.frontWheelRotationRight =
+            (this.frontWheelRotationRight + front_wheel_roll - steering_scrub) % (Math.PI * 2);
         this.frontWheelRotationLeft = (this.frontWheelRotationLeft + front_wheel_roll + steering_scrub) % (Math.PI * 2);
 
         this.under_body.update(this.wheelRotation, this.frontWheelRotationRight, this.frontWheelRotationLeft);
