@@ -1,3 +1,4 @@
+import { CGFshader } from "../../lib/CGF.js";
 import { CGFGroup } from "../core/CGFGroup.js";
 import { Body } from "./components/Body.js";
 import { UnderBody } from "./components/UnderBody.js";
@@ -88,6 +89,13 @@ export class Wagon extends CGFGroup {
         this.body = this.addPart(new Body(this.scene));
         this.under_body = this.addPart(new UnderBody(this.scene, 0.0));
         this.haybale = this.addPart(new HayBale(this.scene, 10, 10));
+
+        // Soft solid-colour shader for the body and chassis (not the hay), lit by
+        // the abstract sun and taking the terrain + self shadows. _depth_pass is
+        // set by ShadowMap while casting, so display() emits plain geometry then.
+        this.body_shader = new CGFshader(this.scene.gl, "wagon/shaders/wagon.vert", "wagon/shaders/wagon.frag");
+        this.body_shader.setUniformsValues({ u_wagon_color: [0.62, 0.46, 0.34] });
+        this._depth_pass = false;
     }
 
     // =====================================================
@@ -250,6 +258,10 @@ export class Wagon extends CGFGroup {
         this.scene.rotate(this.pitch, 1, 0, 0);
         this.scene.rotate(this.roll, 0, 0, 1);
 
+        // Light the body + chassis with the soft, shadow-aware shader (skipped in
+        // the shadow depth pass, which keeps the active depth shader).
+        if (!this._depth_pass) this.applyBodyShader();
+
         // Chassis
         this.under_body.display();
 
@@ -257,10 +269,25 @@ export class Wagon extends CGFGroup {
         this.scene.translate(0, 2.4, 0);
         this.body.display();
 
-        // Cargo
+        // Cargo: the bales carry their own textured, shadow-aware shader. In the
+        // depth pass they emit plain geometry under the active depth shader so they
+        // cast into the wagon shadow map (and self-shadow) like the body.
+        this.haybale._depth_pass = this._depth_pass;
         this.displayHayBales();
+        if (!this._depth_pass) this.scene.setActiveShader(this.scene.defaultShader);
 
         this.scene.popMatrix();
+    }
+
+    // Activate the body shader and feed it the sun + shadow uniforms from the
+    // terrain's shadow maps, so the body lights softly and takes terrain and self
+    // shadows. Falls back to a plain unshadowed look if shadows are off.
+    applyBodyShader() {
+        this.scene.setActiveShader(this.body_shader);
+        const sm = this.scene.terrain && this.scene.terrain.shadow_map;
+        if (!sm) return;
+        if (this.scene.terrain.shadows_enabled) sm.applyUniforms(this.body_shader);
+        else sm.disable(this.body_shader);
     }
 
     displayHayBales() {
