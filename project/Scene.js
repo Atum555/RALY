@@ -8,7 +8,7 @@ import { FpsCounter } from "./core/FpsCounter.js";
 import { patchCGFShaders } from "./core/patchCGFShaders.js";
 import { lerpAngle } from "./utils.js";
 import { Tulip } from "./flowers/tulip/Tulip.js";
-import { Chrysantemum } from "./flowers/chrysantemum/Chrysantemum.js";
+import { FlowerField } from "./flowers/FlowerField.js";
 
 export class Scene extends CGFscene {
     // =====================================================
@@ -118,7 +118,7 @@ export class Scene extends CGFscene {
         // Flowers (CGFappearance-based; lit by the default shader -- see initFlowers).
         this.initFlowers();
 
-        this.all_objects = [this.sky_sphere, this.terrain, this.wagon, this.barn, this.tulip, ...this.flowers];
+        this.all_objects = [this.sky_sphere, this.terrain, this.wagon, this.barn, this.tulip, this.flower_field];
     }
 
     // The flowers are drawn with CGF's default Phong shader (their CGFappearance
@@ -135,29 +135,17 @@ export class Scene extends CGFscene {
         light.update();
 
         // The flower geometry is sized for the old, small scene; this lifts it to
-        // something visible against the open-world terrain.
-        this.FLOWER_SCALE = 4;
+        // something visible against the open-world terrain (kept modest so it
+        // doesn't tower over the wagon).
+        this.FLOWER_SCALE = 2.8;
 
-        // A single tulip, exposed in the UI (axiom / angle / iterations / scale).
+        // A single showcase tulip, exposed in the UI (axiom / angle / iterations /
+        // scale), sat just ahead of the wagon's spawn.
         this.tulip = new Tulip(this);
 
-        // A patch of chrysanthemums on the terrain, offset from the origin so they
-        // clear the wagon's spawn. Each one's ground height is sampled at draw
-        // time (see displayFlowers).
-        this.flowers = [];
-        const COUNT = 24;
-        const COLS = 6;
-        const SPACING = 5;
-        const OFFSET_X = 15;
-        const OFFSET_Z = 15;
-        for (let i = 0; i < COUNT; i++) {
-            const row = Math.floor(i / COLS);
-            const col = i % COLS;
-            const f = new Chrysantemum(this);
-            f.gridX = OFFSET_X + (col - (COLS - 1) / 2) * SPACING;
-            f.gridZ = OFFSET_Z + row * SPACING;
-            this.flowers.push(f);
-        }
+        // The scattered field: flowers throughout the grass, in clusters and
+        // singles, rendered with distance LOD (see FlowerField).
+        this.flower_field = new FlowerField(this, this.terrain);
     }
 
     // =====================================================
@@ -387,23 +375,15 @@ export class Scene extends CGFscene {
         this.displayFlowers();
     }
 
-    // Draw the flowers under the default shader, each sitting on the terrain at
-    // its sampled ground height. The light set up in initFlowers() is refreshed
-    // onto the default shader here so the flowers stay lit after the wagon/barn
-    // ran their own shaders.
+    // Draw the flowers under the default shader, sitting on the terrain at their
+    // sampled ground height. The light set up in initFlowers() is refreshed onto
+    // the default shader (in the field too) so the flowers stay lit after the
+    // wagon/barn ran their own shaders.
     displayFlowers() {
         this.setActiveShader(this.defaultShader);
         this.lights[0].update();
 
-        for (const f of this.flowers) {
-            this.pushMatrix();
-            this.translate(f.gridX, this.terrain.getHeightAt(f.gridX, f.gridZ), f.gridZ);
-            this.scale(this.FLOWER_SCALE, this.FLOWER_SCALE, this.FLOWER_SCALE);
-            f.display();
-            this.popMatrix();
-        }
-
-        // The single UI-controlled tulip, just ahead of the wagon's spawn.
+        // The single UI-controlled showcase tulip, just ahead of the wagon's spawn.
         const tx = 6;
         const tz = 6;
         this.pushMatrix();
@@ -411,6 +391,9 @@ export class Scene extends CGFscene {
         this.scale(this.FLOWER_SCALE, this.FLOWER_SCALE, this.FLOWER_SCALE);
         this.tulip.display();
         this.popMatrix();
+
+        // The scattered field across the grass (handles its own LOD/culling).
+        this.flower_field.display();
     }
 
     // =====================================================

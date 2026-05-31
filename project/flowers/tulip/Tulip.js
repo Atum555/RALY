@@ -16,6 +16,14 @@ export class Tulip extends LSystem {
         this.iterations = 4;
         this.scaleFactor = 0.6;
 
+        // Petals per bloom; the flower field lowers this for distant LOD tiers.
+        this.flower_petals = 5;
+
+        // Strappy leaf length. The L-system's internal scale grows as iterations
+        // drop, so the field (which builds low-iteration prototypes) shrinks this
+        // to keep the leaves in proportion with the bloom.
+        this.leaf_scale = 3;
+
         this.tulip_colors = {
             flower_red: "#e63333",
             flower_purple: "#9933cc",
@@ -46,9 +54,9 @@ export class Tulip extends LSystem {
         this.grammar.push("S");
         this.primitives.push(this.addPart(new Stem(this.scene, 0.12, this.stemColor)));
         this.grammar.push("L");
-        this.primitives.push(this.addPart(new Leaf(this.scene, 3, this.stemColor, 4, 4)));
+        this.primitives.push(this.addPart(new Leaf(this.scene, this.leaf_scale, this.stemColor, 4, 4)));
         this.grammar.push("F");
-        this.primitives.push(this.addPart(new Flower(this.scene, this.flowerColor)));
+        this.primitives.push(this.addPart(new Flower(this.scene, this.flowerColor, this.flower_petals)));
     }
 
     // =====================================================

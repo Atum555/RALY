@@ -16,6 +16,15 @@ export class Chrysantemum extends LSystem {
         this.iterations = 4;
         this.scaleFactor = 0.7;
 
+        // Bloom geometry detail (rings x petals per head); the flower field lowers
+        // these for distant LOD tiers. Defaults are the full showcase head.
+        this.flower_rings = 4;
+        this.flower_petals = 8;
+
+        // Leaf length; field-tunable so low-iteration prototypes (whose internal
+        // L-system scale is larger) keep leaves in proportion with the bloom.
+        this.leaf_scale = 1.0;
+
         this.rose_colors = {
             flower_red: "#cc0033",
             flower_pink: "#ff6699",
@@ -63,11 +72,11 @@ export class Chrysantemum extends LSystem {
         );
         this.grammar.push("L");
         this.primitives.push(
-            this.addPart(new Leaf(this.scene, 1.0, this.stemColor, 4, 4)),
+            this.addPart(new Leaf(this.scene, this.leaf_scale, this.stemColor, 4, 4)),
         );
         this.grammar.push("F");
         this.primitives.push(
-            this.addPart(new Flower(this.scene, this.flowerColor)),
+            this.addPart(new Flower(this.scene, this.flowerColor, this.flower_rings, this.flower_petals)),
         );
     }
 

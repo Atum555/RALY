@@ -242,6 +242,20 @@ export class UI extends CGFinterface {
         tulip_controls.add(tulip, "scaleFactor", 0.1, 1).name("Scale Factor");
         tulip_controls.add(tulip, "init").name("Regenerate");
 
+        // == Flower Field =====================================
+        {
+            const field = this.scene.flower_field;
+            const field_controls = this.gui.addFolder("Flower Field");
+            field_controls.add(field, "enabled").name("Enable");
+            field_controls.add(field, "base_scale", 0.5, 6).step(0.1).name("Size");
+            field_controls.add(field, "density_bias", 0.0, 0.9).step(0.01).name("Sparsity");
+            field_controls.add(field, "base_per_cell", 0, 12).step(1).name("Base Density");
+            field_controls.add(field, "max_per_cell", 1, 24).step(1).name("Cluster Size");
+            field_controls.add(field, "density_scale", 0.001, 0.02).step(0.001).name("Patch Frequency");
+            field_controls.add(field, "draw_radius", 50, 800).step(10).name("Draw Radius");
+            field_controls.add(field, "draw_budget", 50, 3000).step(20).name("Max Drawn");
+        }
+
         // == Wagon ============================================
         {
             const wagon = this.scene.wagon;
