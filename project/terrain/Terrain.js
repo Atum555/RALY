@@ -664,6 +664,10 @@ export class Terrain extends CGFGroup {
         // getHeightAt), so its centre lands at (pos_x, -pos_z).
         const barn = this.scene.barn;
         if (barn) {
+            // Pickup marker: the barn's pickup spot is defined in barn-local XZ,
+            // so lift it into world space (translate + uniform scale) and map world
+            // z to -model y, matching the AO centre and getHeightAt's frame.
+            const s = barn.barn_scale;
             this.shader.setUniformsValues({
                 u_barn_ao_enabled: true,
                 u_barn_center: [barn.pos_x, -barn.pos_z],
@@ -672,9 +676,12 @@ export class Terrain extends CGFGroup {
                 u_barn_ao_strength: BARN_AO_STRENGTH,
                 u_terrain_half: this.half_extent,
                 u_terrain_size: this.effective_size,
+                u_marker_enabled: true,
+                u_marker_center: [barn.pos_x + barn.pickup.x * s, -(barn.pos_z + barn.pickup.z * s)],
+                u_marker_radius: barn.pickup.r * s,
             });
         } else {
-            this.shader.setUniformsValues({ u_barn_ao_enabled: false });
+            this.shader.setUniformsValues({ u_barn_ao_enabled: false, u_marker_enabled: false });
         }
 
         // Bind both materials to the sampler units the shader expects.

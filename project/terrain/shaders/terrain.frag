@@ -25,6 +25,15 @@ uniform float u_barn_ao_strength; // fraction the sky-ambient fill is cut at the
 uniform float u_terrain_half;   // terrain half-extent, for the UV -> model mapping
 uniform float u_terrain_size;   // terrain full extent
 
+// --- Barn pickup marker -----------------------------------------------------
+// The emissive disc marking the barn's pickup spot, painted straight onto the
+// ground instead of as a separate flat decal. Same model-space frame as the AO
+// above: the fragment rebuilds its position from its terrain UV and is inside the
+// marker when within u_marker_radius of u_marker_center.
+uniform bool u_marker_enabled;
+uniform vec2 u_marker_center;  // marker centre, terrain model coords
+uniform float u_marker_radius; // marker radius, model units
+
 // --- Two tiled PBR materials ------------------------------------------------
 // The open ground is rocky terrain; the dirt paths are gravelly sand. Each set
 // is: diffuse albedo, an OpenGL-convention tangent-space normal map, the packed
@@ -85,6 +94,8 @@ uniform bool u_wagon_shadow_on;
 const vec3 SUN_COLOR = vec3(1.0, 0.96, 0.88);     // warm sunlight (used on the dirt)
 const vec3 MOON_COLOR = vec3(0.12, 0.16, 0.26);   // very dim, dark-cool moonlight
 const vec3 SKY_AMBIENT = vec3(0.22, 0.25, 0.32);  // cool fill for shadowed dirt slopes
+const vec3 MARKER_COLOR = vec3(0.95, 0.92, 0.82);  // warm cream glow of the pickup disc
+const float MARKER_GLOW = 0.45;                     // how strongly the disc lights the ground
 
 // --- Value noise + fBm, so the grass varies without any image texture ---
 float hash(vec2 p) {
@@ -302,6 +313,18 @@ float barn_contact_ao() {
     return mix(1.0 - u_barn_ao_strength, 1.0, smoothstep(0.0, u_barn_ao_radius, outside));
 }
 
+// Coverage of the emissive pickup disc at this fragment: 1 inside the radius,
+// easing to 0 over a thin edge band so the rim antialiases. Reuses the same
+// UV -> model reconstruction as the contact AO above.
+float pickup_marker() {
+    if(!u_marker_enabled)
+        return 0.0;
+    vec2 m = vec2(v_terrain_uv.x * u_terrain_size - u_terrain_half, u_terrain_half - v_terrain_uv.y * u_terrain_size);
+    float dist = length(m - u_marker_center);
+    float edge = u_marker_radius * 0.02;
+    return 1.0 - smoothstep(u_marker_radius - edge, u_marker_radius, dist);
+}
+
 // Sample and fully light one tiled PBR set at the current fragment. T/B/n_geom
 // are the eye-space tangent frame, L the light and V the view direction. The
 // displacement map drives parallax-occlusion mapping, then albedo/ARM/normal are
@@ -408,6 +431,10 @@ void main() {
         // Blend the two fully-lit surfaces along the noisy path edge.
         lit_color = mix(lit_rock, lit_path, path_amount);
     }
+
+    // Light up the pickup disc: add a warm cream glow on top of the lit ground
+    // rather than replacing it, so the rock/path texture still reads through.
+    lit_color += MARKER_COLOR * (MARKER_GLOW * pickup_marker());
 
     // Distance fog: fade the lit colour into the horizon colour over the
     // near..far band, so distant terrain dissolves into the sky.

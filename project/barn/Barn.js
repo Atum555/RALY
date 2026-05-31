@@ -1,6 +1,5 @@
 import { CGFshader, CGFtexture } from "../../lib/CGF.js";
 import { CGFGroup } from "../core/CGFGroup.js";
-import { Circle } from "./components/Circle.js";
 import { Cube } from "./components/Cube.js";
 import { Beam } from "./components/Beam.js";
 import { Prism } from "./components/Prism.js";
@@ -25,7 +24,7 @@ export class Barn extends CGFGroup {
         this.length = 48;
         this.width = 48;
         this.header = 10;
-        this.pickup = { x: 0, z: 48, r: this.length / 2 };
+        this.pickup = { x: 0, z: 30, r: this.length / 2 };
 
         // Fixed world placement. The whole barn is translated to
         // (pos_x, pos_y, pos_z) and uniformly scaled by barn_scale in display().
@@ -70,7 +69,6 @@ export class Barn extends CGFGroup {
         this.prism = this.addPart(new Prism(this.scene, this.width, this.top, this.length));
         this.beam = this.addPart(new Beam(this.scene, 16, 0.4));
         this.roof = this.addPart(new Roof(this.scene, this.width, this.top, this.length, 2, 5, 5));
-        this.circle = this.addPart(new Circle(this.scene, this.pickup["r"], 50));
     }
 
     // Activate the shared wood shader, feed it the scene's sun + shadow-map
@@ -124,8 +122,8 @@ export class Barn extends CGFGroup {
     // every timber part under it, updating only the cheap tint/mask uniforms
     // between draws -- no per-part shader switches. The depth pass (driven by
     // ShadowMap via _depth_pass) skips all of that and emits plain geometry under
-    // the active depth shader so the barn casts into the terrain maps; the flat
-    // ground marker is skipped then, as a decal casts nothing.
+    // the active depth shader so the barn casts into the terrain maps. The pickup
+    // marker is painted by the terrain shader (see Terrain.display), not here.
     display() {
         const depth = this._depth_pass;
         const scene = this.scene;
@@ -134,16 +132,7 @@ export class Barn extends CGFGroup {
         scene.translate(this.pos_x, this.pos_y, this.pos_z);
         scene.scale(this.barn_scale, this.barn_scale, this.barn_scale);
 
-        if (!depth) {
-            // Ground pickup marker: emissive, drawn first under the (still active)
-            // default shader, before we switch to the wood shader for the timber.
-            scene.pushMatrix();
-            scene.translate(this.pickup["x"], 0, this.pickup["z"]);
-            this.circle.display();
-            scene.popMatrix();
-
-            this.beginWood();
-        }
+        if (!depth) this.beginWood();
 
         // Beams (all 24 share one tint/mask: set once, draw them all). The fake AO
         // is keyed to the box's barn-space height; the beams' nested transforms put
