@@ -85,6 +85,16 @@ export class UI extends CGFinterface {
         rock_controls.add(rock, "radius", 0.1, 5).step(0.1).name("Radius").onChange(rebuild_rock);
         rock_controls.add(rock, "scale", 1, 3).step(0.1).name("Scale").onChange(rebuild_rock);
 
+        // == Grass ============================================
+
+        const grass = this.scene.grassPatch;
+        const grass_controls = this.gui.addFolder("Grass");
+        const wind_controls = grass_controls.addFolder("Wind");
+        wind_controls.add(grass, "windEnabled").name("Wind Enabled");
+        wind_controls.add(grass, "windStrength", 0, 2).step(0.1).name("Strength");
+        wind_controls.add(grass, "windSpeed", 0, 10).step(0.1).name("Speed");
+        wind_controls.add(grass, "windSpatialFreq", 0, 2).step(0.01).name("Spatial Freq");
+
         return true;
     }
 }
