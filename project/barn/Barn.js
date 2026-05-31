@@ -21,7 +21,7 @@ export class Barn extends CGFGroup {
         this.pickup = { x: 0, z: 48, r: this.length / 2 };
         this.material = new BarnWoodMaterial(scene);
 
-        // World placement, tunable from the UI. The whole barn is translated to
+        // Fixed world placement. The whole barn is translated to
         // (pos_x, pos_y, pos_z) and uniformly scaled by barn_scale in display().
         this.pos_x = 0;
         this.pos_z = -110;
