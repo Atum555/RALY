@@ -30,9 +30,9 @@ uniform float u_parallax_near;  // full parallax within this view distance
 uniform float u_parallax_far;   // parallax faded out (and skipped) beyond this
 
 // --- The sun ----------------------------------------------------------------
-// A single hardcoded directional light, rotated into eye space with uMVMatrix
-// (w = 0 drops the translation) so it stays fixed in the sky as the wagon drives.
-uniform mat4 uMVMatrix;
+// A single directional light. Its eye-space direction is supplied by ShadowMap
+// each frame (u_sun_eye_dir), so it arcs across the sky with the day/night cycle.
+uniform vec3 u_sun_eye_dir;
 
 // --- Distance fog -----------------------------------------------------------
 uniform bool u_fog_enabled;
@@ -40,13 +40,14 @@ uniform vec3 u_fog_color;
 uniform float u_fog_near;
 uniform float u_fog_far;
 
-// --- Sun shadows (two dedicated maps) ---------------------------------------
-// A big map baked once over the whole terrain, plus a small high-res map that
-// follows the wagon. Each *_light_vp maps an eye-space position into that map's
-// light-clip space; a fragment is shadowed if either map occludes the sun. The
-// shadow only darkens the sun term, never the ambient fill.
+// --- Sun shadows (three dedicated maps) -------------------------------------
+// A whole-terrain map, a near map that follows the wagon and the wagon's own
+// map, all re-rendered every frame as the sun arcs across the sky. Each
+// *_light_vp maps an eye-space position into that map's light-clip space; a
+// fragment is shadowed if any map occludes the sun. The shadow only darkens the
+// sun term, never the ambient fill.
 uniform bool u_shadow_enabled;
-uniform sampler2D u_terrain_shadow_map;      // whole terrain, baked once
+uniform sampler2D u_terrain_shadow_map;      // whole terrain
 uniform sampler2D u_terrain_near_shadow_map; // small, follows the wagon (overrides the whole map)
 uniform sampler2D u_wagon_shadow_map;        // the wagon's own silhouette
 uniform mat4 u_terrain_light_vp;      // eye-space -> whole-terrain map light clip
@@ -59,7 +60,6 @@ uniform vec2 u_terrain_shadow_bias;   // (min, max) slope-scaled depth bias
 uniform vec2 u_terrain_near_shadow_bias;
 uniform vec2 u_wagon_shadow_bias;
 
-const vec3 SUN_WORLD_DIR = vec3(0.5, 0.8, 0.3);   // high in the sky, off to one side
 const vec3 SUN_COLOR = vec3(1.0, 0.96, 0.88);     // warm sunlight (used on the dirt)
 const vec3 SKY_AMBIENT = vec3(0.32, 0.36, 0.45);  // cool fill for shadowed dirt slopes
 
@@ -297,7 +297,7 @@ void main() {
     vec2 uv = v_terrain_uv * u_tex_repeat;
 
     vec3 n_geom = normalize(v_normal);
-    vec3 L = normalize((uMVMatrix * vec4(SUN_WORLD_DIR, 0.0)).xyz);
+    vec3 L = normalize(u_sun_eye_dir);
     vec3 V = normalize(-v_view_pos);
 
     // --- Two textured surfaces: rocky open ground, gravelly-sand path ------

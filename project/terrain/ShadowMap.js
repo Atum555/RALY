@@ -6,9 +6,10 @@ import {
     TERRAIN_SHADOW_BIAS_MAX,
     TERRAIN_NEAR_SHADOW_SIZE,
     TERRAIN_NEAR_SHADOW_RADIUS,
-    TERRAIN_NEAR_SHADOW_RECENTER,
     TERRAIN_NEAR_SHADOW_BIAS_MIN,
     TERRAIN_NEAR_SHADOW_BIAS_MAX,
+    TERRAIN_NEAR_SHADOW_SUN_FLOOR,
+    TERRAIN_NEAR_SHADOW_BACK_HEADROOM,
     WAGON_SHADOW_SIZE,
     WAGON_SHADOW_RADIUS,
     WAGON_SHADOW_BIAS_MIN,
@@ -17,28 +18,26 @@ import {
 
 // Sun shadows for the terrain and the wagon, from three depth maps:
 //
-//  - terrain (whole): baked exactly once over the whole terrain (tight ortho
-//    fit, uniform LOD), never re-rendered -- the terrain and sun are static.
+//  - terrain (whole): the whole terrain at a tight ortho fit and uniform LOD,
+//    for the distant shadows the near map doesn't reach.
 //  - terrain (near): same resolution over a small square that follows the wagon,
-//    re-centred only when the wagon drifts far enough, so terrain self-shadows
-//    are sharp near the wagon. Where a fragment is inside it, it overrides the
-//    whole-terrain map.
-//  - wagon: small, very high-resolution, follows the wagon (re-rendered every
-//    frame), holding the wagon's own silhouette so it casts a crisp shadow.
+//    so terrain self-shadows are sharp near it. Where a fragment is inside it, it
+//    overrides the whole-terrain map.
+//  - wagon: small, very high-resolution, follows the wagon, holding the wagon's
+//    own silhouette so it casts a crisp shadow.
 //
-// A fragment is shadowed if any applicable map occludes the sun (the maps are
-// combined with min). The same uniforms light the wagon body shader, so it
+// The sun tracks the day/night cycle, so all three maps are re-rendered every
+// frame. A fragment is shadowed if any applicable map occludes the sun (the maps
+// are combined with min). The same uniforms light the wagon body shader, so it
 // receives terrain and self shadows too.
 //
 // Everything lives in scene-world space (Y up, after Scene's -90deg X rotation).
-// The sun direction is the terrain shader's abstract SUN_WORLD_DIR rotated into
-// that frame; the CGF Sun/Moon lights are deliberately ignored.
+// The sun direction is pulled from the sky's day/night cycle each frame
+// (SkySphere.sun_world_dir); the CGF Sun/Moon lights are otherwise ignored here.
 export class ShadowMap {
-    // SUN_WORLD_DIR in terrain.frag is (0.5, 0.8, 0.3) in terrain-model space.
-    // Scene draws the terrain under rotate(-90deg, X), mapping model (x,y,z) ->
-    // world (x, z, -y); so the sun points this way in scene-world (Y up). This is
-    // the direction *towards* the sun (the shader's L); light travels along -D.
-    static SUN_WORLD_DIR = [0.5, 0.3, -0.8];
+    // Sun direction (scene-world, Y up, towards the sun) used before the sky's
+    // day/night cycle takes over each frame in updateSun().
+    static INITIAL_SUN_DIR = [0.5, 0.3, -0.8];
 
     constructor(scene) {
         this.scene = scene;
@@ -47,7 +46,7 @@ export class ShadowMap {
         // Depth-only shader for both light passes.
         this.depth_shader = new CGFshader(this.gl, "terrain/shaders/depth.vert", "terrain/shaders/depth.frag");
 
-        // --- Terrain map: baked once, static ---
+        // --- Terrain map: whole terrain, re-rendered every frame ---
         this.terrain_size = TERRAIN_SHADOW_SIZE;
         this.terrain_lod_depth = TERRAIN_SHADOW_LOD_DEPTH;
         this.terrain_bias = [TERRAIN_SHADOW_BIAS_MIN, TERRAIN_SHADOW_BIAS_MAX];
@@ -55,14 +54,12 @@ export class ShadowMap {
         this.terrain_tex = tm.tex;
         this.terrain_fbo = tm.fbo;
         this.terrain_cam = new CGFcameraOrtho(-1, 1, -1, 1, 1, 10, [0, 0, 0], [0, 0, -1], [0, 1, 0]);
-        this.terrain_frozen = mat4.create(); // world-space -> terrain light clip, as baked
+        this.terrain_frozen = mat4.create(); // world-space -> terrain light clip
         this.terrain_light_vp = mat4.create(); // eye-space -> terrain light clip (rebuilt per frame)
-        this.terrain_rendered = false;
 
         // --- Near terrain map: follows the wagon, sharper self-shadows ---
         this.near_size = TERRAIN_NEAR_SHADOW_SIZE;
         this.near_radius = TERRAIN_NEAR_SHADOW_RADIUS;
-        this.near_recenter = TERRAIN_NEAR_SHADOW_RECENTER;
         this.near_bias = [TERRAIN_NEAR_SHADOW_BIAS_MIN, TERRAIN_NEAR_SHADOW_BIAS_MAX];
         const nm = this.initMap(this.near_size);
         this.near_tex = nm.tex;
@@ -70,8 +67,7 @@ export class ShadowMap {
         this.near_cam = new CGFcameraOrtho(-1, 1, -1, 1, 1, 10, [0, 0, 0], [0, 0, -1], [0, 1, 0]);
         this.near_frozen = mat4.create();
         this.near_light_vp = mat4.create();
-        this.near_rendered = false;
-        this.near_center = [0, 0]; // wagon world (x, z) at last re-centre
+        this.near_bias_scale = 1; // world-bias compensation as the near reach deepens (renderTerrainNear)
 
         // --- Wagon map: small, crisp, follows the wagon ---
         this.wagon_size = WAGON_SHADOW_SIZE;
@@ -83,13 +79,23 @@ export class ShadowMap {
         this.wagon_cam = new CGFcameraOrtho(-1, 1, -1, 1, 1, 10, [0, 0, 0], [0, 0, -1], [0, 1, 0]);
         this.wagon_frozen = mat4.create();
         this.wagon_light_vp = mat4.create();
-        this.wagon_rendered = false;
 
         // Normalized sun direction (towards the sun) and the light's look
-        // direction (-D), reused every frame.
-        this.sun_dir = vec3.normalize(vec3.create(), vec3.fromValues(...ShadowMap.SUN_WORLD_DIR));
+        // direction (-D), refreshed from the sky's day/night cycle every frame.
+        this.sun_dir = vec3.normalize(vec3.create(), vec3.fromValues(...ShadowMap.INITIAL_SUN_DIR));
         this.look_dir = vec3.negate(vec3.create(), this.sun_dir);
         this.world_up = vec3.fromValues(0, 1, 0);
+
+        // The whole-terrain bias is in normalized light-clip depth, so its real
+        // (world) size is bias * the light frustum's depth range. That range is
+        // the terrain AABB projected onto the sun direction, which collapses when
+        // the sun is overhead -- under-biasing the map's large texels and
+        // speckling distant ground with acne. We hold the world-space bias
+        // constant by scaling the band each frame (renderTerrain) against the
+        // range at the reference angle the band was tuned at (INITIAL_SUN_DIR).
+        const ref = vec3.normalize(vec3.create(), vec3.fromValues(...ShadowMap.INITIAL_SUN_DIR));
+        this.terrain_bias_ref = [Math.abs(ref[0]), Math.abs(ref[1]), Math.abs(ref[2])];
+        this.terrain_bias_scale = 1;
 
         // eye-space -> world-space (inverse of the main camera view), recomputed
         // per frame so the shaders can map their eye-space fragments into the maps
@@ -128,73 +134,70 @@ export class ShadowMap {
         return { tex, fbo };
     }
 
-    // Force the terrain map to re-bake (e.g. after the terrain is regenerated).
-    invalidateTerrain() {
-        this.terrain_rendered = false;
-    }
-
     // =====================================================
     // Depth passes
     // =====================================================
 
-    // Bake the terrain map if needed and refresh the wagon map if it moved, then
-    // rebuild both eye-space matrices for this frame. Self-contained: saves and
-    // restores the scene camera, matrix stack, framebuffer and viewport so the
-    // caller's main pass continues unaffected. Assumes the caller's current
+    // Refresh the sun for this frame: pull its scene-world direction from the
+    // sky's day/night cycle, rebuild the light's look direction, and recompute
+    // the eye-space sun direction (for the body shaders) and the eye->world
+    // matrix. Runs every frame regardless of whether the maps are rendered, since
+    // every surface shader lights from u_sun_eye_dir.
+    updateSun() {
+        const sky = this.scene.sky_sphere;
+        if (sky && sky.sun_world_dir) {
+            this.sun_dir[0] = sky.sun_world_dir[0];
+            this.sun_dir[1] = sky.sun_world_dir[1];
+            this.sun_dir[2] = sky.sun_world_dir[2];
+            vec3.normalize(this.sun_dir, this.sun_dir);
+        }
+        vec3.negate(this.look_dir, this.sun_dir);
+
+        // eye -> world (undoes the main camera view) and the sun direction in eye
+        // space; both change as the camera moves and as the sun arcs across the sky.
+        const view = this.scene.camera.getViewMatrix();
+        mat4.invert(this.inv_view, view);
+        this.transformDir(view, this.sun_dir[0], this.sun_dir[1], this.sun_dir[2], this.sun_eye);
+        vec3.normalize(this.sun_eye, this.sun_eye);
+    }
+
+    // Re-render all three depth maps for the sun's current position and rebuild
+    // their eye-space matrices. The sun moves with the day/night cycle, so every
+    // map is redrawn every frame. Self-contained: saves and restores the scene
+    // camera, matrix stack, framebuffer and viewport so the caller's main pass
+    // continues unaffected. Assumes updateSun() ran first and the current
     // activeMatrix is the main view.
     render(terrain) {
         const scene = this.scene;
         const gl = this.gl;
-
-        // eye -> world for this frame (undoes the main camera view), and the sun
-        // direction in eye space (for the wagon body shader). Both change every
-        // frame as the camera moves even when nothing re-renders.
-        const view = scene.camera.getViewMatrix();
-        mat4.invert(this.inv_view, view);
-        this.transformDir(view, this.sun_dir[0], this.sun_dir[1], this.sun_dir[2], this.sun_eye);
-        vec3.normalize(this.sun_eye, this.sun_eye);
-
         const wagon = scene.wagon;
-        const need_terrain = !this.terrain_rendered;
-        const need_near = wagon && this.nearStale(wagon);
-        // The wagon is low-poly, so its small map is re-rendered every frame.
-        const need_wagon = !!wagon;
 
-        if (need_terrain || need_near || need_wagon) {
-            const real_cam = scene.camera;
-            scene.pushMatrix(); // save the main view·rotation matrix once
-            scene.setActiveShader(this.depth_shader);
+        const real_cam = scene.camera;
+        scene.pushMatrix(); // save the main view·rotation matrix once
+        scene.setActiveShader(this.depth_shader);
 
-            if (need_terrain) this.bakeTerrain(terrain);
-            if (need_near) this.renderTerrainNear(terrain, wagon);
-            if (need_wagon) this.renderWagon(wagon);
-
-            scene.camera = real_cam;
-            scene.popMatrix();
-            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+        this.renderTerrain(terrain);
+        if (wagon) {
+            this.renderTerrainNear(terrain, wagon);
+            this.renderWagon(wagon);
         }
 
-        // Per frame: eye-space -> light clip = frozen(world->light) · (eye->world).
-        // Decoupled from the depth renders so the camera moves without forcing one.
+        scene.camera = real_cam;
+        scene.popMatrix();
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+        // eye-space -> light clip = frozen(world->light) · (eye->world).
         mat4.multiply(this.terrain_light_vp, this.terrain_frozen, this.inv_view);
         mat4.multiply(this.near_light_vp, this.near_frozen, this.inv_view);
         mat4.multiply(this.wagon_light_vp, this.wagon_frozen, this.inv_view);
     }
 
-    // Has the wagon drifted far enough from the near map's centre to re-centre it?
-    nearStale(wagon) {
-        if (!this.near_rendered) return true;
-        const dx = wagon.position_x - this.near_center[0];
-        const dz = wagon.position_z - this.near_center[1];
-        return dx * dx + dz * dz > this.near_recenter * this.near_recenter;
-    }
-
-    // Bake the whole terrain into the terrain map, once. The light frustum is
+    // Render the whole terrain into the terrain map. The light frustum is
     // fitted tightly to the terrain's world AABB so the fixed-resolution map packs
     // as many texels per metre as possible, and the terrain is drawn at a uniform
     // LOD (not the wagon-centred one) so detail is even across the whole map.
-    bakeTerrain(terrain) {
+    renderTerrain(terrain) {
         const scene = this.scene;
         const gl = this.gl;
 
@@ -230,6 +233,14 @@ export class ShadowMap {
         cam.near = Math.max(1, -maxz - 1);
         cam.far = -minz + 1;
 
+        // Hold the depth bias constant in world units as the sun arcs: scale the
+        // band by how much this frame's depth range has shrunk relative to the
+        // reference angle (the AABB extent projected onto each sun direction).
+        const range = cam.far - cam.near;
+        const a = this.terrain_bias_ref;
+        const ref_range = 2 * h * (a[0] + a[2]) + (y_max - y_min) * a[1];
+        this.terrain_bias_scale = range > 0 ? ref_range / range : 1;
+
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.terrain_fbo);
         gl.viewport(0, 0, this.terrain_size, this.terrain_size);
         gl.clear(gl.DEPTH_BUFFER_BIT);
@@ -239,31 +250,49 @@ export class ShadowMap {
         scene.loadIdentity();
         scene.applyViewMatrix(); // activeMatrix = light view
 
+        // Cast from both sides of the heightfield: the terrain is a single sheet,
+        // so back-face culling would record only its sun-facing side. Once the sun
+        // arcs below the horizon its triangles turn away from the light and would
+        // be culled, leaving the map empty so the sun leaks up through the ground
+        // and lights the wagon from underneath. Drawing the underside too keeps the
+        // terrain occluding the sun no matter which side it is on.
+        gl.disable(gl.CULL_FACE);
         scene.pushMatrix();
         scene.rotate(-Math.PI / 2, 1, 0, 0); // into terrain-model frame, matching the main draw
         terrain.drawQuadDepth(-h, h, terrain.effective_size, 0, null, this.terrain_lod_depth);
         scene.popMatrix();
+        gl.enable(gl.CULL_FACE);
 
-        // Freeze world-space -> terrain light clip (proj · view).
+        // World-space -> terrain light clip (proj · view).
         mat4.multiply(this.terrain_frozen, cam.getProjectionMatrix(this.terrain_size, this.terrain_size), view);
-        this.terrain_rendered = true;
     }
 
-    // Re-centre the near terrain map on the wagon and re-render the terrain into
-    // it at the wagon-centred LOD (so it reuses the main pass's fine tiles),
-    // culled to the map's footprint. The centre is texel-snapped to avoid shimmer.
+    // Centre the near terrain map on the wagon and render the terrain into it at
+    // the wagon-centred LOD (so it reuses the main pass's fine tiles), culled to
+    // the map's footprint. The centre is texel-snapped to avoid shimmer.
     renderTerrainNear(terrain, wagon) {
         const scene = this.scene;
         const gl = this.gl;
         const r = this.near_radius;
         const cam = this.near_cam;
 
-        // Depth range tied to the map radius (not the global terrain height), so
-        // the bias stays small and the near self-shadows stay sharp. This covers
-        // ~r of vertical relief around the wagon either way -- ample for the
-        // drivable ground it follows; taller distant terrain is the far map's job.
+        // Sit the frustum up-sun of the wagon far enough that distant casters --
+        // whose long, low-sun shadows still fall on the footprint -- are in front
+        // of the light camera, not clipped behind its near plane. The reach grows
+        // like 1/sin(sun elevation) as the sun drops, but is capped at the terrain
+        // size + headroom (nothing on the terrain casts from farther) so it can't
+        // diverge at the horizon. fitFollow keeps the perpendicular footprint at
+        // +/-r regardless of the reach.
+        const reach = Math.min(
+            r / Math.max(this.sun_dir[1], TERRAIN_NEAR_SHADOW_SUN_FLOOR) + r,
+            terrain.effective_size + TERRAIN_NEAR_SHADOW_BACK_HEADROOM,
+        );
         const center = [wagon.position_x, wagon.position_y, wagon.position_z];
-        this.fitFollow(cam, this.near_size, r, center, r);
+        this.fitFollow(cam, this.near_size, r, center, reach);
+
+        // Deepening the frustum stretches the normalized depth band, so scale the
+        // bias to hold its world size at the value tuned for the base reach (r).
+        this.near_bias_scale = r / reach;
 
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.near_fbo);
         gl.viewport(0, 0, this.near_size, this.near_size);
@@ -274,23 +303,23 @@ export class ShadowMap {
         scene.loadIdentity();
         scene.applyViewMatrix();
 
+        // Double-sided, like the whole-terrain map: the sheet must occlude the sun
+        // from below too, or it leaks up through the ground at night (see renderTerrain).
+        gl.disable(gl.CULL_FACE);
         scene.pushMatrix();
         scene.rotate(-Math.PI / 2, 1, 0, 0); // into terrain-model frame
-        terrain.drawQuadDepth(-terrain.half_extent, terrain.half_extent, terrain.effective_size, 0, this.nearCullBox(terrain), null);
+        terrain.drawQuadDepth(-terrain.half_extent, terrain.half_extent, terrain.effective_size, 0, this.nearCullBox(terrain, reach), null);
         scene.popMatrix();
+        gl.enable(gl.CULL_FACE);
 
         mat4.multiply(this.near_frozen, cam.getProjectionMatrix(this.near_size, this.near_size), cam.getViewMatrix());
-        this.near_rendered = true;
-        this.near_center[0] = wagon.position_x;
-        this.near_center[1] = wagon.position_z;
     }
 
     // Model-space AABB of the near map's ground footprint, to cull the depth walk.
-    // Inflated by 1/sin(sun elevation) because the oblique sun stretches the square
-    // light frustum across the ground, plus a radius of slack for casters just
-    // outside it.
-    nearCullBox(terrain) {
-        const half = this.near_radius / Math.max(this.sun_dir[1], 0.2) + this.near_radius;
+    // `reach` is the frustum's up-sun extent (renderTerrainNear); the box is that
+    // wide each way so every caster the frustum can contain still gets drawn into it.
+    nearCullBox(terrain, reach) {
+        const half = reach;
         const wmx = terrain._wmx;
         const wmy = terrain._wmy;
         return { minx: wmx - half, maxx: wmx + half, miny: wmy - half, maxy: wmy + half };
@@ -361,7 +390,6 @@ export class ShadowMap {
         gl.cullFace(gl.BACK);
 
         mat4.multiply(this.wagon_frozen, cam.getProjectionMatrix(this.wagon_size, this.wagon_size), cam.getViewMatrix());
-        this.wagon_rendered = true;
     }
 
     // m (column-major mat4) applied to point (x, y, z) -> out.
@@ -421,8 +449,10 @@ export class ShadowMap {
         gl.uniform1f(this.loc("u_terrain_shadow_texel"), 1 / this.terrain_size);
         gl.uniform1f(this.loc("u_terrain_near_shadow_texel"), 1 / this.near_size);
         gl.uniform1f(this.loc("u_wagon_shadow_texel"), 1 / this.wagon_size);
-        gl.uniform2f(this.loc("u_terrain_shadow_bias"), this.terrain_bias[0], this.terrain_bias[1]);
-        gl.uniform2f(this.loc("u_terrain_near_shadow_bias"), this.near_bias[0], this.near_bias[1]);
+        gl.uniform2f(this.loc("u_terrain_shadow_bias"),
+            this.terrain_bias[0] * this.terrain_bias_scale, this.terrain_bias[1] * this.terrain_bias_scale);
+        gl.uniform2f(this.loc("u_terrain_near_shadow_bias"),
+            this.near_bias[0] * this.near_bias_scale, this.near_bias[1] * this.near_bias_scale);
         gl.uniform2f(this.loc("u_wagon_shadow_bias"), this.wagon_bias[0], this.wagon_bias[1]);
         gl.uniform3f(this.loc("u_sun_eye_dir"), this.sun_eye[0], this.sun_eye[1], this.sun_eye[2]);
         gl.uniform1i(this.loc("u_shadow_enabled"), 1);

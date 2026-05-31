@@ -105,10 +105,10 @@ export class Terrain extends CGFGroup {
         this.effective_path_count = 0; // POI count from terrain_path_node_density + terrain area
 
         // -- Sun-cast shadows --
-        // Only the terrain casts and receives shadows, only from the abstract sun
-        // (the same SUN_WORLD_DIR the shader lights with -- not the CGF Sun/Moon
-        // lights). Cascaded shadow maps centred on the wagon give the sharpest
-        // shadows where the wagon is and coarser ones toward the horizon.
+        // The terrain and wagon cast and receive shadows from the sun, which
+        // tracks the day/night cycle. Three depth maps (whole terrain, a near map
+        // and the wagon's own), all re-rendered every frame, give the sharpest
+        // shadows around the wagon and coarser ones toward the horizon.
         this.shadows_enabled = true;
 
         this.initHeightField();
@@ -286,10 +286,6 @@ export class Terrain extends CGFGroup {
         this.node_cache = new Map(); // key "depth:ix:iy" -> { tile, used }
         this.frame_stamp = 0;
         this.node_cache_budget = MIN_NODE_CACHE;
-
-        // The terrain changed, so the once-baked terrain shadow map is stale.
-        // (Created in initShaders, which runs after the first initHeightField.)
-        if (this.shadow_map) this.shadow_map.invalidateTerrain();
     }
 
     initTextures() {
@@ -656,8 +652,11 @@ export class Terrain extends CGFGroup {
         this.frame_stamp++;
 
         // --- Shadow depth pass ---
-        // Render the terrain's depth from the sun into the wagon-centred cascades
-        // first; it self-contains its camera/framebuffer/matrix changes.
+        // Keep the sun current (it drives the lighting in every surface shader)
+        // even when shadows are off, then render the terrain's depth from the sun
+        // into the maps; the render self-contains its camera/framebuffer/matrix
+        // changes.
+        this.shadow_map.updateSun();
         if (this.shadows_enabled) this.shadow_map.render(this);
 
         // --- Main pass ---

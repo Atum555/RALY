@@ -38,6 +38,11 @@ export class SkySphere extends CGFobject {
         this.day_factor = 0;
         this.sky_clouds_drift = 0;
 
+        // Scene-world direction towards the sun (Y up), tracking the visible
+        // sun's arc so the shadow maps and surface lighting follow the day/night
+        // cycle. Refreshed each update(); kept un-normalized (ShadowMap normalizes).
+        this.sun_world_dir = [0, 1, 0];
+
         this.initBuffers();
         this.initShaders();
     }
@@ -128,7 +133,7 @@ export class SkySphere extends CGFobject {
         this.sky_clouds_drift += this.sky_clouds_drift_speed * delta_time * 0.001;
 
         // Update Day/Night cycle
-        this.time_of_day += this.day_night_cycle_speed * delta_time * 0.00002;
+        this.time_of_day += this.day_night_cycle_speed * delta_time * 0.00001;
 
         const sun_pitch = (this.time_of_day / (Math.PI * 2)) * Math.PI;
         const sun_y = Math.sin(sun_pitch);
@@ -147,6 +152,12 @@ export class SkySphere extends CGFobject {
 
         sun.setPosition(x, y - 3.5, -z, 1.0);
         moon.setPosition(x, -y + 3.5, z, 1.0);
+
+        // Direction towards the sun from the origin, matching the visible sun's
+        // arc above; the shadow maps light and cast from this.
+        this.sun_world_dir[0] = x;
+        this.sun_world_dir[1] = y;
+        this.sun_world_dir[2] = -z;
 
         const buffer = 3.0;
         if (y > -buffer) sun.enable();
