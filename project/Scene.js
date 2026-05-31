@@ -5,6 +5,7 @@ import { Terrain } from "./terrain/Terrain.js";
 import { Barn } from "./barn/Barn.js";
 import { ShadowMap } from "./lighting/ShadowMap.js";
 import { FpsCounter } from "./core/FpsCounter.js";
+import { patchCGFShaders } from "./core/patchCGFShaders.js";
 import { lerpAngle } from "./utils.js";
 
 export class Scene extends CGFscene {
@@ -18,6 +19,10 @@ export class Scene extends CGFscene {
 
     init(application) {
         super.init(application);
+
+        // Replace CGF's per-shader-switch gl.getUniform readback (a synchronous
+        // GPU pipeline stall, ~90% of the frame) with a JS-side uniform cache.
+        patchCGFShaders();
 
         this.gl.clearColor(1.0, 1.0, 1.0, 1.0);
         this.gl.clearDepth(1.0);
