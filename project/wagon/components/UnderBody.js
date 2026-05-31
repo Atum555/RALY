@@ -15,6 +15,10 @@ export class UnderBody extends CGFGroup {
         this.beam = this.addPart(new Beam(this.scene, 5.5, 0.2));
         this.big_beam = this.addPart(new Beam(this.scene, 9, 0.2));
         this.wheel = this.addPart(new Wheel(this.scene));
+
+        // Set by Wagon while the shadow map casts; forwarded to the steering
+        // direction so its textured horses emit plain depth geometry then.
+        this._depth_pass = false;
     }
 
     // =====================================================
@@ -44,7 +48,9 @@ export class UnderBody extends CGFGroup {
         // relative to it.
         this.scene.translate(0, 1, 5.5);
 
-        // Steering direction (with its 2 front wheels)
+        // Steering direction (with its 2 front wheels and the horses). Pass the
+        // depth-pass flag through so the textured horses cast shadows correctly.
+        this.direction._depth_pass = this._depth_pass;
         this.direction.display();
 
         // Lift to the support-beam layer

@@ -316,7 +316,9 @@ export class Wagon extends CGFGroup {
         // the shadow depth pass, which keeps the active depth shader).
         if (!this._depth_pass) this.applyBodyShader();
 
-        // Chassis
+        // Chassis. The horses on the steering axle carry their own textured
+        // material, so forward the depth-pass flag for their shadow casting.
+        this.under_body._depth_pass = this._depth_pass;
         this.under_body.display();
 
         // Body

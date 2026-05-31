@@ -1,0 +1,23 @@
+// Horse shader: the textured draught horses, taking the sun's terrain and self
+// shadows the same way the wagon body does. Eye-space position + normal and the
+// texture UV are passed to the fragment stage; the shadow maps are sampled there
+// with the exact same uniforms as the terrain, wagon and hay-bale shaders.
+attribute vec3 aVertexPosition;
+attribute vec3 aVertexNormal;
+attribute vec2 aTextureCoord;
+
+uniform mat4 uMVMatrix;
+uniform mat4 uPMatrix;
+uniform mat4 uNMatrix;
+
+varying vec2 v_uv;       // texture coordinate
+varying vec3 v_normal;   // view-space normal
+varying vec3 v_view_pos; // view-space position, for the shadow lookup
+
+void main() {
+    vec4 view_pos = uMVMatrix * vec4(aVertexPosition, 1.0);
+    gl_Position = uPMatrix * view_pos;
+    v_view_pos = view_pos.xyz;
+    v_normal = normalize((uNMatrix * vec4(aVertexNormal, 0.0)).xyz);
+    v_uv = aTextureCoord;
+}
