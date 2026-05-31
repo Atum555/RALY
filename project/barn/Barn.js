@@ -24,7 +24,7 @@ export class Barn extends CGFGroup {
         this.length = 48;
         this.width = 48;
         this.header = 10;
-        this.pickup = { x: 0, z: 30, r: this.length / 2 };
+        this.pickup = { x: 0, z: 25, r: this.length / 3 };
 
         // Fixed world placement. The whole barn is translated to
         // (pos_x, pos_y, pos_z) and uniformly scaled by barn_scale in display().

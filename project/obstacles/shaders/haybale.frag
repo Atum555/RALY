@@ -9,7 +9,8 @@ varying vec3 v_view_pos;
 uniform sampler2D u_hay_texture; // mipmapped hay diffuse
 uniform vec3 u_sun_eye_dir;      // sun direction in eye space (the abstract sun)
 uniform vec3 u_moon_eye_dir;     // moon direction in eye space (cool night fill)
-uniform float u_sun_intensity;   // 0..1, faded to 0 over the 0 -> -2 deg horizon band
+uniform float u_sun_intensity;   // direct sun strength: 1 by day, lifted as it sets, faded to 0 below the horizon
+uniform vec3 u_sun_tint;         // warm multiplier on the sunlight, white by day, orange as it sets
 uniform float u_moon_intensity;  // 0..1, faded to 0 over the 0 -> -2 deg horizon band
 
 const vec3 MOON_COLOR = vec3(0.12, 0.16, 0.26); // very dim, dark-cool moonlight
@@ -106,7 +107,7 @@ void main() {
     // Textured base: a cool ambient fill (never goes black) plus the sun's
     // diffuse, which the shadow darkens.
     vec3 ambient = base * 0.3;
-    vec3 diffuse = base * ndl * shadow * 0.7 * u_sun_intensity;
+    vec3 diffuse = base * u_sun_tint * ndl * shadow * 0.7 * u_sun_intensity;
 
     // Cool moonlight: a second, very dim directional term that self-gates by its
     // own N.L (zero by day, when the moon is below the horizon), fades off below the

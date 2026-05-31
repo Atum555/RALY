@@ -3,12 +3,12 @@ import { SkySphere } from "./sky/SkySphere.js";
 import { Wagon } from "./wagon/Wagon.js";
 import { Terrain } from "./terrain/Terrain.js";
 import { Barn } from "./barn/Barn.js";
+import { HayBaleField } from "./obstacles/HayBaleField.js";
 import { ShadowMap } from "./lighting/ShadowMap.js";
 import { FpsCounter } from "./core/FpsCounter.js";
 import { patchCGFShaders } from "./core/patchCGFShaders.js";
 import { lerpAngle } from "./utils.js";
 import { GameState } from "./gameplay/GameState.js";
-import { Collectible } from "./gameplay/Collectible.js";
 import { Rock } from "./obstacles/Rock.js";
 
 export class Scene extends CGFscene {
@@ -111,12 +111,15 @@ export class Scene extends CGFscene {
         this.wagon = new Wagon(this);
         this.barn = new Barn(this);
 
+        // Loose hay bales strewn along the dirt paths as obstacles.
+        this.haybales = new HayBaleField(this, this.terrain);
+
         // Sun/moon shadow maps for the terrain and the wagon. Scene-owned: it
         // drives the depth pass each frame (display) and both the terrain and the
         // wagon sample the same maps. Built after the casters it renders.
         this.shadow_map = new ShadowMap(this);
 
-        this.all_objects = [this.sky_sphere, this.terrain, this.wagon, this.barn];
+        this.all_objects = [this.sky_sphere, this.terrain, this.wagon, this.barn, this.haybales];
 
         // Gameplay layer (HP/score, bale pickup, barn delivery, rock damage).
         this.initGameplay();
@@ -134,15 +137,11 @@ export class Scene extends CGFscene {
         this.barn_zone_r = this.barn.pickup.r * s;
         this.barn_delivered = false;
 
-        // Collectible hay bales scattered around the clearing, each resting on the
-        // terrain. Placed out past the delivery disc so the wagon has to drive out
-        // to collect them and back to the barn to deliver.
-        const bale_spots = [
-            [140, 40], [-130, 60], [60, 170], [-90, -150], [170, -70],
-        ];
-        this.bales = bale_spots.map(
-            ([x, z]) => new Collectible(this, x, z, this.terrain.getHeightAt(x, z)),
-        );
+        // The collectibles ARE the hay bales scattered across the field: the
+        // pickup logic marks a placement collected, and the field then hides that
+        // bale and drops its proximity arrow. Each placement is { x, y, z, yaw };
+        // the collected flag is added lazily on pickup.
+        this.bales = this.haybales.placements;
 
         // Hazard rocks: damage records (x, z, damageCooldown) paired with a Rock
         // mesh for display. Kept out of all_objects (no normal-viz needed).
@@ -185,6 +184,9 @@ export class Scene extends CGFscene {
         this.applyWagonInput();
         this.wagon.update(this.delta_time / 1000.0);
         this.updateCamera();
+
+        // Bob the hay-bale proximity arrows.
+        this.haybales.update(this.delta_time / 1000.0);
 
         // Gameplay: HP drain + score, automatic barn delivery, rock damage.
         // (Bale pickup is manual — the P key, see UI.js.)
@@ -403,18 +405,22 @@ export class Scene extends CGFscene {
         // Barn
         this.barn.display();
 
-        // Gameplay props (collectible bales + hazard rocks).
+        // Hay bales scattered along the paths — these are the collectibles
+        // (collected ones hide themselves).
+        this.haybales.display();
+
+        // Proximity markers hovering over the uncollected bales near the wagon.
+        this.haybales.displayArrows();
+
+        // Hazard rocks.
         this.displayGameplay();
     }
 
-    // Draw the gameplay props under the default shader with plain CGF
-    // appearances: the collectible bales (revealed near the wagon) and the
-    // hazard rocks. Drawn after the barn, which leaves the default shader active.
+    // Draw the hazard rocks under the default shader with plain CGF appearances.
+    // Drawn after the barn/bales, which leave the default shader active.
     displayGameplay() {
         if (!this.game_state) return;
         this.setActiveShader(this.defaultShader);
-
-        for (const bale of this.bales) bale.display(this.wagon);
 
         for (const rock of this.rocks) {
             this.pushMatrix();
