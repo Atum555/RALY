@@ -1,4 +1,4 @@
-import { CGFobject } from "../../lib/CGF.js";
+import { CGFobject } from "../../../lib/CGF.js";
 
 // A single barn support beam, drawn many times by the Barn. Pure geometry: the
 // Barn drives the shared wood shader, so this just emits the mesh and draws the

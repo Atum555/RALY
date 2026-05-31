@@ -1,12 +1,12 @@
 import { CGFobject } from "../../../lib/CGF.js";
-import { CircleMaterial } from "./materials/circleMaterial.js";
+import { CircleMaterial } from "../materials/circleMaterial.js";
 
 export class Circle extends CGFobject {
     constructor(scene, radius, slices) {
         super(scene);
         this.radius = radius;
         this.slices = slices;
-        this.wasPlayerInside = false; 
+        this.wasPlayerInside = false;
         this.material = new CircleMaterial(this.scene);
         this.initBuffers();
     }

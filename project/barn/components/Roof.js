@@ -7,15 +7,7 @@ export class Roof extends CGFobject {
     // Init
     // =====================================================
 
-    constructor(
-        scene,
-        width,
-        height,
-        length,
-        thickness,
-        overhangSide,
-        overhangLength,
-    ) {
+    constructor(scene, width, height, length, thickness, overhangSide, overhangLength) {
         super(scene);
         this.width = width;
         this.height = height;
@@ -62,11 +54,8 @@ export class Roof extends CGFobject {
                 dx = nX / len;
                 dy = nY / len;
             } else if (i === numPoints - 1) {
-                let nX = -(
-                    baseProfile[numPoints - 1].y - baseProfile[numPoints - 2].y
-                );
-                let nY =
-                    baseProfile[numPoints - 1].x - baseProfile[numPoints - 2].x;
+                let nX = -(baseProfile[numPoints - 1].y - baseProfile[numPoints - 2].y);
+                let nY = baseProfile[numPoints - 1].x - baseProfile[numPoints - 2].x;
                 let len = Math.sqrt(nX * nX + nY * nY);
                 dx = nX / len;
                 dy = nY / len;
@@ -93,21 +82,15 @@ export class Roof extends CGFobject {
                 dy = tx;
             }
 
-            let extSide =
-                i === 0 || i === numPoints - 1 ? this.overhangSide : 0;
+            let extSide = i === 0 || i === numPoints - 1 ? this.overhangSide : 0;
 
             outerProfile.push({
-                x:
-                    baseProfile[i].x +
-                    dx * this.thickness +
-                    (i === 0 ? -extSide : i === numPoints - 1 ? extSide : 0),
+                x: baseProfile[i].x + dx * this.thickness + (i === 0 ? -extSide : i === numPoints - 1 ? extSide : 0),
                 y: baseProfile[i].y + dy * this.thickness,
             });
 
             innerProfile.push({
-                x:
-                    baseProfile[i].x +
-                    (i === 0 ? -extSide : i === numPoints - 1 ? extSide : 0),
+                x: baseProfile[i].x + (i === 0 ? -extSide : i === numPoints - 1 ? extSide : 0),
                 y: baseProfile[i].y,
             });
         }
@@ -147,24 +130,8 @@ export class Roof extends CGFobject {
             let nX = -dy / len;
             let nY = dx / len;
 
-            buildSegment(
-                outerProfile[i],
-                outerProfile[i + 1],
-                nX,
-                nY,
-                0,
-                true,
-                len * 4,
-            );
-            buildSegment(
-                innerProfile[i],
-                innerProfile[i + 1],
-                -nX,
-                -nY,
-                0,
-                false,
-                len * 4,
-            );
+            buildSegment(outerProfile[i], outerProfile[i + 1], nX, nY, 0, true, len * 4);
+            buildSegment(innerProfile[i], innerProfile[i + 1], -nX, -nY, 0, false, len * 4);
         }
 
         const buildCap = (zVal, nZ, isFront) => {
@@ -173,19 +140,13 @@ export class Roof extends CGFobject {
             for (let i = 0; i < numPoints; i++) {
                 this.vertices.push(innerProfile[i].x, innerProfile[i].y, zVal);
                 this.normals.push(0, 0, nZ);
-                this.texCoords.push(
-                    ((innerProfile[i].x + hw) / this.width) * 4,
-                    innerProfile[i].y / this.height,
-                );
+                this.texCoords.push(((innerProfile[i].x + hw) / this.width) * 4, innerProfile[i].y / this.height);
             }
 
             for (let i = 0; i < numPoints; i++) {
                 this.vertices.push(outerProfile[i].x, outerProfile[i].y, zVal);
                 this.normals.push(0, 0, nZ);
-                this.texCoords.push(
-                    ((outerProfile[i].x + hw) / this.width) * 4,
-                    outerProfile[i].y / this.height,
-                );
+                this.texCoords.push(((outerProfile[i].x + hw) / this.width) * 4, outerProfile[i].y / this.height);
             }
 
             for (let i = 0; i < numPoints - 1; i++) {

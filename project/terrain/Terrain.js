@@ -699,7 +699,7 @@ export class Terrain extends CGFGroup {
         // corner is (-half_extent, +half_extent).
         this.drawQuad(-this.half_extent, this.half_extent, this.effective_size, 0);
         this.evictNodeCache();
-
-        this.scene.setActiveShader(this.scene.defaultShader);
+        // No reset to the default shader: the wagon (drawn next) sets its body
+        // shader before drawing anything, so resetting here is a dead switch.
     }
 }

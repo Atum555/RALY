@@ -163,4 +163,18 @@ export class HayBale extends CGFobject {
         this.material.apply();
         super.display();
     }
+
+    // Activate the lit shader + bind the texture once, so a caller drawing several
+    // bales can do it before the loop and then emit each bale's geometry with
+    // displayShape() — no per-bale shader switch or shadow-uniform re-upload. In
+    // the depth pass there's nothing to set up (the active depth shader stands).
+    beginBatch() {
+        if (!this._depth_pass) this.material.apply();
+    }
+
+    // Emit just the bale geometry under whatever shader is currently active.
+    // Pairs with beginBatch() for drawing multiple bales under one activation.
+    displayShape() {
+        super.display();
+    }
 }

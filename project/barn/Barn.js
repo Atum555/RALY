@@ -1,10 +1,10 @@
 import { CGFshader, CGFtexture } from "../../lib/CGF.js";
 import { CGFGroup } from "../core/CGFGroup.js";
-import { Circle } from "./Circle.js";
-import { Cube } from "./Cube.js";
-import { Beam } from "./Beam.js";
-import { Prism } from "./Prism.js";
-import { Roof } from "./Roof.js";
+import { Circle } from "./components/Circle.js";
+import { Cube } from "./components/Cube.js";
+import { Beam } from "./components/Beam.js";
+import { Prism } from "./components/Prism.js";
+import { Roof } from "./components/Roof.js";
 
 export class Barn extends CGFGroup {
     // Per-part wood tints fed to the shared shader between draws (the cube keeps a
@@ -92,9 +92,14 @@ export class Barn extends CGFGroup {
         this.bindMipmapped(this.doorTex, 1);
         this.bindMipmapped(this.windowTex, 2);
 
-        this.maskTex.bind(3);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        // bind() returns false (and leaves nothing bound) until the image has
+        // loaded, so gate the one-time NEAREST setup on it -- otherwise the
+        // texParameteri calls fire against an unbound target and WebGL warns.
+        if (this.maskTex.bind(3) && !this.maskTex._filtered) {
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            this.maskTex._filtered = true;
+        }
     }
 
     // Bind a photo texture on `unit` and, the first frame its image has finished
