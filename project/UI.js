@@ -272,13 +272,20 @@ export class UI extends CGFinterface {
     processKeyDown(event) {
         this.activeKeys[event.code] = true;
 
-        // Gameplay: P picks up a nearby bale, L drops all carried bales.
+        // Gameplay: P picks up a nearby bale, L delivers carried bales at the barn.
         if (this.scene.game_state) {
             if (event.code === "KeyP") {
                 this.scene.game_state.checkBalePickup(this.scene.wagon, this.scene.bales);
             }
             if (event.code === "KeyL") {
-                this.scene.game_state.bales_carried = 0;
+                // Deliver carried bales — only fires when the wagon is inside the
+                // barn drop-off circle (checkBarnDelivery does the zone check).
+                this.scene.barn_delivered = this.scene.game_state.checkBarnDelivery(
+                    this.scene.wagon,
+                    this.scene.barn_zone_x,
+                    this.scene.barn_zone_z,
+                    this.scene.barn_zone_r,
+                );
             }
         }
     }

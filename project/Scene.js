@@ -42,6 +42,7 @@ export class Scene extends CGFscene {
         this.initCamera();
         this.initUIValues();
         this.initObjects();
+        this.initGameplay();
     }
 
     initCamera() {
@@ -127,9 +128,6 @@ export class Scene extends CGFscene {
         this.shadow_map = new ShadowMap(this);
 
         this.all_objects = [this.sky_sphere, this.terrain, this.wagon, this.barn, this.haybales, this.rock_field];
-
-        // Gameplay layer (HP/score, bale pickup, barn delivery, rock damage).
-        this.initGameplay();
     }
 
     initGameplay() {
@@ -195,16 +193,10 @@ export class Scene extends CGFscene {
         // Bob the hay-bale proximity arrows.
         this.haybales.update(this.delta_time / 1000.0);
 
-        // Gameplay: HP drain + score, automatic barn delivery, rock damage.
-        // (Bale pickup is manual — the P key, see UI.js.)
+        // Gameplay: HP drain + score, rock damage. Bale pickup (P) and barn
+        // delivery (L) are both manual key actions — see UI.js.
         const delta = this.delta_time / 1000.0;
         this.game_state.update(delta);
-        this.barn_delivered = this.game_state.checkBarnDelivery(
-            this.wagon,
-            this.barn_zone_x,
-            this.barn_zone_z,
-            this.barn_zone_r,
-        );
         this.game_state.checkRockCollisions(this.wagon, this.rocks, delta);
     }
 
