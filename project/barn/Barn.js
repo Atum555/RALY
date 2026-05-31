@@ -20,19 +20,26 @@ export class Barn extends CGFGroup {
         this.length = 48;
         this.width = 48;
         this.header = 10;
-        this.pickup = {x: 0, z: 48, r : this.length / 2}
+        this.pickup = { x: 0, z: 48, r: this.length / 2 };
         this.material = new BarnWoodMaterial(scene);
+
+        // World placement, tunable from the UI. The whole barn is translated to
+        // (pos_x, pos_y, pos_z) and uniformly scaled by barn_scale in display().
+        this.pos_x = 0;
+        this.pos_y = elevation;
+        this.pos_z = 0;
+        this.barn_scale = 1.0;
+
         this.initComponents();
     }
 
     initComponents() {
         this.cube = this.addPart(new Cube(this.scene, this.top, this.opening, this.length, this.header, this.width));
         this.prism = this.addPart(new Prism(this.scene, this.width, this.top, this.length));
-        this.beam = this.addPart(new Beam(this.scene,16,0.4));
-        this.roof = this.addPart(new Roof(this.scene,this.width,this.top,this.length,2,5,5));
+        this.beam = this.addPart(new Beam(this.scene, 16, 0.4));
+        this.roof = this.addPart(new Roof(this.scene, this.width, this.top, this.length, 2, 5, 5));
         this.circle = this.addPart(new Circle(this.scene, this.pickup["r"], 50));
     }
-
 
     // =====================================================
     // Display
@@ -40,7 +47,8 @@ export class Barn extends CGFGroup {
 
     display() {
         this.scene.pushMatrix();
-        this.scene.translate(0, this.elevation, 0);
+        this.scene.translate(this.pos_x, this.pos_y, this.pos_z);
+        this.scene.scale(this.barn_scale, this.barn_scale, this.barn_scale);
         this.displayBeams();
         this.scene.pushMatrix();
 
@@ -56,31 +64,31 @@ export class Barn extends CGFGroup {
         this.scene.popMatrix();
     }
 
-    displayFrontBeams(){
+    displayFrontBeams() {
         this.scene.pushMatrix();
-        this.scene.translate(this.length / 2 - 0.4 ,8.2,this.length / 2 + 1 - 0.9);
+        this.scene.translate(this.length / 2 - 0.4, 8.2, this.length / 2 + 1 - 0.9);
         this.scene.rotate(Math.PI / 2, 1, 0, 0);
-        this.beam.display();
-        this.scene.translate(-this.opening - 2.3,0,0);
-        this.beam.display();
-        this.scene.translate(-this.opening -0.6,0,0);
         this.beam.display();
         this.scene.translate(-this.opening - 2.3, 0, 0);
         this.beam.display();
-        this.scene.rotate(Math.PI / 2, 0,1,0);
-        this.scene.scale(1,1,2.95);
-        this.scene.translate(2.2,0,8);
+        this.scene.translate(-this.opening - 0.6, 0, 0);
         this.beam.display();
-        this.scene.translate(5.4,0,0);
+        this.scene.translate(-this.opening - 2.3, 0, 0);
+        this.beam.display();
+        this.scene.rotate(Math.PI / 2, 0, 1, 0);
+        this.scene.scale(1, 1, 2.95);
+        this.scene.translate(2.2, 0, 8);
+        this.beam.display();
+        this.scene.translate(5.4, 0, 0);
         this.beam.display();
         this.scene.popMatrix();
     }
 
-    displayBeams(){
+    displayBeams() {
         this.scene.pushMatrix();
-        for(let i = 0; i < 4; i++){
+        for (let i = 0; i < 4; i++) {
             this.displayFrontBeams();
-            this.scene.rotate(Math.PI / 2, 0, 1,0);
+            this.scene.rotate(Math.PI / 2, 0, 1, 0);
         }
         this.scene.popMatrix();
     }
