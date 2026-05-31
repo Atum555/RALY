@@ -1,18 +1,13 @@
-import { CGFscene, CGFcamera, CGFappearance } from "../lib/CGF.js";
+import { CGFscene, CGFcamera } from "../lib/CGF.js";
 import { SkySphere } from "./sky/SkySphere.js";
 import { Wagon } from "./wagon/Wagon.js";
 import { Terrain } from "./terrain/Terrain.js";
 import { Barn } from "./barn/Barn.js";
 import { ShadowMap } from "./lighting/ShadowMap.js";
 import { FpsCounter } from "./core/FpsCounter.js";
-import { hexToRGB, lerpAngle } from "./utils.js";
+import { lerpAngle } from "./utils.js";
 
 export class Scene extends CGFscene {
-    static Lights = Object.freeze({
-        SUN: 0,
-        MOON: 1,
-    });
-
     // =====================================================
     // Init
     // =====================================================
@@ -36,8 +31,6 @@ export class Scene extends CGFscene {
         this.delta_time = 0;
 
         this.initCamera();
-        this.initLights();
-        this.initMaterials();
         this.initUIValues();
         this.initObjects();
     }
@@ -90,34 +83,6 @@ export class Scene extends CGFscene {
         this.CAM_TILT_RATE = 4.0; // tilt easing rate (1/s)
         this.CAM_TILT_GAIN = 0.9; // fraction of the wagon's slope to mirror
         this.CAM_PITCH_LIMIT = 1.4; // clamp on pitch (+tilt) so the rig can't go under the anchor or past overhead
-    }
-
-    initLights() {
-        const sun = this.lights[Scene.Lights.SUN];
-        const SUN_COLOR = hexToRGB("#FFED9E");
-        sun.setPosition(15, 6, 6, 1);
-        sun.setDiffuse(...SUN_COLOR);
-        sun.setSpecular(...SUN_COLOR);
-        sun.enable();
-        sun.setVisible(true);
-        sun.update();
-
-        const moon = this.lights[Scene.Lights.MOON];
-        const MOON_COLOR = hexToRGB("#2C3F64");
-        moon.setPosition(15, 6, 6, 1);
-        moon.setDiffuse(...MOON_COLOR);
-        moon.setSpecular(...MOON_COLOR);
-        moon.enable();
-        moon.setVisible(true);
-        moon.update();
-    }
-
-    initMaterials() {
-        this.default_material = new CGFappearance(this);
-        this.default_material.setAmbient(0.2, 0.2, 0.2, 1);
-        this.default_material.setDiffuse(0.9, 0.9, 0.9, 1);
-        this.default_material.setSpecular(0.1, 0.1, 0.1, 1);
-        this.default_material.setShininess(10.0);
     }
 
     initUIValues() {
@@ -343,14 +308,7 @@ export class Scene extends CGFscene {
 
         this.setDefaultAppearance();
 
-        // Lights
         this.sky_sphere.display();
-        // Push both lights here, after the view matrix is applied, so their
-        // eye-space positions are correct for any shader that lights with them
-        // (e.g. the terrain). SkySphere.update() runs in the update phase under a
-        // stale matrix, so that pass alone leaves the moon's position wrong.
-        this.lights[Scene.Lights.SUN].update();
-        this.lights[Scene.Lights.MOON].update();
 
         // Shadow depth pass: render the sun/moon shadow maps once for the whole
         // frame, before the terrain and wagon sample them. The terrain's per-frame
