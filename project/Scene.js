@@ -152,6 +152,15 @@ export class Scene extends CGFscene {
         // bale and drops its proximity arrow. Each placement is { x, y, z, yaw };
         // the collected flag is added lazily on pickup.
         this.bales = this.haybales.placements;
+        // Bales are also solid obstacles (block + damage like rocks): tag each
+        // with a per-bale cooldown and precompute its world-space box half-extents.
+        // The HayBale mesh is a unit-squircle cross-section (radius 1 -> half-width
+        // 1.0) extruded over a length of 3 and centred on the placement, so the
+        // local footprint is 1.0 across x and 1.5 along z; the field scales the
+        // whole bale. See GameState.checkBaleCollisions.
+        for (const bale of this.bales) bale.damageCooldown = 0;
+        this.bale_half_x = 1.0 * this.haybales.scale;
+        this.bale_half_z = 1.5 * this.haybales.scale;
 
         // Hazard rocks: the wagon takes damage from the rocks scattered by the
         // RockField, so the rocks the player sees are exactly the ones that hurt.
@@ -201,6 +210,7 @@ export class Scene extends CGFscene {
         const delta = this.delta_time / 1000.0;
         this.game_state.update(delta);
         this.game_state.checkRockCollisions(this.wagon, this.rocks, delta);
+        this.game_state.checkBaleCollisions(this.wagon, this.bales, this.bale_half_x, this.bale_half_z, delta);
         this.game_state.checkBarnCollision(
             this.wagon,
             this.barn.pos_x,

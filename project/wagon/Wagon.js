@@ -64,11 +64,14 @@ export class Wagon extends CGFGroup {
         this.steering_rate = 2.0;
         this.wheel_base = 8.0; // front axle (z=5.5) to rear axle (z=-2.5), see UnderBody
 
-        // Knockback on a rock hit (see applyKnockback): the wagon is shoved away
-        // from the rock by a fixed minimum distance plus a bonus that grows with
-        // how fast it was going (as a fraction of base_max_speed).
-        this.knockback_min = 3.0;
-        this.knockback_speed_scale = 12.0;
+        // Collision response (see avoidObstacle): instead of a hard knockback, a
+        // hit stops the wagon and slowly swings its nose to one side for a short
+        // spell so it noses off and deviates around whatever it struck. The total
+        // turn is roughly avoid_turn_rate * avoid_duration radians.
+        this.avoid_turn_rate = 1.4; // rad/s the nose swings during avoidance
+        this.avoid_duration = 0.5; // seconds an avoidance turn lasts
+        this.avoid_timer = 0; // seconds left in the current avoidance turn
+        this.avoid_dir = 0; // +1 swings the nose right, -1 left
 
         // Length of the front steering axle (UnderBody builds Direction with 5.5),
         // whose wheels mount at ±front_axle_beam/2 from the central pivot. That
@@ -195,30 +198,23 @@ export class Wagon extends CGFGroup {
         this.steering_angle = this.clamp(this.steering_angle + amount, -limit, limit);
     }
 
-    // Shove the wagon directly away from a world point it collided with (a rock
-    // or the barn). The push is a fixed minimum plus a bonus that scales with how
-    // fast the wagon was going, applied as an instant positional displacement.
-    // Forward speed is killed so the wagon doesn't immediately drive back into
-    // whatever it hit. Terrain following in update() re-seats it on the ground.
-    applyKnockback(from_x, from_z) {
-        let dx = this.position_x - from_x;
-        let dz = this.position_z - from_z;
-        let len = Math.hypot(dx, dz);
-        if (len < 1e-4) {
-            // Dead-centre hit: shove straight back along the heading instead.
-            dx = -Math.sin(this.heading);
-            dz = -Math.cos(this.heading);
-            len = 1;
-        }
-        dx /= len;
-        dz /= len;
-
-        const speed_frac = Math.abs(this.speed) / this.base_max_speed;
-        const distance = this.knockback_min + this.knockback_speed_scale * speed_frac;
-        this.position_x += dx * distance;
-        this.position_z += dz * distance;
-
+    // React to a collision without the old hard knockback: kill forward speed and
+    // start a slow turn that swings the nose away from the obstacle, so over the
+    // next moment the wagon deviates off to the side instead of snapping back.
+    // update() runs the turn (and holds the wagon still) while avoid_timer lasts.
+    // `from_x/z` is the world point that was struck.
+    avoidObstacle(from_x, from_z) {
         this.speed = 0;
+
+        // Which way to turn: look at where the obstacle sits along the wagon's
+        // right axis. Increasing heading swings the nose right, so to turn away
+        // we rotate opposite the side the obstacle is on; dead ahead falls back
+        // to the way the wagon was last steered.
+        const dx = from_x - this.position_x;
+        const dz = from_z - this.position_z;
+        const local_right = dx * Math.cos(this.heading) - dz * Math.sin(this.heading);
+        this.avoid_dir = local_right > 0 ? -1 : local_right < 0 ? 1 : this.last_steered_dir || 1;
+        this.avoid_timer = this.avoid_duration;
     }
 
     // =====================================================
@@ -226,6 +222,17 @@ export class Wagon extends CGFGroup {
     // =====================================================
 
     update(delta_seconds = 0) {
+        // Collision avoidance: a hit stops the wagon and runs a brief, slow turn
+        // that noses it off to one side so it deviates around the obstacle. While
+        // it runs the wagon is held still (any throttle this frame is overridden)
+        // so it can't drive back into what it hit; afterwards driving resumes in
+        // the new heading.
+        if (this.avoid_timer > 0) {
+            this.speed = 0;
+            this.heading += this.avoid_dir * this.avoid_turn_rate * delta_seconds;
+            this.avoid_timer = Math.max(0, this.avoid_timer - delta_seconds);
+        }
+
         // Drag: with no throttle or brake input, rolling resistance bleeds the
         // speed toward zero so the wagon coasts to a stop.
         if (this.coasting && delta_seconds > 0 && this.speed > 0) {
@@ -470,12 +477,20 @@ export class Wagon extends CGFGroup {
     }
 
     displayHayBales() {
-        // Two bales turned 90° so they lie crosswise, stacked one on top of the
-        // other at the back of the wagon (relative to the body frame).
+        // The cargo shows exactly the bales the wagon is currently carrying (0–2),
+        // so the load you see matches the gameplay count. Pick up a bale and one
+        // appears; deliver at the barn and the bed empties.
+        const carried = this.scene.game_state ? this.scene.game_state.bales_carried : 0;
+        if (carried <= 0) return;
+
+        // Up to two bales turned 90° so they lie crosswise, stacked one on top of
+        // the other at the back of the wagon (relative to the body frame). The
+        // first bale carried fills the lower slot, the second stacks on top.
         const x = 0;
         const z = -2.6;
         const scale = 0.9;
-        const heights = [1.1, 2.7];
+        const slot_heights = [1.1, 2.7];
+        const heights = slot_heights.slice(0, carried);
 
         // The bale runs from local z = 0 to z = 3, so its centre sits at z = 1.5;
         // shift back by that after the turn to keep it centred across the wagon.
