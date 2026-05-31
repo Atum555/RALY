@@ -151,12 +151,6 @@ export class SkySphere extends CGFobject {
         const x = -2;
         const y = Math.sin(sun_pitch) * radius;
         const z = -Math.cos(sun_pitch) * radius;
-        const { Lights } = this.scene.constructor;
-        const sun = this.scene.lights[Lights.SUN];
-        const moon = this.scene.lights[Lights.MOON];
-
-        sun.setPosition(x, y - 3.5, -z, 1.0);
-        moon.setPosition(x, -y + 3.5, z, 1.0);
 
         // Direction towards the sun from the origin, matching the visible sun's
         // arc above; the shadow maps light and cast from this.
@@ -164,20 +158,11 @@ export class SkySphere extends CGFobject {
         this.sun_world_dir[1] = y;
         this.sun_world_dir[2] = -z;
 
-        // Direction towards the moon, mirroring the moon light's antipodal arc
-        // (setPosition above); the surface shaders light from this at night.
+        // Direction towards the moon, mirroring the moon light's antipodal arc;
+        // the surface shaders light from this at night.
         this.moon_world_dir[0] = x;
         this.moon_world_dir[1] = -y;
         this.moon_world_dir[2] = z;
-
-        const buffer = 3.0;
-        if (y > -buffer) sun.enable();
-        else sun.disable();
-        if (y < buffer) moon.enable();
-        else moon.disable();
-
-        sun.update();
-        moon.update();
     }
 
     // =====================================================
