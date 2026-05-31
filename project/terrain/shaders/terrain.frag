@@ -40,6 +40,25 @@ uniform vec3 u_fog_color;
 uniform float u_fog_near;
 uniform float u_fog_far;
 
+// --- Sun shadows (two dedicated maps) ---------------------------------------
+// A big map baked once over the whole terrain, plus a small high-res map that
+// follows the wagon. Each *_light_vp maps an eye-space position into that map's
+// light-clip space; a fragment is shadowed if either map occludes the sun. The
+// shadow only darkens the sun term, never the ambient fill.
+uniform bool u_shadow_enabled;
+uniform sampler2D u_terrain_shadow_map;      // whole terrain, baked once
+uniform sampler2D u_terrain_near_shadow_map; // small, follows the wagon (overrides the whole map)
+uniform sampler2D u_wagon_shadow_map;        // the wagon's own silhouette
+uniform mat4 u_terrain_light_vp;      // eye-space -> whole-terrain map light clip
+uniform mat4 u_terrain_near_light_vp; // eye-space -> near-terrain map light clip
+uniform mat4 u_wagon_light_vp;        // eye-space -> wagon map light clip
+uniform float u_terrain_shadow_texel; // 1.0 / map resolution (for PCF)
+uniform float u_terrain_near_shadow_texel;
+uniform float u_wagon_shadow_texel;
+uniform vec2 u_terrain_shadow_bias;   // (min, max) slope-scaled depth bias
+uniform vec2 u_terrain_near_shadow_bias;
+uniform vec2 u_wagon_shadow_bias;
+
 const vec3 SUN_WORLD_DIR = vec3(0.5, 0.8, 0.3);   // high in the sky, off to one side
 const vec3 SUN_COLOR = vec3(1.0, 0.96, 0.88);     // warm sunlight (used on the dirt)
 const vec3 SKY_AMBIENT = vec3(0.32, 0.36, 0.45);  // cool fill for shadowed dirt slopes
@@ -187,13 +206,70 @@ vec2 parallax_uv(sampler2D disp_map, vec2 uv, vec3 vt, float fade) {
     return mix(cur_uv, prev_uv, w);
 }
 
+// --- Shadow lookup ----------------------------------------------------------
+
+// 3x3 percentage-closer filter over one depth map: average how many of the nine
+// taps the fragment (depth `ref`) is in front of, softening the shadow edge.
+// `ref` is the fragment's depth in that map, in [0, 1]; `texel` is 1/resolution.
+float pcf(sampler2D smap, vec2 uv, float ref, float texel) {
+    float sum = 0.0;
+    for (int dy = -1; dy <= 1; dy++) {
+        for (int dx = -1; dx <= 1; dx++) {
+            float d = texture2D(smap, uv + vec2(float(dx), float(dy)) * texel).r;
+            sum += ref <= d ? 1.0 : 0.0;
+        }
+    }
+    return sum / 9.0;
+}
+
+// Project an eye-space position into one map and sample it. Returns 1 = lit,
+// 0 = fully shadowed, or -1 when the fragment falls outside the map (so the
+// caller can fall through to another map / treat it as lit). A small border keeps
+// PCF taps from reading past the map edge.
+float sample_shadow(sampler2D smap, mat4 m, vec3 view_pos, float bias, float texel) {
+    vec4 lp = m * vec4(view_pos, 1.0);
+    vec3 uvz = (lp.xyz / lp.w) * 0.5 + 0.5; // ortho clip -> [0, 1]
+
+    float b = 2.0 * texel; // one PCF tap of slack at the border
+    if (uvz.x < b || uvz.x > 1.0 - b || uvz.y < b || uvz.y > 1.0 - b || uvz.z > 1.0) return -1.0;
+
+    return pcf(smap, uvz.xy, uvz.z - bias, texel);
+}
+
+// `ndl` is the geometric N.L, used to scale a map's depth bias up on grazing
+// slopes where acne is worst.
+float slope_bias(vec2 band, float ndl) {
+    return max(band.y * (1.0 - ndl), band.x);
+}
+
+// Terrain self-shadow: prefer the sharp near map; where the fragment is outside
+// it, fall back to the whole-terrain map; lit if outside both.
+float terrain_shadow(vec3 view_pos, float ndl) {
+    float ns = sample_shadow(u_terrain_near_shadow_map, u_terrain_near_light_vp, view_pos,
+                             slope_bias(u_terrain_near_shadow_bias, ndl), u_terrain_near_shadow_texel);
+    if (ns >= 0.0) return ns;
+    float fs = sample_shadow(u_terrain_shadow_map, u_terrain_light_vp, view_pos,
+                             slope_bias(u_terrain_shadow_bias, ndl), u_terrain_shadow_texel);
+    return fs < 0.0 ? 1.0 : fs;
+}
+
+// Sun visibility at this fragment: the darker of the terrain self-shadow and the
+// wagon's cast shadow, so a fragment is shadowed if either occludes the sun.
+float sun_shadow(vec3 view_pos, float ndl) {
+    if (!u_shadow_enabled) return 1.0;
+    float terrain_s = terrain_shadow(view_pos, ndl);
+    float wagon_s = sample_shadow(u_wagon_shadow_map, u_wagon_light_vp, view_pos,
+                                  slope_bias(u_wagon_shadow_bias, ndl), u_wagon_shadow_texel);
+    return min(terrain_s, wagon_s < 0.0 ? 1.0 : wagon_s);
+}
+
 // Sample and fully light one tiled PBR set at the current fragment. T/B/n_geom
 // are the eye-space tangent frame, L the light and V the view direction. The
 // displacement map drives parallax-occlusion mapping, then albedo/ARM/normal are
 // read at the parallaxed UVs and lit with a warm sun plus cool ambient fill and
 // a roughness-shaped specular highlight.
 vec3 lit_material(sampler2D diff_map, sampler2D norm_map, sampler2D arm_map, sampler2D disp_map,
-                 vec2 uv, vec3 T, vec3 B, vec3 n_geom, vec3 L, vec3 V, float p_fade) {
+                 vec2 uv, vec3 T, vec3 B, vec3 n_geom, vec3 L, vec3 V, float p_fade, float shadow) {
     vec3 vt = vec3(dot(V, T), dot(V, B), dot(V, n_geom));
     vec2 uvr = parallax_uv(disp_map, uv, vt, p_fade);
 
@@ -210,7 +286,9 @@ vec3 lit_material(sampler2D diff_map, sampler2D norm_map, sampler2D arm_map, sam
     float shininess = mix(4.0, 128.0, 1.0 - roughness);
     float spec = pow(max(dot(N, hh), 0.0), shininess) * (1.0 - roughness);
 
-    return albedo * (SKY_AMBIENT * ao + SUN_COLOR * diffuse) + SUN_COLOR * spec * diffuse * 0.4;
+    // The shadow darkens only the sun's direct diffuse and specular; the cool
+    // sky-ambient fill still lights shadowed slopes so they don't go black.
+    return albedo * (SKY_AMBIENT * ao + SUN_COLOR * diffuse * shadow) + SUN_COLOR * spec * diffuse * shadow * 0.4;
 }
 
 void main() {
@@ -233,10 +311,14 @@ void main() {
     // u_parallax_far. Beyond that the march is skipped entirely (see parallax_uv).
     float p_fade = 1.0 - smoothstep(u_parallax_near, u_parallax_far, length(v_view_pos));
 
+    // Sun visibility from the terrain + wagon shadow maps (geometric N.L drives
+    // the bias). Shared by both materials -- it depends on the surface, not the map.
+    float shadow = sun_shadow(v_view_pos, max(dot(n_geom, L), 0.0));
+
     vec3 lit_rock = lit_material(u_rock_diffuse_map, u_rock_normal_map, u_rock_arm_map, u_rock_disp_map,
-                               uv, T, B, n_geom, L, V, p_fade);
+                               uv, T, B, n_geom, L, V, p_fade, shadow);
     vec3 lit_path = lit_material(u_diffuse_map, u_normal_map, u_arm_map, u_disp_map,
-                               uv, T, B, n_geom, L, V, p_fade);
+                               uv, T, B, n_geom, L, V, p_fade, shadow);
 
     // --- Open ground <-> path transition (unchanged edge logic) ------------
     // v_path_dist is the per-vertex normalized distance to the nearest path; we
