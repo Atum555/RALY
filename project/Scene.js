@@ -80,6 +80,8 @@ export class Scene extends CGFscene {
 
         this.cam_last_manual_ms = -1e9; // follow is active from the start
         this.CAM_RESUME_DELAY = 3.0; // seconds of no input before follow resumes
+        this.cam_move_start_ms = -1; // when the wagon began moving (-1 while stopped)
+        this.CAM_MOVE_DELAY = 3.0; // seconds the wagon must move before follow engages
         this.CAM_POS_RATE = 15.0; // anchor easing rate (1/s)
         this.CAM_YAW_RATE = 3.0; // yaw realign rate (1/s); lower = softer turns
         this.CAM_PITCH_RATE = 3.0; // pitch realign rate (1/s) back to CAM_REST_PITCH
@@ -212,8 +214,22 @@ export class Scene extends CGFscene {
         if (dragging) this.cam_last_manual_ms = now;
         const since_manual = (now - this.cam_last_manual_ms) / 1000.0;
         const manual_active = dragging || since_manual < 0.2; // 0.2s tail covers wheel ticks
-        // Follow has fully resumed: past the hold window with no manual input.
-        const following = !manual_active && since_manual >= this.CAM_RESUME_DELAY;
+
+        // The chase camera only follows while the wagon is actually rolling, and
+        // only after it has been moving for a short settle delay. A stationary
+        // wagon leaves the camera holding its spot (the mouse still owns it), and
+        // a brief nudge of speed won't immediately swing the view around.
+        const moving = Math.abs(this.wagon.speed) > 0.01;
+        if (moving) {
+            if (this.cam_move_start_ms < 0) this.cam_move_start_ms = now;
+        } else {
+            this.cam_move_start_ms = -1;
+        }
+        const moving_settled = moving && (now - this.cam_move_start_ms) / 1000.0 >= this.CAM_MOVE_DELAY;
+
+        // Follow is active once the wagon has rolled past the settle delay and the
+        // mouse has been idle past its hold window (and no drag is in progress).
+        const following = moving_settled && !manual_active && since_manual >= this.CAM_RESUME_DELAY;
 
         if (manual_active) {
             // The interface just orbited/zoomed the camera around its target;
@@ -230,7 +246,9 @@ export class Scene extends CGFscene {
             const kpitch = 1 - Math.exp(-this.CAM_PITCH_RATE * dt);
             this.cam_pitch += (this.CAM_REST_PITCH - this.cam_pitch) * kpitch;
         }
-        // (During the hold window the yaw/pitch/distance stay frozen.)
+        // (Until the wagon has rolled past the settle delay, the yaw/pitch stay
+        // frozen so the view doesn't pan or pitch around — but the anchor below
+        // still tracks the wagon, so the camera keeps following its position.)
 
         // Lean the rig into the slope while following; hold it level otherwise so
         // the mouse keeps full control of the elevation. wagon.pitch is negative
