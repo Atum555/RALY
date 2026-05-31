@@ -141,6 +141,12 @@ export class Scene extends CGFscene {
         this.barn_zone_r = this.barn.pickup.r * s;
         this.barn_delivered = false;
 
+        // Solid barn footprint (world half-extents) for wagon collision: the
+        // building's width/length scaled by barn_scale. The delivery zone sits
+        // just in front of the door, outside this box, so it stays reachable.
+        this.barn_half_x = (this.barn.width / 2) * s;
+        this.barn_half_z = (this.barn.length / 2) * s;
+
         // The collectibles ARE the hay bales scattered across the field: the
         // pickup logic marks a placement collected, and the field then hides that
         // bale and drops its proximity arrow. Each placement is { x, y, z, yaw };
@@ -195,6 +201,14 @@ export class Scene extends CGFscene {
         const delta = this.delta_time / 1000.0;
         this.game_state.update(delta);
         this.game_state.checkRockCollisions(this.wagon, this.rocks, delta);
+        this.game_state.checkBarnCollision(
+            this.wagon,
+            this.barn.pos_x,
+            this.barn.pos_z,
+            this.barn_half_x,
+            this.barn_half_z,
+            delta,
+        );
 
         this.updateHUD();
     }

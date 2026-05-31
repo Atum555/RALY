@@ -64,6 +64,12 @@ export class Wagon extends CGFGroup {
         this.steering_rate = 2.0;
         this.wheel_base = 8.0; // front axle (z=5.5) to rear axle (z=-2.5), see UnderBody
 
+        // Knockback on a rock hit (see applyKnockback): the wagon is shoved away
+        // from the rock by a fixed minimum distance plus a bonus that grows with
+        // how fast it was going (as a fraction of base_max_speed).
+        this.knockback_min = 3.0;
+        this.knockback_speed_scale = 12.0;
+
         // Length of the front steering axle (UnderBody builds Direction with 5.5),
         // whose wheels mount at ±front_axle_beam/2 from the central pivot. That
         // half-length is the lever arm the wheels swing through when steering.
@@ -187,6 +193,32 @@ export class Wagon extends CGFGroup {
     steer(amount) {
         const limit = this.currentMaxSteeringAngle();
         this.steering_angle = this.clamp(this.steering_angle + amount, -limit, limit);
+    }
+
+    // Shove the wagon directly away from a world point it collided with (a rock
+    // or the barn). The push is a fixed minimum plus a bonus that scales with how
+    // fast the wagon was going, applied as an instant positional displacement.
+    // Forward speed is killed so the wagon doesn't immediately drive back into
+    // whatever it hit. Terrain following in update() re-seats it on the ground.
+    applyKnockback(from_x, from_z) {
+        let dx = this.position_x - from_x;
+        let dz = this.position_z - from_z;
+        let len = Math.hypot(dx, dz);
+        if (len < 1e-4) {
+            // Dead-centre hit: shove straight back along the heading instead.
+            dx = -Math.sin(this.heading);
+            dz = -Math.cos(this.heading);
+            len = 1;
+        }
+        dx /= len;
+        dz /= len;
+
+        const speed_frac = Math.abs(this.speed) / this.base_max_speed;
+        const distance = this.knockback_min + this.knockback_speed_scale * speed_frac;
+        this.position_x += dx * distance;
+        this.position_z += dz * distance;
+
+        this.speed = 0;
     }
 
     // =====================================================

@@ -18,6 +18,7 @@ export class GameState {
         this.last_heal = 0; // HP gained in the last barn delivery
         this.game_over = false;
         this.barn_delivery_cooldown = 0; // prevents delivery firing every frame
+        this.barn_hit_cooldown = 0; // prevents barn-collision damage every frame
 
         // World-scale interaction radii (1 unit = 1 m; the playfield spans
         // hundreds of units, so these are larger than the original metre values).
@@ -86,12 +87,36 @@ export class GameState {
                 this.last_damage = Math.max(2, Math.round(25 * speed_factor * size_factor));
                 this.hp = Math.max(0, this.hp - this.last_damage);
                 rock.damageCooldown = 2.0;
+                // Bounce the wagon back off the rock it struck.
+                wagon.applyKnockback(rock.x, rock.z);
             }
         }
 
         // Decrement all active damage cooldowns.
         for (const rock of rocks) {
             if (rock.damageCooldown > 0) rock.damageCooldown -= delta;
+        }
+    }
+
+    // Solid barn collision: the wagon can't drive through the barn. The barn's
+    // footprint is a rectangle (it's a square building), so this is an AABB test
+    // rather than a circle — a circle around the centre would reach out past the
+    // door and block the delivery approach. On contact the wagon takes
+    // speed-scaled damage and is knocked back, on its own cooldown so it doesn't
+    // drain HP every frame while pressed against the wall. `barn_x/z` is the barn
+    // centre and `half_x/half_z` its footprint half-extents (all world units).
+    checkBarnCollision(wagon, barn_x, barn_z, half_x, half_z, delta) {
+        if (this.barn_hit_cooldown > 0) this.barn_hit_cooldown -= delta;
+
+        const dx = wagon.position_x - barn_x;
+        const dz = wagon.position_z - barn_z;
+        if (Math.abs(dx) < half_x && Math.abs(dz) < half_z && this.barn_hit_cooldown <= 0) {
+            const speed_factor = Math.abs(wagon.speed) / wagon.base_max_speed;
+            // Base 30 HP wall impact, scaled by speed, with a small floor.
+            this.last_damage = Math.max(2, Math.round(30 * speed_factor));
+            this.hp = Math.max(0, this.hp - this.last_damage);
+            this.barn_hit_cooldown = 1.0;
+            wagon.applyKnockback(barn_x, barn_z);
         }
     }
 }
