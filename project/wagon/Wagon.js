@@ -13,7 +13,6 @@ export class Wagon extends CGFGroup {
         super(scene);
 
         // -- Driving state (W/A/S/D) --
-
         this.steering_angle = 0;
         this.position_x = 0;
         this.position_z = 0;
