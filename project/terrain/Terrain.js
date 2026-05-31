@@ -3,6 +3,7 @@ import { ValueNoise } from "./Noise.js";
 import { PathNetwork } from "./Path.js";
 import { TerrainTile } from "./TerrainTile.js";
 import { CGFGroup } from "../core/CGFGroup.js";
+import { hexToRGB } from "../utils.js";
 import {
     MAX_COMPONENT_SUBDIVISIONS,
     MAX_PATH_NODES,
@@ -68,6 +69,15 @@ export class Terrain extends CGFGroup {
         this.terrain_path_shoulder = 25; // falloff width blending back to natural ground
         this.terrain_path_smoothing = 9; // centerline smoothing window (vertices each side)
         this.terrain_path_slope_weight = 45; // how strongly paths avoid slopes (higher = flatter, windier)
+
+        // -- Distance fog --
+        // Distant terrain fades into the sky's horizon colour over the
+        // fog_start..fog_end band (view-space distance, in terrain units). The fog
+        // colour is not stored here: it is read each frame from the SkySphere so
+        // it tracks the day/night cycle (see display()).
+        this.fog_enabled = true;
+        this.fog_start = 0; // no fog nearer than this
+        this.fog_end = 6500; // terrain fully dissolved into the horizon beyond this
 
         // Derived from the above in initHeightField, exposed read-only in the UI:
         this.lod_levels = 1; // number of LOD tile sizes (doublings from leaf to root)
@@ -485,12 +495,41 @@ export class Terrain extends CGFGroup {
     }
 
     // =====================================================
+    // Fog
+    // =====================================================
+
+    // Fog colour to fade distant terrain into. The sky's fragment shader puts
+    // colour2 at the horizon (elevation 0): mix(night_colour2, day_colour2,
+    // day_factor). We reproduce exactly that here so the terrain dissolves into
+    // the same colour the sky shows just above it, across the day/night cycle.
+    fogColor() {
+        const sky = this.scene.sky_sphere;
+        if (!sky) return [0.6, 0.7, 0.85];
+        const day = hexToRGB(sky.sky_colors.sky_day_colour_2, false);
+        const night = hexToRGB(sky.sky_colors.sky_night_colour_2, false);
+        const t = sky.day_factor;
+        return [
+            night[0] + (day[0] - night[0]) * t,
+            night[1] + (day[1] - night[1]) * t,
+            night[2] + (day[2] - night[2]) * t,
+        ];
+    }
+
+    // =====================================================
     // Display
     // =====================================================
 
     display() {
         this.scene.setActiveShader(this.shader);
         this.configureTextureFiltering();
+
+        const fog = this.fogColor();
+        this.shader.setUniformsValues({
+            u_fog_enabled: this.fog_enabled,
+            u_fog_color: fog,
+            u_fog_near: this.fog_start,
+            u_fog_far: this.fog_end,
+        });
 
         // Bind both materials to the sampler units the shader expects.
         this.rock_diffuse_map.bind(0);

@@ -180,6 +180,14 @@ export class UI extends CGFinterface {
                 .step(1)
                 .name("Slope Avoidance")
                 .onChange(rebuild_terrain);
+
+            // -- Fog ----------------------------------------------
+            // Distance fog fading distant terrain into the sky's horizon colour; the
+            // colour tracks the day/night cycle, so only the band is tunable here.
+            const fog_controls = terrain_controls.addFolder("Fog");
+            fog_controls.add(terrain, "fog_enabled").name("Enable");
+            fog_controls.add(terrain, "fog_start", 0, 2000).step(200).name("Start");
+            fog_controls.add(terrain, "fog_end", 0, 20000).step(200).name("End");
         }
 
         // == Obstacles ========================================

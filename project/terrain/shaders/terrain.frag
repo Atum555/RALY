@@ -6,6 +6,7 @@ varying vec2 v_terrain_uv;
 varying vec3 v_normal;   // view-space geometric normal
 varying vec3 v_tangent;  // view-space tangent (along +U of a_terrain_uv)
 varying vec3 v_view_pos; // view-space fragment position
+varying float v_fog_depth;
 varying float v_path_dist; // normalized distance to nearest path: 0 = centre, 1 = transition end
 
 uniform float u_tex_repeat;     // base frequency of the material tiling
@@ -32,6 +33,12 @@ uniform float u_parallax_far;   // parallax faded out (and skipped) beyond this
 // A single hardcoded directional light, rotated into eye space with uMVMatrix
 // (w = 0 drops the translation) so it stays fixed in the sky as the wagon drives.
 uniform mat4 uMVMatrix;
+
+// --- Distance fog -----------------------------------------------------------
+uniform bool u_fog_enabled;
+uniform vec3 u_fog_color;
+uniform float u_fog_near;
+uniform float u_fog_far;
 
 const vec3 SUN_WORLD_DIR = vec3(0.5, 0.8, 0.3);   // high in the sky, off to one side
 const vec3 SUN_COLOR = vec3(1.0, 0.96, 0.88);     // warm sunlight (used on the dirt)
@@ -245,6 +252,13 @@ void main() {
 
     // Blend the two fully-lit surfaces along the noisy path edge.
     vec3 lit_color = mix(lit_rock, lit_path, path_amount);
+
+    // Distance fog: fade the lit colour into the horizon colour over the
+    // near..far band, so distant terrain dissolves into the sky.
+    if (u_fog_enabled) {
+        float fog = smoothstep(u_fog_near, u_fog_far, v_fog_depth);
+        lit_color = mix(lit_color, u_fog_color, fog);
+    }
 
     gl_FragColor = vec4(lit_color, 1.0);
 }
