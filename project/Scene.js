@@ -3,6 +3,7 @@ import { SkySphere } from "./sky/SkySphere.js";
 import { Wagon } from "./wagon/Wagon.js";
 import { Terrain } from "./terrain/Terrain.js";
 import { Barn } from "./barn/Barn.js";
+import { HayBaleField } from "./obstacles/HayBaleField.js";
 import { ShadowMap } from "./lighting/ShadowMap.js";
 import { FpsCounter } from "./core/FpsCounter.js";
 import { patchCGFShaders } from "./core/patchCGFShaders.js";
@@ -108,12 +109,15 @@ export class Scene extends CGFscene {
         this.wagon = new Wagon(this);
         this.barn = new Barn(this);
 
+        // Loose hay bales strewn along the dirt paths as obstacles.
+        this.haybales = new HayBaleField(this, this.terrain);
+
         // Sun/moon shadow maps for the terrain and the wagon. Scene-owned: it
         // drives the depth pass each frame (display) and both the terrain and the
         // wagon sample the same maps. Built after the casters it renders.
         this.shadow_map = new ShadowMap(this);
 
-        this.all_objects = [this.sky_sphere, this.terrain, this.wagon, this.barn];
+        this.all_objects = [this.sky_sphere, this.terrain, this.wagon, this.barn, this.haybales];
     }
 
     // =====================================================
@@ -338,6 +342,9 @@ export class Scene extends CGFscene {
 
         // Barn
         this.barn.display();
+
+        // Hay bales scattered along the paths (drawn in world space, like the wagon)
+        this.haybales.display();
     }
 
     // =====================================================

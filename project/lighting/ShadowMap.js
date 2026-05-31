@@ -387,6 +387,11 @@ export class ShadowMap {
         // it is simply clipped by the light frustum.
         this.castBarn();
 
+        // The path-scattered hay bales cast into this near map too (and only this
+        // one of the wagon-following maps -- never the wagon's own tiny map), so
+        // they drop sharp shadows on the ground and on each other around the wagon.
+        this.castHayBales(wagon);
+
         mat4.multiply(this.near_frozen, cam.getProjectionMatrix(this.near_size, this.near_size), cam.getViewMatrix());
     }
 
@@ -486,6 +491,30 @@ export class ShadowMap {
         barn.display();
         barn._depth_pass = false;
         gl.cullFace(gl.BACK);
+    }
+
+    // Emit the path-scattered hay bales into the currently bound depth map, under
+    // the active depth shader and light camera. Called only from the near terrain
+    // pass, so the bales cast into the small wagon-following map but not the
+    // whole-terrain map nor the wagon's own. Culled to a band around the wagon so
+    // the pass stays cheap with the field scattered across the whole terrain.
+    //
+    // Unlike the barn and wagon, the bales cast first-depth (the default back-face
+    // cull stores their sun-facing silhouette). Second-depth would store each
+    // bale's back face -- ~2*scale world units behind its front -- and a bale is
+    // small enough that that displacement projects onto the ground as a detached,
+    // anti-sun-shifted shadow (peter-panning). The near map's depth range is large,
+    // so the shader's existing slope+normal bias keeps the lit faces acne-free.
+    castHayBales(wagon) {
+        const field = this.scene.haybales;
+        if (!field) return;
+        const cull = wagon ? { x: wagon.position_x, z: wagon.position_z, r: this.near_radius + 50 } : null;
+
+        // Drawn with the pass's default back-face culling (already set by the
+        // caller), so no cull-face change is needed here.
+        field._depth_pass = true;
+        field.display(cull);
+        field._depth_pass = false;
     }
 
     // m (column-major mat4) applied to point (x, y, z) -> out.
