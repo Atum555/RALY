@@ -22,7 +22,7 @@ void main() {
     v_terrain_uv = a_terrain_uv;
     v_path_dist = a_path_dist;
     v_normal = normalize((uNMatrix * vec4(aVertexNormal, 0.0)).xyz);
-    v_tangent = normalize((uNMatrix * vec4(a_vertex_tangent, 0.0)).xyz);
+    v_tangent = normalize((uMVMatrix * vec4(a_vertex_tangent, 0.0)).xyz);
     v_view_pos = view_pos.xyz;
     v_fog_depth = -view_pos.z;
 }
