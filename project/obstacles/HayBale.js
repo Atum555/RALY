@@ -1,4 +1,5 @@
-import { CGFobject, CGFshader, CGFtexture } from "../../lib/CGF.js";
+import { CGFobject } from "../../lib/CGF.js";
+import { ShadowedTexturedMaterial } from "../core/ShadowedTexturedMaterial.js";
 
 export class HayBale extends CGFobject {
     // =====================================================
@@ -28,16 +29,16 @@ export class HayBale extends CGFobject {
     }
 
     initMaterials() {
-        // Own CGFtexture (not a CGFappearance) so we control the filtering and can
-        // build a mip chain like the terrain materials.
-        this.texture = new CGFtexture(this.scene, "obstacles/textures/hay2.jpg");
-        this.texture_filtering_ready = false;
-
-        // Custom shader: textures the bale and takes the sun's terrain + self
-        // shadows, the same uniforms the wagon body shader uses. u_hay_texture
-        // reads from unit 0.
-        this.shader = new CGFshader(this.scene.gl, "obstacles/shaders/haybale.vert", "obstacles/shaders/haybale.frag");
-        this.shader.setUniformsValues({ u_hay_texture: 0 });
+        // Textured + shadow-aware appearance (its u_hay_texture sampler reads
+        // unit 0), shared with the wagon's horses. Owns the texture and builds a
+        // mip chain like the terrain materials.
+        this.material = new ShadowedTexturedMaterial(
+            this.scene,
+            "obstacles/textures/hay2.jpg",
+            "obstacles/shaders/haybale.vert",
+            "obstacles/shaders/haybale.frag",
+            "u_hay_texture",
+        );
     }
 
     // =====================================================
@@ -159,50 +160,7 @@ export class HayBale extends CGFobject {
             return;
         }
 
-        this.applyShader();
+        this.material.apply();
         super.display();
-    }
-
-    // Activate the bale shader and feed it the sun + shadow uniforms from the
-    // scene's shadow maps, then bind the (mipmapped) hay texture to unit 0.
-    applyShader() {
-        const scene = this.scene;
-        scene.setActiveShader(this.shader);
-
-        const sm = scene.shadow_map;
-        if (sm) {
-            if (sm.enabled) sm.applyUniforms(this.shader);
-            else sm.disable(this.shader);
-        }
-
-        // Bind after the shadow maps (which leave TEXTURE0 active); bind(0) also
-        // sets scene.activeTexture so the texCoord attribute gets wired up.
-        this.configureTextureFiltering();
-        this.texture.bind(0);
-    }
-
-    // Build a mip chain for the hay texture so it stops shimmering at distance,
-    // matching the terrain's trilinear + anisotropic filtering. Runs lazily once
-    // CGFtexture has finished loading (texID is set), then caches the result.
-    configureTextureFiltering() {
-        if (this.texture_filtering_ready || this.texture.texID === -1) return;
-        const gl = this.scene.gl;
-
-        const aniso =
-            gl.getExtension("EXT_texture_filter_anisotropic") ||
-            gl.getExtension("WEBKIT_EXT_texture_filter_anisotropic") ||
-            gl.getExtension("MOZ_EXT_texture_filter_anisotropic");
-        const maxAniso = aniso ? gl.getParameter(aniso.MAX_TEXTURE_MAX_ANISOTROPY_EXT) : 0;
-
-        gl.bindTexture(gl.TEXTURE_2D, this.texture.texID);
-        gl.generateMipmap(gl.TEXTURE_2D);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-        if (aniso) gl.texParameterf(gl.TEXTURE_2D, aniso.TEXTURE_MAX_ANISOTROPY_EXT, maxAniso);
-        gl.bindTexture(gl.TEXTURE_2D, null);
-
-        this.texture_filtering_ready = true;
     }
 }

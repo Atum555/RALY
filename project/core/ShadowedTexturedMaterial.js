@@ -1,21 +1,25 @@
-import { CGFshader, CGFtexture } from "../../../lib/CGF.js";
+import { CGFshader, CGFtexture } from "../../lib/CGF.js";
 
-// The draught horses' appearance: a textured, shadow-aware shader that lights the
-// horses with the abstract sun and takes the terrain + wagon shadows, exactly like
-// the wagon body and the hay bales (it shares their shadow-map uniforms). Owns the
-// horse texture and binds it to the shader's sampler.
-export class HorseMaterial {
+// Shared appearance for objects lit by the abstract sun and shadowed by the
+// terrain + wagon shadow maps: owns a texture and a textured, shadow-aware
+// shader, feeds the shader the scene's shadow-map uniforms, and binds the
+// (mipmapped) texture to unit 0. The shader's sampler uniform must read from
+// texture unit 0; pass its name as `samplerName`.
+//
+// Used by the wagon's horses and the hay bales, which differ only in their
+// texture, shader, and sampler-uniform name.
+export class ShadowedTexturedMaterial {
     // =====================================================
     // Init
     // =====================================================
 
-    constructor(scene) {
+    constructor(scene, texturePath, vertPath, fragPath, samplerName) {
         this.scene = scene;
-        this.texture = new CGFtexture(scene, "wagon/horse/horse.jpg");
+        this.texture = new CGFtexture(scene, texturePath);
 
-        // Textured + shadow-aware shader; u_horse_texture samples texture unit 0.
-        this.shader = new CGFshader(scene.gl, "wagon/shaders/horse.vert", "wagon/shaders/horse.frag");
-        this.shader.setUniformsValues({ u_horse_texture: 0 });
+        // Textured + shadow-aware shader; its sampler reads from texture unit 0.
+        this.shader = new CGFshader(scene.gl, vertPath, fragPath);
+        this.shader.setUniformsValues({ [samplerName]: 0 });
 
         this.texture_filtering_ready = false;
     }
@@ -24,8 +28,8 @@ export class HorseMaterial {
     // Apply
     // =====================================================
 
-    // Activate the horse shader and feed it the sun + shadow uniforms from the
-    // scene's shadow maps, then bind the (mipmapped) horse texture to unit 0.
+    // Activate the shader and feed it the sun + shadow uniforms from the scene's
+    // shadow maps, then bind the (mipmapped) texture to unit 0.
     apply() {
         const scene = this.scene;
         scene.setActiveShader(this.shader);
@@ -42,8 +46,8 @@ export class HorseMaterial {
         this.texture.bind(0);
     }
 
-    // Build a mip chain for the horse texture so it stops shimmering at distance,
-    // matching the hay bale's trilinear + anisotropic filtering. Runs lazily once
+    // Build a mip chain for the texture so it stops shimmering at distance,
+    // matching the terrain's trilinear + anisotropic filtering. Runs lazily once
     // CGFtexture has finished loading (texID is set), then caches the result.
     configureTextureFiltering() {
         if (this.texture_filtering_ready || this.texture.texID === -1) return;

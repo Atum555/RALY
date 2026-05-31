@@ -2,7 +2,7 @@ import { CGFobjModel } from "../../../lib/extra/CGFobjModel.js";
 import { CGFGroup } from "../../core/CGFGroup.js";
 import { Beam } from "./Beam.js";
 import { Wheel } from "./Wheel.js";
-import { HorseMaterial } from "../materials/HorseMaterial.js";
+import { ShadowedTexturedMaterial } from "../../core/ShadowedTexturedMaterial.js";
 
 export class Direction extends CGFGroup {
     // =====================================================
@@ -18,7 +18,13 @@ export class Direction extends CGFGroup {
         this.beam = this.addPart(new Beam(this.scene, this.beam_length, 0.2));
         this.wheel = this.addPart(new Wheel(this.scene));
         this.horse = new CGFobjModel(this.scene, "wagon/horse/horse.obj");
-        this.horseMaterial = new HorseMaterial(this.scene);
+        this.horseMaterial = new ShadowedTexturedMaterial(
+            this.scene,
+            "wagon/horse/horse.jpg",
+            "wagon/shaders/horse.vert",
+            "wagon/shaders/horse.frag",
+            "u_horse_texture",
+        );
 
         // Set by UnderBody (in turn from Wagon) while the shadow map casts: in the
         // depth pass the horses emit plain geometry under the active depth shader
