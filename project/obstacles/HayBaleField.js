@@ -13,9 +13,17 @@ export class HayBaleField {
 
         this.seed = (opts.seed ?? 1337) >>> 0;
         this.scale = opts.scale ?? 2.0; // uniform size of each bale
-        this.spacing = opts.spacing ?? 200; // average path length between bales
-        this.max_count = opts.max_count ?? 250; // hard cap so big terrains stay cheap
+        this.spacing = opts.spacing ?? 160; // average path length between bales
+        this.max_count = opts.max_count ?? 500; // hard cap so big terrains stay cheap
         this.clear_radius = opts.clear_radius ?? 230; // keep the barn clearing free
+
+        // Centre bias: bales cluster near the world origin and thin out toward the
+        // edges. A candidate at distance d from the origin is kept with probability
+        // (1 - d/falloff_radius)^center_bias, so a higher exponent crowds them
+        // tighter around the middle. falloff_radius defaults to the path network's
+        // node bound (set in scatter once the network is known).
+        this.center_bias = opts.center_bias ?? 1.7;
+        this.falloff_radius = opts.falloff_radius ?? 0; // 0 -> derive from the network
 
         // Shared mesh; the cross-section bottom sits at y = -1 (radius 1), so a
         // bale rests on the ground when lifted by its scale.
@@ -63,7 +71,16 @@ export class HayBaleField {
         const rand = mulberry32(this.seed);
         const half_width = (net.half_width || 8) * 0.6; // stay inside the flat strip
 
-        for (let b = 0; b < count; b++) {
+        // Distance at which the keep-probability hits zero. Default to the path
+        // network's node bound (its outermost reach), so bales fade out by the edge.
+        const falloff = this.falloff_radius > 0 ? this.falloff_radius : (net.bound || total * 0.5);
+        const inv_falloff = falloff > 0 ? 1 / falloff : 0;
+
+        // Centre bias means most candidates near the edge get rejected, so over-
+        // sample: keep drawing until we hit `count` accepted bales or run out of
+        // attempts (the cap also stops us looping forever on sparse networks).
+        const max_attempts = count * 30;
+        for (let a = 0; a < max_attempts && this.placements.length < count; a++) {
             // Locate a random arc-length position within a segment.
             const target = rand() * total;
             let lo = 0;
@@ -86,7 +103,14 @@ export class HayBaleField {
             const px = seg.ax[lo] + dx * t + (-dy / len) * off;
             const py = seg.ay[lo] + dy * t + (dx / len) * off;
 
-            if (Math.hypot(px, py) < this.clear_radius) continue; // skip the barn pad
+            const dist = Math.hypot(px, py);
+            if (dist < this.clear_radius) continue; // skip the barn pad
+
+            // Keep denser near the origin: probability falls from 1 at the centre
+            // to 0 at the falloff radius, shaped by the center_bias exponent.
+            const u = Math.min(1, dist * inv_falloff);
+            const keep = Math.pow(1 - u, this.center_bias);
+            if (rand() >= keep) continue; // too far out this draw -- reject
 
             // Model -> world, then snap onto the rendered ground.
             const wx = px;
