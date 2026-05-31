@@ -366,6 +366,10 @@ export class ShadowMap {
         // (Y up), like the wagon -- not the terrain's rotated model frame.
         this.castBarn();
 
+        // The scattered rocks cast into the whole map too, at their cheapest LOD,
+        // so their shadows reach the distant ground the near map doesn't cover.
+        this.castRocks(2, TERRAIN_NEAR_SHADOW_RADIUS + 1000);
+
         // World-space -> terrain light clip (proj · view).
         mat4.multiply(this.terrain_frozen, cam.getProjectionMatrix(this.terrain_size, this.terrain_size), view);
     }
@@ -424,6 +428,10 @@ export class ShadowMap {
         // one of the wagon-following maps -- never the wagon's own tiny map), so
         // they drop sharp shadows on the ground and on each other around the wagon.
         this.castHayBales(wagon);
+
+        // The scattered rocks cast into the near map as well, at a mid LOD, so they
+        // drop sharp shadows on the ground and on each other around the wagon.
+        this.castRocks(1, this.near_radius + 80);
 
         mat4.multiply(this.near_frozen, cam.getProjectionMatrix(this.near_size, this.near_size), cam.getViewMatrix());
     }
@@ -548,6 +556,23 @@ export class ShadowMap {
         field._depth_pass = true;
         field.display(cull);
         field._depth_pass = false;
+    }
+
+    // Emit the scattered rocks into the currently bound depth map, under the
+    // active depth shader and light camera. Called from both terrain passes so the
+    // rocks cast into the whole-terrain (distant) and near (sharp) maps, at the
+    // given LOD. `radius` culls to a band around the wagon so the dense field stays
+    // cheap -- generous for the whole map (distant shadows), tight for the near one.
+    //
+    // First-depth, like the hay bales (the pass's default back-face cull stores
+    // each rock's sun-facing silhouette); the rock shader's normal+slope bias keeps
+    // the lit faces acne-free. No cull-face change is needed here.
+    castRocks(lod, radius) {
+        const field = this.scene.rock_field;
+        if (!field) return;
+        const wagon = this.scene.wagon;
+        const cull = wagon ? { x: wagon.position_x, z: wagon.position_z, r: radius } : null;
+        field.displayDepth(cull, lod);
     }
 
     // m (column-major mat4) applied to point (x, y, z) -> out.
