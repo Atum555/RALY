@@ -7,6 +7,9 @@ import { ShadowMap } from "./lighting/ShadowMap.js";
 import { FpsCounter } from "./core/FpsCounter.js";
 import { patchCGFShaders } from "./core/patchCGFShaders.js";
 import { lerpAngle } from "./utils.js";
+import { GameState } from "./gameplay/GameState.js";
+import { Collectible } from "./gameplay/Collectible.js";
+import { Rock } from "./obstacles/Rock.js";
 
 export class Scene extends CGFscene {
     // =====================================================
@@ -114,6 +117,45 @@ export class Scene extends CGFscene {
         this.shadow_map = new ShadowMap(this);
 
         this.all_objects = [this.sky_sphere, this.terrain, this.wagon, this.barn];
+
+        // Gameplay layer (HP/score, bale pickup, barn delivery, rock damage).
+        this.initGameplay();
+    }
+
+    initGameplay() {
+        this.game_state = new GameState();
+        this._game_over_logged = false;
+
+        // Barn delivery zone = the barn's pickup marker disc (the terrain already
+        // paints a glow there). Lift the barn-local pickup spot into world space.
+        const s = this.barn.barn_scale;
+        this.barn_zone_x = this.barn.pos_x + this.barn.pickup.x * s;
+        this.barn_zone_z = this.barn.pos_z + this.barn.pickup.z * s;
+        this.barn_zone_r = this.barn.pickup.r * s;
+        this.barn_delivered = false;
+
+        // Collectible hay bales scattered around the clearing, each resting on the
+        // terrain. Placed out past the delivery disc so the wagon has to drive out
+        // to collect them and back to the barn to deliver.
+        const bale_spots = [
+            [140, 40], [-130, 60], [60, 170], [-90, -150], [170, -70],
+        ];
+        this.bales = bale_spots.map(
+            ([x, z]) => new Collectible(this, x, z, this.terrain.getHeightAt(x, z)),
+        );
+
+        // Hazard rocks: damage records (x, z, damageCooldown) paired with a Rock
+        // mesh for display. Kept out of all_objects (no normal-viz needed).
+        const rock_spots = [
+            [50, -60], [-70, 30], [110, -130], [-120, -40], [30, 120],
+        ];
+        this.rocks = rock_spots.map(([x, z]) => ({
+            x,
+            z,
+            ground_y: this.terrain.getHeightAt(x, z),
+            damageCooldown: 0,
+            geometry: new Rock(this),
+        }));
     }
 
     // =====================================================
@@ -121,6 +163,16 @@ export class Scene extends CGFscene {
     // =====================================================
 
     update() {
+        // Game over freezes the whole update loop (movement, HP drain, camera);
+        // display() keeps running, so the world stays on screen, frozen.
+        if (this.game_state && this.game_state.game_over) {
+            if (!this._game_over_logged) {
+                this._game_over_logged = true;
+                console.log("GAME OVER — Score: " + Math.floor(this.game_state.score));
+            }
+            return;
+        }
+
         // Calculate delta time
         const current_time = performance.now();
         this.delta_time = current_time - this.last_time;
@@ -133,6 +185,18 @@ export class Scene extends CGFscene {
         this.applyWagonInput();
         this.wagon.update(this.delta_time / 1000.0);
         this.updateCamera();
+
+        // Gameplay: HP drain + score, automatic barn delivery, rock damage.
+        // (Bale pickup is manual — the P key, see UI.js.)
+        const delta = this.delta_time / 1000.0;
+        this.game_state.update(delta);
+        this.barn_delivered = this.game_state.checkBarnDelivery(
+            this.wagon,
+            this.barn_zone_x,
+            this.barn_zone_z,
+            this.barn_zone_r,
+        );
+        this.game_state.checkRockCollisions(this.wagon, this.rocks, delta);
     }
 
     applyWagonInput() {
@@ -338,6 +402,28 @@ export class Scene extends CGFscene {
 
         // Barn
         this.barn.display();
+
+        // Gameplay props (collectible bales + hazard rocks).
+        this.displayGameplay();
+    }
+
+    // Draw the gameplay props under the default shader with plain CGF
+    // appearances: the collectible bales (revealed near the wagon) and the
+    // hazard rocks. Drawn after the barn, which leaves the default shader active.
+    displayGameplay() {
+        if (!this.game_state) return;
+        this.setActiveShader(this.defaultShader);
+
+        for (const bale of this.bales) bale.display(this.wagon);
+
+        for (const rock of this.rocks) {
+            this.pushMatrix();
+            this.translate(rock.x, rock.ground_y, rock.z);
+            this.scale(6, 6, 6);
+            this.rotate(-Math.PI / 2, 1, 0, 0); // Rock's pole axis (local z) -> world up
+            rock.geometry.display();
+            this.popMatrix();
+        }
     }
 
     // =====================================================

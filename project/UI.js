@@ -243,6 +243,20 @@ export class UI extends CGFinterface {
             readonly(wagon_controls.add(wagon, "steering_angle_degrees").name("Steering Angle (deg)").listen());
         }
 
+        // == Game =============================================
+        {
+            // Live gameplay telemetry: read-only, kept in sync via listen().
+            const gs = this.scene.game_state;
+            const game_controls = this.gui.addFolder("Game");
+            readonly(game_controls.add(gs, "hp").name("Health Points").listen());
+            readonly(game_controls.add(gs, "score").name("Score (s)").listen());
+            readonly(game_controls.add(gs, "bales_carried").name("Bales Carried").listen());
+            readonly(game_controls.add(gs, "total_bales_delivered").name("Bales Delivered").listen());
+            readonly(game_controls.add(gs, "last_damage").name("Last Damage").listen());
+            readonly(game_controls.add(gs, "last_heal").name("Last Heal").listen());
+            game_controls.open();
+        }
+
         this.initKeys();
         return true;
     }
@@ -257,6 +271,16 @@ export class UI extends CGFinterface {
 
     processKeyDown(event) {
         this.activeKeys[event.code] = true;
+
+        // Gameplay: P picks up a nearby bale, L drops all carried bales.
+        if (this.scene.game_state) {
+            if (event.code === "KeyP") {
+                this.scene.game_state.checkBalePickup(this.scene.wagon, this.scene.bales);
+            }
+            if (event.code === "KeyL") {
+                this.scene.game_state.bales_carried = 0;
+            }
+        }
     }
 
     processKeyUp(event) {
