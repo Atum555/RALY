@@ -89,16 +89,28 @@ export class HayBaleField {
     // Display
     // =====================================================
 
-    display() {
+    // Draw every bale (main pass) or emit their geometry into the active depth
+    // map (when _depth_pass is set). `cull`, if given as { x, z, r }, skips bales
+    // whose horizontal distance from (x, z) exceeds r -- used by the shadow pass
+    // to draw only the bales near the wagon-following near map, since the field
+    // is scattered across the whole terrain.
+    display(cull = null) {
         if (this.placements.length === 0) return;
 
         const bale = this.bale;
         const s = this.scene;
         bale._depth_pass = this._depth_pass;
+        const r2 = cull ? cull.r * cull.r : 0;
 
-        // One material activation (and shadow-uniform upload) for the whole field.
+        // One material activation (and shadow-uniform upload) for the whole field;
+        // a no-op in the depth pass, where the active depth shader stands.
         bale.beginBatch();
         for (const p of this.placements) {
+            if (cull) {
+                const dx = p.x - cull.x;
+                const dz = p.z - cull.z;
+                if (dx * dx + dz * dz > r2) continue;
+            }
             s.pushMatrix();
             s.translate(p.x, p.y + this.lift, p.z);
             s.rotate(p.yaw, 0, 1, 0);
