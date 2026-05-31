@@ -29,8 +29,9 @@ export class Direction extends CGFGroup {
         this.steering_angle = angle;
     }
 
-    update(wheelRotation) {
-        this.wheelRotation = wheelRotation;
+    update(rightWheelRotation, leftWheelRotation = rightWheelRotation) {
+        this.rightWheelRotation = rightWheelRotation;
+        this.leftWheelRotation = leftWheelRotation;
     }
 
     // =====================================================
@@ -79,11 +80,12 @@ export class Direction extends CGFGroup {
     }
 
     displayWheels() {
-        // Steering wheels mounted at each end of the axle (mirrored)
+        // Steering wheels mounted at each end of the axle (mirrored). Each side
+        // takes its own rotation so the steering scrub can spin them opposite.
         this.scene.pushMatrix();
         this.scene.translate(this.beam_length / 2, 0, 0);
         this.scene.rotate(Math.PI / 2, 0, 1, 0);
-        this.scene.rotate(this.wheelRotation, 0, 0, 1);
+        this.scene.rotate(this.rightWheelRotation, 0, 0, 1);
         this.wheel.display();
         this.scene.popMatrix();
 
@@ -91,7 +93,7 @@ export class Direction extends CGFGroup {
         this.scene.translate(-this.beam_length / 2, 0, 0);
         this.scene.rotate(Math.PI / 2, 0, 1, 0);
         this.scene.rotate(Math.PI, 0, 1, 0);
-        this.scene.rotate(-this.wheelRotation, 0, 0, 1);
+        this.scene.rotate(-this.leftWheelRotation, 0, 0, 1);
         this.wheel.display();
         this.scene.popMatrix();
     }

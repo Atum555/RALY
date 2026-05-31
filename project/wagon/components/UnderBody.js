@@ -25,9 +25,12 @@ export class UnderBody extends CGFGroup {
         this.direction.updateDirection(angle);
     }
 
-    update(wheelRotation) {
+    update(wheelRotation, frontRightRotation = wheelRotation, frontLeftRotation = wheelRotation) {
+        // Rear wheels roll with the ground speed; the front (steering) wheels get
+        // their own per-side rotation, which also picks up a scrub as the wagon
+        // is steered (opposite on each side, since the axle pivots centrally).
         this.wheelRotation = wheelRotation;
-        this.direction.update(wheelRotation);
+        this.direction.update(frontRightRotation, frontLeftRotation);
     }
 
     // =====================================================

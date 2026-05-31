@@ -15,7 +15,12 @@ export class Wagon extends CGFGroup {
 
         // -- Driving state (W/A/S/D) --
         this.steering_angle = 0;
-        this.wheelRotation = 0;
+        this.wheelRotation = 0; // rear wheels: rolls with ground speed
+        // Front wheels: shared forward roll, but the steering scrub is opposite
+        // on each side because the axle pivots about its centre.
+        this.frontWheelRotationRight = 0;
+        this.frontWheelRotationLeft = 0;
+        this.last_steering_angle = 0;
         this.position_x = 0;
         this.position_z = 0;
         this.heading = 0;
@@ -59,6 +64,11 @@ export class Wagon extends CGFGroup {
         this.steering_rate = 2.0;
         this.wheel_base = 8.0; // front axle (z=5.5) to rear axle (z=-2.5), see UnderBody
 
+        // Length of the front steering axle (UnderBody builds Direction with 5.5),
+        // whose wheels mount at ±front_axle_beam/2 from the central pivot. That
+        // half-length is the lever arm the wheels swing through when steering.
+        this.front_axle_beam = 5.5;
+
         // True while the player is neither accelerating nor braking, so the
         // wagon coasts and drag eases it to a stop.
         this.coasting = true;
@@ -75,8 +85,14 @@ export class Wagon extends CGFGroup {
         // radius wheel_radius (see UnderBody/Wheel), so the wheels' lowest point
         // is axle_height - wheel_radius below the origin. Lift the wagon by that
         // amount so the wheels rest on the ground instead of sinking into it.
+        //
+        // The rolling radius is read off the wheel model, not guessed: Wheel.js
+        // builds its rim as WheelRim(radius = 2.0, thickness = 0.15), and the
+        // rim's outer surface (the contact circle) is at radius + thickness, so
+        // the tyre meets the ground at 2.15. The wheel is never scaled when
+        // displayed, so that is its true world radius and sets the roll rate.
         this.axle_height = 1.0;
-        this.wheel_radius = 2.0;
+        this.wheel_radius = 2.15;
         this.wheel_ground_offset = this.wheel_radius - this.axle_height;
 
         this.position_y = 0;
@@ -203,8 +219,42 @@ export class Wagon extends CGFGroup {
         }
 
         this.under_body.updateDirection(this.steering_angle);
-        this.wheelRotation = (this.wheelRotation + this.scene.delta_time * 0.003) % (Math.PI * 2);
-        this.under_body.update(this.wheelRotation);
+
+        // Roll the wheels at the wagon's ground speed: a wheel rolling without
+        // slipping turns at angular velocity ground_speed / wheel_radius. We use
+        // the horizontal ground speed (the slope speed projected by the pitch,
+        // matching the kinematics above), so on a climb the wheels slow with the
+        // distance actually covered over the terrain and stop when it stops.
+        const ground_speed = this.speed * Math.cos(this.pitch);
+        const wheel_roll = (ground_speed / this.wheel_radius) * delta_seconds;
+        this.wheelRotation = (this.wheelRotation + wheel_roll) % (Math.PI * 2);
+
+        // The steered front wheels trace a wider arc than the rear axle, so they
+        // cover more ground per unit of travel and roll faster by exactly
+        // 1 / cos(steering_angle) (bicycle model). Deriving their roll from that
+        // distance keeps them following the real ground spin, just quicker into
+        // a turn, instead of spinning by an arbitrary amount.
+        const front_ground_speed = ground_speed / Math.cos(this.steering_angle);
+        const front_wheel_roll = (front_ground_speed / this.wheel_radius) * delta_seconds;
+
+        // Sweeping the steering pivots the whole front axle, so each wheel's
+        // contact point arcs through (front_axle_beam / 2) * Δsteer along the
+        // ground. Rolling that distance turns the wheel by arm / wheel_radius per
+        // radian of steer, so the front wheels visibly spin as they are steered
+        // (even at a standstill) — at a rate derived from the geometry, not a
+        // guessed factor.
+        const steering_change = this.steering_angle - this.last_steering_angle;
+        this.last_steering_angle = this.steering_angle;
+        const steering_arm = this.front_axle_beam / 2;
+        const steering_scrub = (steering_arm / this.wheel_radius) * steering_change;
+
+        // The axle pivots about its centre, so the two wheels arc in opposite
+        // directions as the steering sweeps: the scrub subtracts on the right and
+        // adds on the left, while both keep the shared forward roll.
+        this.frontWheelRotationRight = (this.frontWheelRotationRight + front_wheel_roll - steering_scrub) % (Math.PI * 2);
+        this.frontWheelRotationLeft = (this.frontWheelRotationLeft + front_wheel_roll + steering_scrub) % (Math.PI * 2);
+
+        this.under_body.update(this.wheelRotation, this.frontWheelRotationRight, this.frontWheelRotationLeft);
 
         // Net acceleration over the full frame: compares against the speed at the
         // end of the previous frame, so it folds in the throttle/brake applied
