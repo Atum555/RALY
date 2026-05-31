@@ -291,17 +291,23 @@ export class Wagon extends CGFGroup {
     }
 
     displayHayBales() {
-        // 2x2 stack of hay bales, relative to the body frame.
-        const positions = [
-            [1, 1.2, -3.6],
-            [-1, 1.2, -3.6],
-            [-1, 3.2, -3.6],
-            [1, 3.2, -3.6],
-        ];
+        // Two bales turned 90° so they lie crosswise, stacked one on top of the
+        // other at the back of the wagon (relative to the body frame).
+        const x = 0;
+        const z = -2.6;
+        const scale = 0.9;
+        const heights = [1.1, 2.7];
 
-        for (const [x, y, z] of positions) {
+        // The bale runs from local z = 0 to z = 3, so its centre sits at z = 1.5;
+        // shift back by that after the turn to keep it centred across the wagon.
+        const bale_half_length = 1.5;
+
+        for (const y of heights) {
             this.scene.pushMatrix();
             this.scene.translate(x, y, z);
+            this.scene.rotate(Math.PI / 2, 0, 1, 0);
+            this.scene.scale(scale, scale, scale);
+            this.scene.translate(0, 0, -bale_half_length);
             this.haybale.display();
             this.scene.popMatrix();
         }
