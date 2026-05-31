@@ -37,22 +37,22 @@ This document serves as your structured master checklist and implementation plan
     - [x] A wooden wagon bed [cite: 68].
     - [x] A front tongue/shaft mechanism to attach horses/mules [cite: 68].
     - [x] 4 individual wheels [cite: 68].
-- [ ] Import horse/mule assets in `.obj` format using the provided extra WebCGF class [cite: 69].
-- [x] **Advanced/Bonus:** Create a highly detailed wagon with complex geometries and premium textures [cite: 70].
+- [x] Import horse/mule assets in `.obj` format using the provided extra WebCGF class [cite: 69].
+- [ ] **Advanced/Bonus:** Create a highly detailed wagon with complex geometries and premium textures [cite: 70].
 
 ## 5. Movement, Interaction & Animations
 
 - [x] **Steering Mechanics:** Implement smooth keyboard control of the front steering wheel axis and the connected front tongue [cite: 73, 98]. They must rotate together on a central pivot point (in the center of the axis) as the wagon turns left or right [cite: 98].
-- [x] **Locomotion Controls (Forward Only):**
-    - `W` : Accelerate forward up to horse walk speed [cite: 74, 75].
-    - `S` : Reduce speed [cite: 74, 78].
-    - `A` : Steer front wheels left [cite: 74, 76].
-    - `D` : Steer front wheels right [cite: 74, 77].
-    - `P` : Pick up a hay bale [cite: 74, 79].
-    - `L` : Drop a hay bale [cite: 74, 80].
+- [ ] **Locomotion Controls (Forward Only):**
+    - [x] `W` : Accelerate forward up to horse walk speed [cite: 74, 75].
+    - [x] `S` : Reduce speed [cite: 74, 78].
+    - [x] `A` : Steer front wheels left [cite: 74, 76].
+    - [x] `D` : Steer front wheels right [cite: 74, 77].
+    - [ ] `P` : Pick up a hay bale [cite: 74, 79].
+    - [ ] `L` : Drop a hay bale [cite: 74, 80].
 - [x] **Wheel Animation:** Animate all 4 wheels of the wagon to rotate realistically relative to the wagon's forward movement [cite: 97].
 - [ ] **Pinpointing Arrow:** Model a vertical arrow hovering above hay bales that performs a time-dependent vertical floating animation [cite: 30, 98].
-- [ ] **Advanced/Bonus:** Implement wagon acceleration using physics/kinematics and advanced detailed horse movement [cite: 81, 99].
+- [x] **Advanced/Bonus:** Implement wagon acceleration using physics/kinematics and advanced detailed horse movement [cite: 81, 99].
 
 ## 6. Gameplay, Collectible System & UI
 
