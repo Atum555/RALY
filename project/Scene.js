@@ -9,6 +9,8 @@ import { ShadowMap } from "./lighting/ShadowMap.js";
 import { FpsCounter } from "./core/FpsCounter.js";
 import { patchCGFShaders } from "./core/patchCGFShaders.js";
 import { lerpAngle } from "./utils.js";
+import { Tulip } from "./flowers/tulip/Tulip.js";
+import { FlowerField } from "./flowers/FlowerField.js";
 
 export class Scene extends CGFscene {
     // =====================================================
@@ -124,7 +126,37 @@ export class Scene extends CGFscene {
         // wagon sample the same maps. Built after the casters it renders.
         this.shadow_map = new ShadowMap(this);
 
-        this.all_objects = [this.sky_sphere, this.terrain, this.wagon, this.barn, this.haybales, this.rock_field];
+        // Flowers (CGFappearance-based; lit by the default shader -- see initFlowers).
+        this.initFlowers();
+
+        this.all_objects = [this.sky_sphere, this.terrain, this.wagon, this.barn, this.haybales, this.rock_field, this.tulip, this.flower_field];
+    }
+
+    // The flowers are drawn with CGF's default Phong shader (their CGFappearance
+    // materials), which needs an enabled CGF light. main's refactor drives every
+    // other surface with its own custom shader and removed the scene lights, so
+    // set one up here purely for the flowers; the custom-shader objects ignore it.
+    initFlowers() {
+        const light = this.lights[0];
+        light.setPosition(0.5, 1.0, 0.3, 0.0); // directional (w = 0)
+        light.setAmbient(0.5, 0.5, 0.5, 1.0);
+        light.setDiffuse(1.0, 1.0, 1.0, 1.0);
+        light.setSpecular(0.2, 0.2, 0.2, 1.0);
+        light.enable();
+        light.update();
+
+        // The flower geometry is sized for the old, small scene; this lifts it to
+        // something visible against the open-world terrain (kept modest so it
+        // doesn't tower over the wagon).
+        this.FLOWER_SCALE = 2.8;
+
+        // A single showcase tulip, exposed in the UI (axiom / angle / iterations /
+        // scale), sat just ahead of the wagon's spawn.
+        this.tulip = new Tulip(this);
+
+        // The scattered field: flowers throughout the grass, in clusters and
+        // singles, rendered with distance LOD (see FlowerField).
+        this.flower_field = new FlowerField(this, this.terrain);
     }
 
     // =====================================================
@@ -365,6 +397,29 @@ export class Scene extends CGFscene {
         // textured, shadow-aware shader (so the rocks both receive and cast the
         // sun's shadows), so no shader needs to be bound here first.
         this.rock_field.display();
+
+        // Flowers.
+        this.displayFlowers();
+    }
+
+    // Draw the flowers sitting on the terrain at their sampled ground height. The
+    // showcase tulip uses the default shader (its CGFappearance light is refreshed
+    // here); the scattered field binds its own sun/shadow-aware shader internally.
+    displayFlowers() {
+        this.setActiveShader(this.defaultShader);
+        this.lights[0].update();
+
+        // The single UI-controlled showcase tulip, just ahead of the wagon's spawn.
+        const tx = 6;
+        const tz = 6;
+        this.pushMatrix();
+        this.translate(tx, this.terrain.getHeightAt(tx, tz), tz);
+        this.scale(this.FLOWER_SCALE, this.FLOWER_SCALE, this.FLOWER_SCALE);
+        this.tulip.display();
+        this.popMatrix();
+
+        // The scattered field across the grass (handles its own LOD/culling).
+        this.flower_field.display();
     }
 
     // =====================================================

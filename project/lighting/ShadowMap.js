@@ -424,6 +424,11 @@ export class ShadowMap {
         // it is simply clipped by the light frustum.
         this.castBarn();
 
+        // The flower field casts into the near map only -- it follows the wagon, so
+        // the flowers around it drop shadows on the ground (and on each other) where
+        // the player actually sees them, without the whole-map's cost of every flower.
+        this.castFlowers();
+
         // The path-scattered hay bales cast into this near map too (and only this
         // one of the wagon-following maps -- never the wagon's own tiny map), so
         // they drop sharp shadows on the ground and on each other around the wagon.
@@ -532,6 +537,24 @@ export class ShadowMap {
         barn.display();
         barn._depth_pass = false;
         gl.cullFace(gl.BACK);
+    }
+
+    // Emit the flower field's baked geometry into the currently bound (near) map,
+    // under the active depth shader and light camera. _depth_pass tells the field
+    // to skip its lit shader and just draw geometry. Drawn double-sided (cull off):
+    // the petals are thin, so a back-face cull would punch holes in their shadows;
+    // the receiving flower shader uses a light-space offset to stay acne-free.
+    // The field already draws in world space (Y up), like the barn -- no rotation.
+    castFlowers() {
+        const field = this.scene.flower_field;
+        if (!field || !field.enabled) return;
+        const gl = this.gl;
+
+        gl.disable(gl.CULL_FACE);
+        field._depth_pass = true;
+        field.display();
+        field._depth_pass = false;
+        gl.enable(gl.CULL_FACE);
     }
 
     // Emit the path-scattered hay bales into the currently bound depth map, under
