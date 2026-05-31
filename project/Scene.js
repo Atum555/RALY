@@ -56,6 +56,7 @@ export class Scene extends CGFscene {
         this.CAM_BEHIND = 40; // default horizontal follow distance
         this.CAM_HEIGHT = 15; // default camera height above the wagon
         this.CAM_LOOK_UP = 8; // anchor sits this far above the wagon
+        this.CAM_LOOK_AHEAD = 8; // anchor sits this far forward of the wagon (along its heading)
 
         this.cam_anchor = vec3.fromValues(0, this.CAM_LOOK_UP, 0);
         this.cam_dist = Math.hypot(this.CAM_BEHIND, this.CAM_HEIGHT - this.CAM_LOOK_UP);
@@ -264,11 +265,13 @@ export class Scene extends CGFscene {
         const kt = 1 - Math.exp(-this.CAM_TILT_RATE * dt);
         this.cam_tilt += (target_tilt - this.cam_tilt) * kt;
 
-        // Position always follows the wagon: ease the anchor toward it.
+        // Position always follows the wagon: ease the anchor toward a point a bit
+        // ahead of it along its heading, so the camera looks where the wagon is
+        // going rather than straight at it.
         const target = vec3.fromValues(
-            this.wagon.position_x,
+            this.wagon.position_x + this.CAM_LOOK_AHEAD * Math.sin(this.wagon.heading),
             this.wagon.position_y + this.CAM_LOOK_UP,
-            this.wagon.position_z,
+            this.wagon.position_z + this.CAM_LOOK_AHEAD * Math.cos(this.wagon.heading),
         );
         const kp = 1 - Math.exp(-this.CAM_POS_RATE * dt);
         vec3.lerp(this.cam_anchor, this.cam_anchor, target, kp);
