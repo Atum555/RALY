@@ -278,7 +278,7 @@ export class UI extends CGFinterface {
                 this.scene.game_state.checkBalePickup(this.scene.wagon, this.scene.bales);
             }
             if (event.code === "KeyL") {
-                // Deliver carried bales — only fires when the wagon is inside the
+                // Deliver carried bales; only fires when the wagon is inside the
                 // barn drop-off circle (checkBarnDelivery does the zone check).
                 this.scene.barn_delivered = this.scene.game_state.checkBarnDelivery(
                     this.scene.wagon,

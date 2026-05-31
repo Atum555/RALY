@@ -10,7 +10,6 @@ import { FpsCounter } from "./core/FpsCounter.js";
 import { patchCGFShaders } from "./core/patchCGFShaders.js";
 import { lerpAngle } from "./utils.js";
 import { GameState } from "./gameplay/GameState.js";
-import { Rock } from "./obstacles/Rock.js";
 
 export class Scene extends CGFscene {
     // =====================================================
@@ -148,18 +147,15 @@ export class Scene extends CGFscene {
         // the collected flag is added lazily on pickup.
         this.bales = this.haybales.placements;
 
-        // Hazard rocks: damage records (x, z, damageCooldown) paired with a Rock
-        // mesh for display. Kept out of all_objects (no normal-viz needed).
-        const rock_spots = [
-            [50, -60], [-70, 30], [110, -130], [-120, -40], [30, 120],
-        ];
-        this.rocks = rock_spots.map(([x, z]) => ({
-            x,
-            z,
-            ground_y: this.terrain.getHeightAt(x, z),
-            damageCooldown: 0,
-            geometry: new Rock(this),
-        }));
+        // Hazard rocks: the wagon takes damage from the rocks scattered by the
+        // RockField, so the rocks the player sees are exactly the ones that hurt.
+        // Reuse the field's placements as the damage records, tagging each with a
+        // per-rock cooldown (see GameState.checkRockCollisions). The field already
+        // draws them, so there's no separate hazard-rock geometry.
+        this.rocks = this.rock_field.placements;
+        for (const rock of this.rocks) rock.damageCooldown = 0;
+
+        this.initHUD();
     }
 
     // =====================================================
@@ -173,6 +169,7 @@ export class Scene extends CGFscene {
             if (!this._game_over_logged) {
                 this._game_over_logged = true;
                 console.log("GAME OVER — Score: " + Math.floor(this.game_state.score));
+                this.showGameOverScreen();
             }
             return;
         }
@@ -198,6 +195,8 @@ export class Scene extends CGFscene {
         const delta = this.delta_time / 1000.0;
         this.game_state.update(delta);
         this.game_state.checkRockCollisions(this.wagon, this.rocks, delta);
+
+        this.updateHUD();
     }
 
     applyWagonInput() {
@@ -237,6 +236,152 @@ export class Scene extends CGFscene {
             else if (this.wagon.steering_angle > 0) this.wagon.steer(-steer_step);
             else if (this.wagon.steering_angle < 0) this.wagon.steer(steer_step);
         }
+    }
+
+    // Build the on-screen HUD: a plain DOM bar pinned to the top of the screen
+    // showing the live health and score, layered over the canvas. Created once
+    // when gameplay starts; refreshed every frame by updateHUD().
+    initHUD() {
+        if (document.getElementById("game-hud")) return;
+
+        const hud = document.createElement("div");
+        hud.id = "game-hud";
+        Object.assign(hud.style, {
+            position: "fixed",
+            top: "0",
+            left: "0",
+            right: "0",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: "32px",
+            padding: "16px 24px",
+            boxSizing: "border-box",
+            color: "#fff",
+            fontFamily: "sans-serif",
+            fontSize: "22px",
+            fontWeight: "bold",
+            textShadow: "0 1px 3px rgba(0, 0, 0, 0.8)",
+            pointerEvents: "none",
+            zIndex: "900",
+        });
+
+        // Health (a coloured bar + readout) and score sit together, centred at the
+        // top of the screen.
+        const health = document.createElement("div");
+        Object.assign(health.style, { display: "flex", alignItems: "center", gap: "10px" });
+
+        const health_label = document.createElement("span");
+        health_label.textContent = "HP";
+
+        const health_track = document.createElement("div");
+        Object.assign(health_track.style, {
+            width: "200px",
+            height: "18px",
+            border: "2px solid #fff",
+            borderRadius: "9px",
+            overflow: "hidden",
+            background: "rgba(0, 0, 0, 0.3)",
+        });
+        this._hud_health_fill = document.createElement("div");
+        Object.assign(this._hud_health_fill.style, {
+            height: "100%",
+            width: "100%",
+            background: "#3cdc4b",
+            transition: "width 0.1s linear, background 0.2s linear",
+        });
+        health_track.appendChild(this._hud_health_fill);
+
+        this._hud_health_text = document.createElement("span");
+
+        health.append(health_label, health_track, this._hud_health_text);
+
+        this._hud_score = document.createElement("div");
+
+        hud.append(health, this._hud_score);
+        document.body.appendChild(hud);
+
+        this.updateHUD();
+    }
+
+    // Push the current HP/score into the HUD elements. Cheap enough to run every
+    // frame: it just sets a width and two text strings.
+    updateHUD() {
+        if (!this._hud_health_fill) return;
+
+        const hp = Math.max(0, Math.round(this.game_state.hp));
+        this._hud_health_fill.style.width = hp + "%";
+        // Green when healthy, fading to red as it drains.
+        this._hud_health_fill.style.background = hp > 50 ? "#3cdc4b" : hp > 25 ? "#e0c020" : "#dc3c3c";
+        this._hud_health_text.textContent = hp;
+
+        this._hud_score.textContent = "Score: " + Math.floor(this.game_state.score) + " s";
+    }
+
+    // Build and show the game-over overlay (a plain DOM element layered over the
+    // canvas) once HP hits zero. The frozen world keeps rendering behind it. The
+    // Restart button just reloads the page, which rebuilds a fresh scene/run.
+    showGameOverScreen() {
+        if (document.getElementById("game-over-overlay")) return;
+
+        const overlay = document.createElement("div");
+        overlay.id = "game-over-overlay";
+        Object.assign(overlay.style, {
+            position: "fixed",
+            inset: "0",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "24px",
+            background: "rgba(0, 0, 0, 0.7)",
+            color: "#fff",
+            fontFamily: "sans-serif",
+            zIndex: "1000",
+        });
+
+        const title = document.createElement("div");
+        title.textContent = "GAME OVER";
+        Object.assign(title.style, { fontSize: "64px", fontWeight: "bold", letterSpacing: "4px" });
+
+        const score = document.createElement("div");
+        score.textContent = "Score: " + Math.floor(this.game_state.score) + " s";
+        Object.assign(score.style, { fontSize: "28px" });
+
+        const restart = document.createElement("button");
+        restart.textContent = "Restart";
+        Object.assign(restart.style, {
+            fontSize: "24px",
+            padding: "12px 36px",
+            cursor: "pointer",
+            border: "2px solid #fff",
+            borderRadius: "8px",
+            background: "transparent",
+            color: "#fff",
+            // Animate the hover state: grow slightly, invert to a filled look and
+            // glow. The transition makes both enter and leave ease smoothly.
+            transition: "transform 0.15s ease, background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease",
+        });
+        restart.onmouseenter = () => {
+            Object.assign(restart.style, {
+                transform: "scale(1.1)",
+                background: "#fff",
+                color: "#000",
+                boxShadow: "0 0 20px rgba(255, 255, 255, 0.6)",
+            });
+        };
+        restart.onmouseleave = () => {
+            Object.assign(restart.style, {
+                transform: "scale(1)",
+                background: "transparent",
+                color: "#fff",
+                boxShadow: "none",
+            });
+        };
+        restart.onclick = () => location.reload();
+
+        overlay.append(title, score, restart);
+        document.body.appendChild(overlay);
     }
 
     // Soft chase camera. See initCameras() for the overall design. The anchor
@@ -417,25 +562,6 @@ export class Scene extends CGFscene {
         // textured, shadow-aware shader (so the rocks both receive and cast the
         // sun's shadows), so no shader needs to be bound here first.
         this.rock_field.display();
-
-        // Hazard rocks.
-        this.displayGameplay();
-    }
-
-    // Draw the hazard rocks under the default shader with plain CGF appearances.
-    // Drawn after the barn/bales, which leave the default shader active.
-    displayGameplay() {
-        if (!this.game_state) return;
-        this.setActiveShader(this.defaultShader);
-
-        for (const rock of this.rocks) {
-            this.pushMatrix();
-            this.translate(rock.x, rock.ground_y, rock.z);
-            this.scale(6, 6, 6);
-            this.rotate(-Math.PI / 2, 1, 0, 0); // Rock's pole axis (local z) -> world up
-            rock.geometry.display();
-            this.popMatrix();
-        }
     }
 
     // =====================================================
