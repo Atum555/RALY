@@ -40,6 +40,11 @@ export class ShadowedTexturedMaterial {
             else sm.disable(this.shader);
         }
 
+        // Distance fog, shared with the terrain so textured obstacles fade into
+        // the same horizon haze. setUniformsValues only writes uniforms the shader
+        // declares, so materials whose shader has no fog (the horses) ignore it.
+        if (scene.terrain) scene.terrain.uploadFogUniforms(this.shader);
+
         // Bind after the shadow maps (which leave TEXTURE0 active); bind(0) also
         // sets scene.activeTexture so the texCoord attribute gets wired up.
         this.configureTextureFiltering();

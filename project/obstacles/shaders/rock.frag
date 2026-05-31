@@ -7,7 +7,7 @@ varying vec3 v_normal;
 varying vec3 v_view_pos;
 varying float v_fog_depth; // distance in front of the camera, for distance fog
 
-uniform sampler2D u_hay_texture; // mipmapped hay diffuse
+uniform sampler2D u_rock_texture; // mipmapped rock diffuse
 uniform vec3 u_sun_eye_dir;      // sun direction in eye space (the abstract sun)
 uniform vec3 u_moon_eye_dir;     // moon direction in eye space (cool night fill)
 uniform float u_sun_intensity;   // direct sun strength: 1 by day, lifted as it sets, faded to 0 below the horizon
@@ -65,7 +65,9 @@ float slope_bias(vec2 band, float ndl) {
     return max(band.y * (1.0 - ndl), band.x);
 }
 
-// Terrain self-shadow: prefer the sharp near map, fall back to the whole map.
+// Terrain shadow: prefer the sharp near map, fall back to the whole map. The
+// rocks cast into both, so this also returns rock-on-ground and rock-on-rock
+// shadows, sharp near the wagon and coarse in the distance.
 float terrain_shadow(vec3 view_pos, float ndl) {
     float ns = u_terrain_near_shadow_on ? sample_shadow(u_terrain_near_shadow_map, u_terrain_near_light_vp, view_pos, slope_bias(u_terrain_near_shadow_bias, ndl), u_terrain_near_shadow_texel) : -1.0;
     if(ns >= 0.0)
@@ -74,8 +76,7 @@ float terrain_shadow(vec3 view_pos, float ndl) {
     return fs < 0.0 ? 1.0 : fs;
 }
 
-// Sun visibility: the darker of the terrain shadow and the wagon's own map (the
-// wagon map holds the hay too, so the bale shadows itself and the wagon body).
+// Sun visibility: the darker of the terrain shadow and the wagon's own map.
 float sun_shadow(vec3 view_pos, float ndl) {
     if(!u_shadow_enabled)
         return 1.0;
@@ -85,7 +86,10 @@ float sun_shadow(vec3 view_pos, float ndl) {
 }
 
 void main() {
-    vec3 base = texture2D(u_hay_texture, v_uv).rgb;
+    // Pull the diffuse toward grey a touch and darken it so the stone reads as
+    // rock rather than the warm sandy tone the raw texture leans to.
+    vec3 tex = texture2D(u_rock_texture, v_uv).rgb;
+    vec3 base = mix(vec3(dot(tex, vec3(0.299, 0.587, 0.114))), tex, 0.7) * 0.9;
 
     vec3 N = normalize(v_normal);
     vec3 L = normalize(u_sun_eye_dir);
@@ -98,32 +102,35 @@ void main() {
     vec3 cast_L = u_sun_intensity >= u_moon_intensity ? L : Lm;
     float ndl_cast = max(dot(N, cast_L), 0.0);
 
-    // Small normal-offset bias. The wagon depth map stores back faces (front-face
-    // culling), so self-shadow acne is already prevented geometrically and the
-    // offset can stay tiny; a faint grazing term still guards against terrain
-    // shadows acne-ing on the bale.
-    vec3 sample_pos = v_view_pos + N * (0.02 + 0.05 * (1.0 - ndl_cast));
+    // Normal-offset bias. The rocks cast first-depth (their sun-facing silhouette
+    // is stored), so the lit faces sit right at the stored depth; a small offset,
+    // grown at grazing angles, keeps them acne-free without detaching the shadow.
+    vec3 sample_pos = v_view_pos + N * (0.03 + 0.08 * (1.0 - ndl_cast));
 
-    // True Lambert (not a half-Lambert wrap): the diffuse falls to zero right at
-    // the terminator, so the bale's own curved self-shadow boundary lines up with
-    // the lighting and the shadow-map artifacts that a wrap would keep lit on the
-    // back face are hidden where N.L already vanishes.
     float shadow = sun_shadow(sample_pos, ndl_cast);
 
+    // A tight, low specular gives the stone a faint hard sheen where it faces the
+    // sun, so the rounded boulders catch a highlight instead of reading as matte
+    // clay. Shadowed and sun-gated like the diffuse.
+    vec3 V = normalize(-v_view_pos);
+    vec3 H = normalize(L + V);
+    float spec = pow(max(dot(N, H), 0.0), 24.0) * 0.18 * ndl * shadow * u_sun_intensity;
+
     // Textured base: a cool ambient fill (never goes black) plus the sun's
-    // diffuse, which the shadow darkens.
+    // diffuse, which the shadow darkens, plus the stony highlight.
     vec3 ambient = base * 0.3;
     vec3 diffuse = base * u_sun_tint * ndl * shadow * 0.7 * u_sun_intensity;
+    vec3 specular = u_sun_tint * spec;
 
     // Cool moonlight: a second, very dim directional term that self-gates by its
-    // own N.L (zero by day, when the moon is below the horizon), fades off below the
-    // horizon via u_moon_intensity, and is shadowed by the same maps as the sun.
+    // own N.L (zero by day), fades off below the horizon via u_moon_intensity, and
+    // is shadowed by the same maps as the sun.
     vec3 moon = base * MOON_COLOR * moon_ndl * shadow * 0.7 * u_moon_intensity;
-    vec3 color = ambient + diffuse + moon;
+    vec3 color = ambient + diffuse + specular + moon;
 
     // Distance fog: fade into the horizon colour over the near..far band, exactly
     // as the terrain shader does (same uniforms, same -view_pos.z depth), so the
-    // bales dissolve into the same haze as the ground they sit on.
+    // rocks dissolve into the same haze as the ground they sit on.
     if(u_fog_enabled) {
         float fog = smoothstep(u_fog_near, u_fog_far, v_fog_depth);
         color = mix(color, u_fog_color, fog);

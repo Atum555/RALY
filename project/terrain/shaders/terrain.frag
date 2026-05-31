@@ -59,7 +59,8 @@ uniform float u_parallax_far;   // parallax faded out (and skipped) beyond this
 // is clamped to zero by day, when it is below).
 uniform vec3 u_sun_eye_dir;
 uniform vec3 u_moon_eye_dir;
-uniform float u_sun_intensity;  // 0..1, faded to 0 over the 0 -> -2 deg horizon band
+uniform float u_sun_intensity;  // direct sun strength: 1 by day, lifted as it sets, faded to 0 below the horizon
+uniform vec3 u_sun_tint;        // warm multiplier on the sunlight, white by day, orange as it sets
 uniform float u_moon_intensity; // 0..1, faded to 0 over the 0 -> -2 deg horizon band
 
 // --- Distance fog -----------------------------------------------------------
@@ -373,7 +374,8 @@ vec3 lit_material(
     // direct term is also faded to zero as it drops below the horizon.
     float sun = shadow * u_sun_intensity;
     float moon = shadow * u_moon_intensity;
-    return albedo * (SKY_AMBIENT * ao * occ + SUN_COLOR * diffuse * sun + MOON_COLOR * moon_diffuse * moon) + SUN_COLOR * spec * diffuse * sun * 0.4 + MOON_COLOR * moon_spec * moon_diffuse * moon * 0.4;
+    vec3 sun_col = SUN_COLOR * u_sun_tint;
+    return albedo * (SKY_AMBIENT * ao * occ + sun_col * diffuse * sun + MOON_COLOR * moon_diffuse * moon) + sun_col * spec * diffuse * sun * 0.4 + MOON_COLOR * moon_spec * moon_diffuse * moon * 0.4;
 }
 
 void main() {

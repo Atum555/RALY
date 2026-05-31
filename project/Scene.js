@@ -3,6 +3,8 @@ import { SkySphere } from "./sky/SkySphere.js";
 import { Wagon } from "./wagon/Wagon.js";
 import { Terrain } from "./terrain/Terrain.js";
 import { Barn } from "./barn/Barn.js";
+import { HayBaleField } from "./obstacles/HayBaleField.js";
+import { RockField } from "./obstacles/RockField.js";
 import { ShadowMap } from "./lighting/ShadowMap.js";
 import { FpsCounter } from "./core/FpsCounter.js";
 import { patchCGFShaders } from "./core/patchCGFShaders.js";
@@ -110,6 +112,15 @@ export class Scene extends CGFscene {
         this.wagon = new Wagon(this);
         this.barn = new Barn(this);
 
+        // Loose hay bales strewn along the dirt paths as obstacles.
+        this.haybales = new HayBaleField(this, this.terrain);
+
+        // Rocks scattered over the open grass and path shoulders (never the flat
+        // drivable path or the barn clearing). Built after the terrain and barn,
+        // since it needs the terrain's height field, path network, and the barn's
+        // clearing to place against.
+        this.rock_field = new RockField(this);
+
         // Sun/moon shadow maps for the terrain and the wagon. Scene-owned: it
         // drives the depth pass each frame (display) and both the terrain and the
         // wagon sample the same maps. Built after the casters it renders.
@@ -118,7 +129,7 @@ export class Scene extends CGFscene {
         // Flowers (CGFappearance-based; lit by the default shader -- see initFlowers).
         this.initFlowers();
 
-        this.all_objects = [this.sky_sphere, this.terrain, this.wagon, this.barn, this.tulip, this.flower_field];
+        this.all_objects = [this.sky_sphere, this.terrain, this.wagon, this.barn, this.haybales, this.rock_field, this.tulip, this.flower_field];
     }
 
     // The flowers are drawn with CGF's default Phong shader (their CGFappearance
@@ -165,6 +176,9 @@ export class Scene extends CGFscene {
         this.applyWagonInput();
         this.wagon.update(this.delta_time / 1000.0);
         this.updateCamera();
+
+        // Bob the hay-bale proximity arrows.
+        this.haybales.update(this.delta_time / 1000.0);
     }
 
     applyWagonInput() {
@@ -370,6 +384,19 @@ export class Scene extends CGFscene {
 
         // Barn
         this.barn.display();
+
+        // Hay bales scattered along the paths (drawn in world space, like the wagon)
+        this.haybales.display();
+
+        // Proximity markers hovering over the bales nearest the wagon.
+        this.haybales.displayArrows();
+
+        // Scattered rocks on the grass and path shoulders. Drawn with the other
+        // ground obstacles, in world space (the terrain's -90deg X rotation has
+        // been popped above). Like the hay bales, the field activates its own
+        // textured, shadow-aware shader (so the rocks both receive and cast the
+        // sun's shadows), so no shader needs to be bound here first.
+        this.rock_field.display();
 
         // Flowers.
         this.displayFlowers();

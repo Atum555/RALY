@@ -19,7 +19,7 @@ export const TERRAIN_SHADOW_BIAS_MAX = 0.006;
 // wagon, so terrain self-shadows are sharp around it. Re-rendered every frame,
 // centred on the wagon, at the wagon-centred LOD so it reuses the main pass's
 // fine tiles. Where a fragment is inside this map it overrides the whole-area map.
-export const TERRAIN_NEAR_SHADOW_SIZE = 4096;
+export const TERRAIN_NEAR_SHADOW_SIZE = 8192;
 export const TERRAIN_NEAR_SHADOW_RADIUS = 350; // half-extent of the near map, world units
 export const TERRAIN_NEAR_SHADOW_BIAS_MIN = 0.0008;
 export const TERRAIN_NEAR_SHADOW_BIAS_MAX = 0.004;
