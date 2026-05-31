@@ -181,6 +181,32 @@ export class UI extends CGFinterface {
                 .name("Slope Avoidance")
                 .onChange(rebuild_terrain);
 
+            // -- Central clearing ---------------------------------
+            // Levelled, dirt-covered circular pad at the world origin for the barn,
+            // with independent radii for the flatness and the dirt texture.
+            const clearing_controls = terrain_controls.addFolder("Central Clearing");
+            clearing_controls.add(terrain, "terrain_clearing_enabled").name("Enable").onChange(rebuild_terrain);
+            clearing_controls
+                .add(terrain, "terrain_clearing_flat_radius", 0, 500)
+                .step(1)
+                .name("Flat Radius")
+                .onChange(rebuild_terrain);
+            clearing_controls
+                .add(terrain, "terrain_clearing_texture_radius", 0, 500)
+                .step(1)
+                .name("Texture Radius")
+                .onChange(rebuild_terrain);
+            clearing_controls
+                .add(terrain, "terrain_clearing_flatness", 0, 1)
+                .step(0.05)
+                .name("Flatness")
+                .onChange(rebuild_terrain);
+            clearing_controls
+                .add(terrain, "terrain_clearing_shoulder", 1, 400)
+                .step(1)
+                .name("Shoulder")
+                .onChange(rebuild_terrain);
+
             // -- Fog ----------------------------------------------
             // Distance fog fading distant terrain into the sky's horizon colour; the
             // colour tracks the day/night cycle, so only the band is tunable here.

@@ -70,6 +70,24 @@ export class Terrain extends CGFGroup {
         this.terrain_path_smoothing = 9; // centerline smoothing window (vertices each side)
         this.terrain_path_slope_weight = 45; // how strongly paths avoid slopes (higher = flatter, windier)
 
+        // -- Central clearing --
+        // A levelled, dirt-covered circular pad at the world origin so a structure
+        // placed there (the barn) rests on calm, drivable ground covered in the
+        // path material. The flatness and the dirt texture have *independent* radii:
+        // inside terrain_clearing_flat_radius the natural height variation is scaled
+        // down toward the pad's centre height by terrain_clearing_flatness (0 = dead
+        // flat, 1 = untouched), so the ground gently settles rather than becoming a
+        // pancake; inside terrain_clearing_texture_radius the surface is rendered as
+        // full dirt. Each effect blends back to the natural ground across
+        // terrain_clearing_shoulder. Because the clearing edits the same shared
+        // height field as the paths, collision (getHeightAt) and the rendered mesh
+        // agree, exactly like the paths.
+        this.terrain_clearing_enabled = true;
+        this.terrain_clearing_flat_radius = 150; // radius of the levelled zone, world units
+        this.terrain_clearing_texture_radius = 200; // radius of the full-dirt zone, world units
+        this.terrain_clearing_flatness = 0.4; // height-variation scale inside the flat zone (0 = flat, 1 = natural)
+        this.terrain_clearing_shoulder = 200; // falloff width blending each effect back to natural ground
+
         // -- Distance fog --
         // Distant terrain fades into the sky's horizon colour over the
         // fog_start..fog_end band (view-space distance, in terrain units). The fog
@@ -163,16 +181,70 @@ export class Terrain extends CGFGroup {
             natural_height_at: this.natural_height_at_model,
         });
 
+        // Central clearing: a levelled dirt pad at the world origin, with separate
+        // radii for its flatness and its dirt texture. clearing_at returns a flatten
+        // influence (1 inside the flat radius, smoothstep down across the shoulder, 0
+        // beyond) used to scale the height variation toward the pad's centre height,
+        // plus a normalized path distance (mapped through the same dirt/grass edge the
+        // shader uses for trails, u_path_dirt_edge) so the texture radius reads as full
+        // dirt and its shoulder fades into grass. The two effects are independent.
+        const c_shoulder = Math.max(1e-3, this.terrain_clearing_shoulder);
+        const c_flat_radius = Math.max(0, this.terrain_clearing_flat_radius);
+        const c_tex_radius = Math.max(0, this.terrain_clearing_texture_radius);
+        const c_flatness = Math.min(Math.max(this.terrain_clearing_flatness, 0), 1);
+        const c_enabled = this.terrain_clearing_enabled;
+        const dirt_edge = this.terrain_path_width / (this.terrain_path_width + this.terrain_path_shoulder);
+        this.clearing_height = this.natural_height_at_model(0, 0);
+        const clearing = { flat_influence: 0, path_dist: 1 };
+        this.clearing_at = (mx, my) => {
+            clearing.flat_influence = 0;
+            clearing.path_dist = 1;
+            if (!c_enabled) return clearing;
+            const d = Math.hypot(mx, my);
+
+            // Flatness: 1 inside the flat radius, smoothstep down across the shoulder.
+            if (c_flat_radius > 0 && d < c_flat_radius + c_shoulder) {
+                if (d <= c_flat_radius) {
+                    clearing.flat_influence = 1;
+                } else {
+                    const x = (d - c_flat_radius) / c_shoulder; // 0..1 across the shoulder
+                    clearing.flat_influence = 1 - x * x * (3 - 2 * x); // smoothstep down
+                }
+            }
+
+            // Dirt texture: full dirt inside the texture radius, fading to grass.
+            if (c_tex_radius > 0 && d < c_tex_radius + c_shoulder) {
+                if (d <= c_tex_radius) {
+                    clearing.path_dist = (d / c_tex_radius) * dirt_edge; // full dirt within the radius
+                } else {
+                    const x = (d - c_tex_radius) / c_shoulder; // 0..1 across the shoulder
+                    clearing.path_dist = dirt_edge + (1 - dirt_edge) * x; // dirt -> grass
+                }
+            }
+            return clearing;
+        };
+
+        // Pull a pathed height toward the clearing's settled surface: inside the flat
+        // zone the variation around the pad's centre height is scaled by c_flatness
+        // (0 = dead flat, 1 = untouched), eased out by the flatten influence.
+        this.apply_clearing_height = (h, c) => {
+            if (c.flat_influence <= 0) return h;
+            const target = this.clearing_height + (h - this.clearing_height) * c_flatness;
+            return h + (target - h) * c.flat_influence;
+        };
+
         // The height field is the single source of truth, sampled at absolute
         // model coordinates. getHeightAt() (collision) uses this; the tile meshes
         // use sample_at_model below, which returns the same height plus the path
         // distance from a single query, so the rendered surface and the collision
         // surface always agree. Near a path the natural height is pulled toward the
-        // path's smoothed centerline.
+        // path's smoothed centerline, and the central clearing overrides both,
+        // pulling the ground to its single flat height.
         this.height_at_model = (mx, my) => {
             const natural = this.natural_height_at_model(mx, my);
             const q = this.path_network.query(mx, my);
-            return q.influence > 0 ? natural + (q.target_height - natural) * q.influence : natural;
+            let h = q.influence > 0 ? natural + (q.target_height - natural) * q.influence : natural;
+            return this.apply_clearing_height(h, this.clearing_at(mx, my));
         };
 
         // Combined per-vertex sample for the tile meshes: the pathed height plus
@@ -191,8 +263,11 @@ export class Terrain extends CGFGroup {
             const q = this.path_network.query(mx, my);
             const h = q.influence > 0 ? natural + (q.target_height - natural) * q.influence : natural;
             const pd = Math.min(1, q.dist / path_reach);
-            sample.height = h;
-            sample.path_dist = pd;
+            // The central clearing levels the ground and paints dirt over it,
+            // overriding the paths where the two overlap (nearer-to-dirt wins).
+            const c = this.clearing_at(mx, my);
+            sample.height = this.apply_clearing_height(h, c);
+            sample.path_dist = Math.min(pd, c.path_dist);
             return sample;
         };
 
@@ -235,7 +310,7 @@ export class Terrain extends CGFGroup {
 
     initShaders() {
         // Terrain shader: blends two tiled PBR materials (rocky ground, gravelly-sand
-        // paths) under one directional sun.
+        // paths) under one directional sun, then fades into the sky with distance fog.
         this.shader = new CGFshader(this.scene.gl, "terrain/shaders/terrain.vert", "terrain/shaders/terrain.frag");
 
         this.shader.setUniformsValues({

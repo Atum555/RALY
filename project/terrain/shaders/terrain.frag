@@ -44,7 +44,7 @@ const vec3 SUN_WORLD_DIR = vec3(0.5, 0.8, 0.3);   // high in the sky, off to one
 const vec3 SUN_COLOR = vec3(1.0, 0.96, 0.88);     // warm sunlight (used on the dirt)
 const vec3 SKY_AMBIENT = vec3(0.32, 0.36, 0.45);  // cool fill for shadowed dirt slopes
 
-// --- Value noise + fBm, used to break up the path edge into natural fingers ---
+// --- Value noise + fBm, so the grass varies without any image texture ---
 float hash(vec2 p) {
     p = fract(p * vec2(123.34, 345.45));
     p += dot(p, p + 34.345);
@@ -214,8 +214,8 @@ vec3 lit_material(sampler2D diff_map, sampler2D norm_map, sampler2D arm_map, sam
 }
 
 void main() {
-    // Global terrain coords scaled by u_tex_repeat give the material its base
-    // tiling frequency.
+    // Global terrain coords scaled by u_tex_repeat give the noise its base
+    // frequency; because the noise never repeats, there is no tiling seam.
     vec2 uv = v_terrain_uv * u_tex_repeat;
 
     vec3 n_geom = normalize(v_normal);
@@ -238,7 +238,7 @@ void main() {
     vec3 lit_path = lit_material(u_diffuse_map, u_normal_map, u_arm_map, u_disp_map,
                                uv, T, B, n_geom, L, V, p_fade);
 
-    // --- Open ground <-> path transition -----------------------------------
+    // --- Open ground <-> path transition (unchanged edge logic) ------------
     // v_path_dist is the per-vertex normalized distance to the nearest path; we
     // perturb it with tuft-scale, rotated multi-octave fBm and threshold it so
     // the band between path and open ground breaks into natural fingers.
