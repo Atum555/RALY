@@ -1,6 +1,7 @@
 import { CGFGroup } from "../../core/CGFGroup.js";
 import { UnitCube } from "./UnitCube.js";
 import { Cylinder } from "./Cylinder.js";
+import { WheelRim } from "./WheelRim.js";
 
 export class Wheel extends CGFGroup {
     // =====================================================
@@ -19,6 +20,7 @@ export class Wheel extends CGFGroup {
 
         this.hub = this.addPart(new Cylinder(scene, 12, 1));
         this.segment = this.addPart(new UnitCube(scene));
+        this.rim = this.addPart(new WheelRim(this.scene, 2, 0.15, 0.3, 48));
     }
 
     // =====================================================
@@ -28,6 +30,7 @@ export class Wheel extends CGFGroup {
     display() {
         this.displayHub();
         this.displaySpokes();
+        this.rim.display();
     }
 
     displayHub() {
@@ -48,15 +51,6 @@ export class Wheel extends CGFGroup {
             this.scene.rotate(angle, 0, 0, 1);
             this.scene.translate(0, this.wheel_radius / 2.0, 0);
             this.scene.scale(0.06, this.wheel_radius, 0.06);
-            this.segment.display();
-            this.scene.popMatrix();
-
-            // Rim segment
-            this.scene.pushMatrix();
-            this.scene.rotate(angle, 0, 0, 1);
-            this.scene.translate(0, this.wheel_radius, 0);
-            const segment_length = this.wheel_radius * ((2 * Math.PI) / this.num_spokes) * 1.05;
-            this.scene.scale(segment_length, this.rim_thickness, this.wheel_width);
             this.segment.display();
             this.scene.popMatrix();
         }
