@@ -1,9 +1,11 @@
 import { CGFshader, CGFtexture } from "../../lib/CGF.js";
 import { ValueNoise } from "./Noise.js";
+import { PathNetwork } from "./Path.js";
 import { TerrainTile } from "./TerrainTile.js";
 import { CGFGroup } from "../core/CGFGroup.js";
 import {
     MAX_COMPONENT_SUBDIVISIONS,
+    MAX_PATH_NODES,
     LOD_MIN_SPLIT_FACTOR,
     LOD_OFF_DEPTH,
     MIN_NODE_CACHE,
@@ -53,10 +55,25 @@ export class Terrain extends CGFGroup {
         this.terrain_lod_detail_density = 40; // mesh vertices per 100 world units across a leaf tile
         this.terrain_lod_split_factor = 2.2; // larger = fine detail reaches further from the wagon
 
+        // -- Procedural dirt paths --
+        // A trail network is carved into the height field: scattered points of
+        // interest are connected by A* routes that hug gentle grades, then the
+        // ground is flattened along them. Because paths edit the shared height
+        // field, the rendered mesh and collision (getHeightAt) agree, so the
+        // wagon drives on them automatically.
+        this.terrain_paths_enabled = true;
+        this.terrain_path_seed = Math.floor(Math.random() * 9999) + 1; // random path each run (1–9999)
+        this.terrain_path_node_density = 3; // POIs per 1,000,000 world units^2
+        this.terrain_path_width = 12; // half-width of the fully-flat strip, world units
+        this.terrain_path_shoulder = 25; // falloff width blending back to natural ground
+        this.terrain_path_smoothing = 9; // centerline smoothing window (vertices each side)
+        this.terrain_path_slope_weight = 45; // how strongly paths avoid slopes (higher = flatter, windier)
+
         // Derived from the above in initHeightField, exposed read-only in the UI:
         this.lod_levels = 1; // number of LOD tile sizes (doublings from leaf to root)
         this.effective_size = this.terrain_size; // actual extent the single root tile spans
         this.effective_tile_subdivisions = 1; // per-node grid from terrain_lod_detail_density + terrain_lod_tile_size
+        this.effective_path_count = 0; // POI count from terrain_path_node_density + terrain area
 
         this.initHeightField();
         this.initTextures();
@@ -111,24 +128,61 @@ export class Terrain extends CGFGroup {
                 : this.terrain_mid_height + (this.terrain_max_height - this.terrain_mid_height) * ((t - r) / (1 - r));
         };
 
-        // Terrain elevation, sampled at absolute model coordinates. The height
-        // field is the single source of truth: getHeightAt() (collision) and the
-        // tile meshes (sample_at_model) both read it, so the rendered surface and
-        // the collision surface always agree.
+        // Raw, un-pathed terrain elevation. The path network samples this to
+        // decide what height to flatten each path toward.
         this.natural_height_at_model = (mx, my) =>
             this.noise.fbm(mx * this.terrain_noise_scale, my * this.terrain_noise_scale, this.terrain_noise_octaves) *
             this.height_scale_at(mx, my);
 
-        this.height_at_model = (mx, my) => this.natural_height_at_model(mx, my);
+        // Points of interest scale with the terrain area to hold trail spacing
+        // constant: density is per 1,000,000 world units^2, capped for A* cost.
+        this.effective_path_count = Math.min(
+            MAX_PATH_NODES,
+            Math.round((this.terrain_path_node_density * this.effective_size * this.effective_size) / 1e6),
+        );
 
-        // Combined per-vertex sample for the tile meshes: the height plus a
-        // normalized distance to the nearest path (always 0 until the path
-        // network is added). Returns a reused scratch object: consume both fields
-        // before the next call.
+        // (Re)build the procedural path network from the current natural ground.
+        this.path_network = new PathNetwork({
+            size: this.effective_size,
+            seed: this.terrain_path_seed,
+            num_nodes: this.terrain_paths_enabled ? this.effective_path_count : 0,
+            half_width: this.terrain_path_width,
+            shoulder: this.terrain_path_shoulder,
+            smoothing: this.terrain_path_smoothing,
+            slope_weight: this.terrain_path_slope_weight,
+            natural_height_at: this.natural_height_at_model,
+        });
+
+        // The height field is the single source of truth, sampled at absolute
+        // model coordinates. getHeightAt() (collision) uses this; the tile meshes
+        // use sample_at_model below, which returns the same height plus the path
+        // distance from a single query, so the rendered surface and the collision
+        // surface always agree. Near a path the natural height is pulled toward the
+        // path's smoothed centerline.
+        this.height_at_model = (mx, my) => {
+            const natural = this.natural_height_at_model(mx, my);
+            const q = this.path_network.query(mx, my);
+            return q.influence > 0 ? natural + (q.target_height - natural) * q.influence : natural;
+        };
+
+        // Combined per-vertex sample for the tile meshes: the pathed height plus
+        // the normalized distance to the nearest path (0 at the centerline, 1
+        // at/beyond the transition's outer edge, baked per vertex so the grass/dirt
+        // edge inherits the mesh's LOD resolution). Both are derived from one
+        // path_network.query() -- the network's hot path -- so meshing a tile
+        // queries it once per vertex instead of once for height and again for path
+        // distance. Returns a reused scratch object: consume both fields before the
+        // next call. query().dist is already clamped to reach; the divide maps it
+        // into [0, 1].
+        const path_reach = this.path_network.reach || 1;
         const sample = { height: 0, path_dist: 0 };
         this.sample_at_model = (mx, my) => {
-            sample.height = this.natural_height_at_model(mx, my);
-            sample.path_dist = 0;
+            const natural = this.natural_height_at_model(mx, my);
+            const q = this.path_network.query(mx, my);
+            const h = q.influence > 0 ? natural + (q.target_height - natural) * q.influence : natural;
+            const pd = Math.min(1, q.dist / path_reach);
+            sample.height = h;
+            sample.path_dist = pd;
             return sample;
         };
 
@@ -142,27 +196,41 @@ export class Terrain extends CGFGroup {
     }
 
     initTextures() {
-        // Open ground: rocky terrain, as a PBR set (albedo + normal + packed ARM +
-        // displacement).
+        // Open ground: rocky terrain. Dirt paths: gravelly sand. Each is a PBR set
+        // (albedo + normal + packed ARM + displacement).
         this.rock_diffuse_map = new CGFtexture(this.scene, "terrain/textures/rocky_terrain_02_diff_1k.png");
         this.rock_normal_map = new CGFtexture(this.scene, "terrain/textures/rocky_terrain_02_nor_gl_1k.png");
         this.rock_arm_map = new CGFtexture(this.scene, "terrain/textures/rocky_terrain_02_arm_1k.png");
         this.rock_disp_map = new CGFtexture(this.scene, "terrain/textures/rocky_terrain_02_disp_1k.png");
+        this.path_diffuse_map = new CGFtexture(this.scene, "terrain/textures/gravelly_sand_diff_1k.png");
+        this.path_normal_map = new CGFtexture(this.scene, "terrain/textures/gravelly_sand_nor_gl_1k.png");
+        this.path_arm_map = new CGFtexture(this.scene, "terrain/textures/gravelly_sand_arm_1k.png");
+        this.path_disp_map = new CGFtexture(this.scene, "terrain/textures/gravelly_sand_disp_1k.png");
 
         // CGFtexture uploads with only a LINEAR min filter (no mip chain), so the
         // tiled ground aliases badly when minified into the distance.
         // Mipmaps (and anisotropy) are built once the images have loaded; see configureTextureFiltering.
-        this.pbr_textures = [this.rock_diffuse_map, this.rock_normal_map, this.rock_arm_map, this.rock_disp_map];
+        this.pbr_textures = [
+            this.rock_diffuse_map,
+            this.rock_normal_map,
+            this.rock_arm_map,
+            this.rock_disp_map,
+            this.path_diffuse_map,
+            this.path_normal_map,
+            this.path_arm_map,
+            this.path_disp_map,
+        ];
         this.texture_filtering_ready = false;
     }
 
     initShaders() {
-        // Terrain shader: a tiled PBR material (rocky ground) under one
-        // directional sun.
+        // Terrain shader: blends two tiled PBR materials (rocky ground, gravelly-sand
+        // paths) under one directional sun.
         this.shader = new CGFshader(this.scene.gl, "terrain/shaders/terrain.vert", "terrain/shaders/terrain.frag");
 
         this.shader.setUniformsValues({
             u_tex_repeat: TEX_REPEAT,
+            u_path_dirt_edge: this.terrain_path_width / (this.terrain_path_width + this.terrain_path_shoulder),
             u_parallax_scale: PARALLAX_SCALE,
             u_parallax_near: PARALLAX_NEAR,
             u_parallax_far: PARALLAX_FAR,
@@ -170,6 +238,10 @@ export class Terrain extends CGFGroup {
             u_rock_normal_map: 1,
             u_rock_arm_map: 2,
             u_rock_disp_map: 3,
+            u_diffuse_map: 4,
+            u_normal_map: 5,
+            u_arm_map: 6,
+            u_disp_map: 7,
         });
     }
 
@@ -420,11 +492,15 @@ export class Terrain extends CGFGroup {
         this.scene.setActiveShader(this.shader);
         this.configureTextureFiltering();
 
-        // Bind the rock material to the sampler units the shader expects.
+        // Bind both materials to the sampler units the shader expects.
         this.rock_diffuse_map.bind(0);
         this.rock_normal_map.bind(1);
         this.rock_arm_map.bind(2);
         this.rock_disp_map.bind(3);
+        this.path_diffuse_map.bind(4);
+        this.path_normal_map.bind(5);
+        this.path_arm_map.bind(6);
+        this.path_disp_map.bind(7);
 
         // Wagon position in model space (world x -> model x, world z -> -model
         // y, matching getHeightAt's frame), stored so the quadtree refinement and

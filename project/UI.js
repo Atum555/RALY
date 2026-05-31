@@ -152,6 +152,34 @@ export class UI extends CGFinterface {
                 .name("Detail Density")
                 .onChange(rebuild_terrain);
             lod_controls.add(terrain, "terrain_lod_split_factor", 1.5, 5).step(0.1).name("Detail Reach");
+
+            // -- Paths --------------------------------------------
+
+            const path_controls = terrain_controls.addFolder("Paths");
+            path_controls.add(terrain, "terrain_paths_enabled").name("Enable").onChange(rebuild_terrain);
+            path_controls.add(terrain, "terrain_path_seed", 0, 9999).step(1).name("Seed").onChange(rebuild_terrain);
+            readonly(path_controls.add(terrain, "effective_path_count").name("Node Count (derived)").listen());
+            path_controls
+                .add(terrain, "terrain_path_node_density", 0, 20)
+                .step(0.1)
+                .name("Node Density")
+                .onChange(rebuild_terrain);
+            path_controls.add(terrain, "terrain_path_width", 1, 30).step(1).name("Width").onChange(rebuild_terrain);
+            path_controls
+                .add(terrain, "terrain_path_shoulder", 1, 50)
+                .step(1)
+                .name("Shoulder")
+                .onChange(rebuild_terrain);
+            path_controls
+                .add(terrain, "terrain_path_smoothing", 0, 60)
+                .step(1)
+                .name("Smoothing")
+                .onChange(rebuild_terrain);
+            path_controls
+                .add(terrain, "terrain_path_slope_weight", 0, 100)
+                .step(1)
+                .name("Slope Avoidance")
+                .onChange(rebuild_terrain);
         }
 
         // == Obstacles ========================================

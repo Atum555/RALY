@@ -6,18 +6,24 @@ varying vec2 v_terrain_uv;
 varying vec3 v_normal;   // view-space geometric normal
 varying vec3 v_tangent;  // view-space tangent (along +U of a_terrain_uv)
 varying vec3 v_view_pos; // view-space fragment position
+varying float v_path_dist; // normalized distance to nearest path: 0 = centre, 1 = transition end
 
 uniform float u_tex_repeat;     // base frequency of the material tiling
+uniform float u_path_dirt_edge; // normalized distance at which solid path ends and the transition begins
 
-// --- Tiled PBR ground material ----------------------------------------------
-// The open ground is rocky terrain. The set is: diffuse albedo, an OpenGL-
-// convention tangent-space normal map, the packed ARM map (R = ambient
-// occlusion, G = roughness, B = metalness) and a height/displacement map
-// driving parallax (bump offset).
+// --- Two tiled PBR materials ------------------------------------------------
+// The open ground is rocky terrain; the dirt paths are gravelly sand. Each set
+// is: diffuse albedo, an OpenGL-convention tangent-space normal map, the packed
+// ARM map (R = ambient occlusion, G = roughness, B = metalness) and a
+// height/displacement map driving parallax (bump offset).
 uniform sampler2D u_rock_diffuse_map;
 uniform sampler2D u_rock_normal_map;
 uniform sampler2D u_rock_arm_map;
 uniform sampler2D u_rock_disp_map;
+uniform sampler2D u_diffuse_map; // gravelly-sand path
+uniform sampler2D u_normal_map;
+uniform sampler2D u_arm_map;
+uniform sampler2D u_disp_map;
 uniform float u_parallax_scale; // depth of the parallax effect, in tiled-UV units
 uniform float u_parallax_near;  // full parallax within this view distance
 uniform float u_parallax_far;   // parallax faded out (and skipped) beyond this
@@ -30,6 +36,35 @@ uniform mat4 uMVMatrix;
 const vec3 SUN_WORLD_DIR = vec3(0.5, 0.8, 0.3);   // high in the sky, off to one side
 const vec3 SUN_COLOR = vec3(1.0, 0.96, 0.88);     // warm sunlight (used on the dirt)
 const vec3 SKY_AMBIENT = vec3(0.32, 0.36, 0.45);  // cool fill for shadowed dirt slopes
+
+// --- Value noise + fBm, used to break up the path edge into natural fingers ---
+float hash(vec2 p) {
+    p = fract(p * vec2(123.34, 345.45));
+    p += dot(p, p + 34.345);
+    return fract(p.x * p.y);
+}
+
+float value_noise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    f = f * f * f * (f * (f * 6.0 - 15.0) + 10.0); // quintic: smoother, less grid-blocky
+    float a = hash(i);
+    float b = hash(i + vec2(1.0, 0.0));
+    float c = hash(i + vec2(0.0, 1.0));
+    float d = hash(i + vec2(1.0, 1.0));
+    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+
+float fbm(vec2 p) {
+    float v = 0.0;
+    float amp = 0.5;
+    for (int i = 0; i < 5; i++) {
+        v += amp * value_noise(p);
+        p *= 2.0;
+        amp *= 0.5;
+    }
+    return v;
+}
 
 // --- Stochastic "texture bombing" to break up visible tiling ----------------
 // An exactly-repeating texture reads as a regular lattice at large scales. We lay
@@ -180,8 +215,10 @@ void main() {
     vec3 L = normalize((uMVMatrix * vec4(SUN_WORLD_DIR, 0.0)).xyz);
     vec3 V = normalize(-v_view_pos);
 
+    // --- Two textured surfaces: rocky open ground, gravelly-sand path ------
     // Tangent frame in eye space: Gram-Schmidt the interpolated tangent against
-    // the normal, then the bitangent runs along +V (cross(T, N)).
+    // the normal, then the bitangent runs along +V (cross(T, N)). Both materials
+    // share this frame; each samples and lights its own map set.
     vec3 T = normalize(v_tangent - n_geom * dot(n_geom, v_tangent));
     vec3 B = cross(T, n_geom);
 
@@ -189,8 +226,25 @@ void main() {
     // u_parallax_far. Beyond that the march is skipped entirely (see parallax_uv).
     float p_fade = 1.0 - smoothstep(u_parallax_near, u_parallax_far, length(v_view_pos));
 
-    vec3 lit_color = lit_material(u_rock_diffuse_map, u_rock_normal_map, u_rock_arm_map, u_rock_disp_map,
+    vec3 lit_rock = lit_material(u_rock_diffuse_map, u_rock_normal_map, u_rock_arm_map, u_rock_disp_map,
                                uv, T, B, n_geom, L, V, p_fade);
+    vec3 lit_path = lit_material(u_diffuse_map, u_normal_map, u_arm_map, u_disp_map,
+                               uv, T, B, n_geom, L, V, p_fade);
+
+    // --- Open ground <-> path transition -----------------------------------
+    // v_path_dist is the per-vertex normalized distance to the nearest path; we
+    // perturb it with tuft-scale, rotated multi-octave fBm and threshold it so
+    // the band between path and open ground breaks into natural fingers.
+    float dist = v_path_dist;
+    mat2 rot = mat2(0.80, -0.60, 0.60, 0.80);
+    float breakup = fbm(uv * 5.0 + 53.0) * 0.5
+                  + fbm(rot * uv * 13.0 + 17.0) * 0.3
+                  + fbm(rot * rot * uv * 30.0 + 91.0) * 0.2;
+    float edge = dist + (breakup - 0.5) * 0.22;
+    float path_amount = 1.0 - smoothstep(u_path_dirt_edge, 1.0, edge);
+
+    // Blend the two fully-lit surfaces along the noisy path edge.
+    vec3 lit_color = mix(lit_rock, lit_path, path_amount);
 
     gl_FragColor = vec4(lit_color, 1.0);
 }
