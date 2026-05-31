@@ -14,11 +14,12 @@ export class UI extends CGFinterface {
         this.gui = new dat.GUI();
 
         // == Scene ============================================
-
-        this.gui.add(this.scene, "scale_factor", 0.1, 5).name("Scale Factor");
-        this.gui.add(this.scene, "display_axis").name("Display Axis");
-        this.gui.add(this.scene, "display_normals").name("Display Normals");
-        this.gui.add(this.scene, "selected_object", this.scene.object_ids).name("Selected Object");
+        {
+            this.gui
+                .add(this.scene, "display_normals")
+                .name("Display Normals")
+                .onChange(on => (on ? this.scene.enableNormalViz() : this.scene.disableNormalViz()));
+        }
 
         // == Camera ===========================================
         {
@@ -41,43 +42,44 @@ export class UI extends CGFinterface {
         }
 
         // == Sky ==============================================
+        {
+            const sky = this.scene.sky_sphere;
+            const rebuild_sky = () => {
+                sky.initBuffers();
+                sky.initNormalVizBuffers();
+            };
+            const sky_controls = this.gui.addFolder("Sky");
+            sky_controls.add(sky, "sky_radius", 10000, 100000).step(10).name("Radius").onChange(rebuild_sky);
+            sky_controls.add(sky, "sky_slices", 4, 100).step(1).name("Slices").onChange(rebuild_sky);
+            sky_controls.add(sky, "sky_stacks", 4, 100).step(1).name("Stacks").onChange(rebuild_sky);
+            sky_controls.add(sky, "day_night_cycle_speed", 0.0, 50.0).step(1).name("Day/Night Speed");
+            sky_controls.add(sky, "sky_sun_moon_display").name("Sun / Moon");
 
-        const sky = this.scene.sky_sphere;
-        const rebuild_sky = () => {
-            sky.initBuffers();
-            sky.initNormalVizBuffers();
-        };
-        const sky_controls = this.gui.addFolder("Sky");
-        sky_controls.add(sky, "sky_radius", 10000, 100000).step(10).name("Radius").onChange(rebuild_sky);
-        sky_controls.add(sky, "sky_slices", 4, 100).step(1).name("Slices").onChange(rebuild_sky);
-        sky_controls.add(sky, "sky_stacks", 4, 100).step(1).name("Stacks").onChange(rebuild_sky);
-        sky_controls.add(sky, "day_night_cycle_speed", 0.0, 50.0).step(1).name("Day/Night Speed");
-        sky_controls.add(sky, "sky_sun_moon_display").name("Sun / Moon");
+            var sky_colors = sky_controls.addFolder("Colors");
+            sky_colors.addColor(sky.sky_colors, "sky_day_colour_1").name("Day Color 1");
+            sky_colors.addColor(sky.sky_colors, "sky_day_colour_2").name("Day Color 2");
+            sky_colors.addColor(sky.sky_colors, "sky_night_colour_1").name("Night Color 1");
+            sky_colors.addColor(sky.sky_colors, "sky_night_colour_2").name("Night Color 2");
 
-        var sky_colors = sky_controls.addFolder("Colors");
-        sky_colors.addColor(sky.sky_colors, "sky_day_colour_1").name("Day Color 1");
-        sky_colors.addColor(sky.sky_colors, "sky_day_colour_2").name("Day Color 2");
-        sky_colors.addColor(sky.sky_colors, "sky_night_colour_1").name("Night Color 1");
-        sky_colors.addColor(sky.sky_colors, "sky_night_colour_2").name("Night Color 2");
+            // -- Clouds -------------------------------------------
 
-        // -- Clouds -------------------------------------------
-
-        const cloud_controls = sky_controls.addFolder("Clouds");
-        cloud_controls.add(sky, "sky_clouds_display").name("Display Clouds");
-        cloud_controls.add(sky, "sky_clouds_drift_speed", 0.0, 0.1).step(0.001).name("Drift Speed");
-        cloud_controls.add(sky, "sky_clouds_scale", 0.001, 1.0).step(0.01).name("Scale");
-        cloud_controls.add(sky, "sky_clouds_alpha", 0.0, 20.0).step(0.5).name("Alpha");
-        cloud_controls.add(sky, "sky_clouds_cover", 0.0, 1.0).step(0.05).name("Cover");
-        cloud_controls.add(sky, "sky_clouds_light", 0.0, 1.0).step(0.05).name("Light");
-        cloud_controls.add(sky, "sky_clouds_dark", 0.0, 1.0).step(0.05).name("Dark");
+            const cloud_controls = sky_controls.addFolder("Clouds");
+            cloud_controls.add(sky, "sky_clouds_display").name("Display Clouds");
+            cloud_controls.add(sky, "sky_clouds_drift_speed", 0.0, 0.1).step(0.001).name("Drift Speed");
+            cloud_controls.add(sky, "sky_clouds_scale", 0.001, 1.0).step(0.01).name("Scale");
+            cloud_controls.add(sky, "sky_clouds_alpha", 0.0, 20.0).step(0.5).name("Alpha");
+            cloud_controls.add(sky, "sky_clouds_cover", 0.0, 1.0).step(0.05).name("Cover");
+            cloud_controls.add(sky, "sky_clouds_light", 0.0, 1.0).step(0.05).name("Light");
+            cloud_controls.add(sky, "sky_clouds_dark", 0.0, 1.0).step(0.05).name("Dark");
+        }
 
         // == Terrain ==========================================
         {
             const terrain = this.scene.terrain;
             // Rebuild the mesh buffers and re-push the shader's static uniforms:
-            // some of them derive from these controls and are set once in
-            // initShaders, so they need a refresh on change. The textures depend
-            // on no control, so they are not reloaded here.
+            // some of them (e.g. u_path_dirt_edge) derive from these controls and
+            // are set once in initShaders, so they need a refresh on change. The
+            // textures depend on no control, so they are not reloaded here.
             const rebuild_terrain = () => {
                 terrain.initHeightField();
                 terrain.initShaders();
@@ -215,32 +217,6 @@ export class UI extends CGFinterface {
             fog_controls.add(terrain, "fog_start", 0, 2000).step(200).name("Start");
             fog_controls.add(terrain, "fog_end", 0, 20000).step(200).name("End");
         }
-
-        // == Obstacles ========================================
-
-        var obstacle_controls = this.gui.addFolder("Obstacles");
-
-        // -- Hay Bale -----------------------------------------
-
-        const haybale = this.scene.haybale;
-        const rebuild_haybale = () => {
-            haybale.initBuffers();
-            haybale.initNormalVizBuffers();
-        };
-        var haybale_controls = obstacle_controls.addFolder("Hay Bale");
-        haybale_controls.add(haybale, "slices", 3, 100).step(1).name("Slices").onChange(rebuild_haybale);
-        haybale_controls.add(haybale, "stacks", 1, 50).step(1).name("Stacks").onChange(rebuild_haybale);
-
-        // -- Rock ---------------------------------------------
-
-        const rock = this.scene.rock;
-        const rebuild_rock = () => {
-            rock.initBuffers();
-            rock.initNormalVizBuffers();
-        };
-        var rock_controls = obstacle_controls.addFolder("Rock");
-        rock_controls.add(rock, "radius", 0.1, 5).step(0.1).name("Radius").onChange(rebuild_rock);
-        rock_controls.add(rock, "scale", 1, 3).step(0.1).name("Scale").onChange(rebuild_rock);
 
         // == Barn =============================================
         {

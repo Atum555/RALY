@@ -1,10 +1,7 @@
-import { CGFscene, CGFcamera, CGFaxis, CGFappearance } from "../lib/CGF.js";
+import { CGFscene, CGFcamera, CGFappearance } from "../lib/CGF.js";
 import { SkySphere } from "./sky/SkySphere.js";
-import { HayBale } from "./obstacles/HayBale.js";
-import { Rock } from "./obstacles/Rock.js";
 import { Wagon } from "./wagon/Wagon.js";
 import { Terrain } from "./terrain/Terrain.js";
-import { MyFlowerPatch } from "./MyFlowerPatch.js";
 import { Barn } from "./barn/Barn.js";
 import { FpsCounter } from "./core/FpsCounter.js";
 import { hexToRGB, lerpAngle } from "./utils.js";
@@ -15,7 +12,9 @@ export class Scene extends CGFscene {
         MOON: 1,
     });
 
-    // == Init =============================================
+    // =====================================================
+    // Init
+    // =====================================================
 
     constructor() {
         super();
@@ -25,14 +24,14 @@ export class Scene extends CGFscene {
         super.init(application);
 
         this.gl.clearColor(1.0, 1.0, 1.0, 1.0);
-        this.gl.clearDepth(100.0);
+        this.gl.clearDepth(1.0);
         this.gl.enable(this.gl.DEPTH_TEST);
         this.gl.enable(this.gl.CULL_FACE);
         this.gl.depthFunc(this.gl.LEQUAL);
         this.enableTextures(true);
 
-        this.setUpdatePeriod(50);
-        this.last_time = Date.now();
+        this.setUpdatePeriod(1);
+        this.last_time = performance.now();
         this.delta_time = 0;
 
         this.initCamera();
@@ -91,7 +90,7 @@ export class Scene extends CGFscene {
 
     initLights() {
         const sun = this.lights[Scene.Lights.SUN];
-        const SUN_COLOR = hexToRGB("#ffe6b3ff");
+        const SUN_COLOR = hexToRGB("#FFED9E");
         sun.setPosition(15, 6, 6, 1);
         sun.setDiffuse(...SUN_COLOR);
         sun.setSpecular(...SUN_COLOR);
@@ -100,7 +99,7 @@ export class Scene extends CGFscene {
         sun.update();
 
         const moon = this.lights[Scene.Lights.MOON];
-        const MOON_COLOR = hexToRGB("#334D80FF");
+        const MOON_COLOR = hexToRGB("#2C3F64");
         moon.setPosition(15, 6, 6, 1);
         moon.setDiffuse(...MOON_COLOR);
         moon.setSpecular(...MOON_COLOR);
@@ -111,7 +110,7 @@ export class Scene extends CGFscene {
 
     initMaterials() {
         this.default_material = new CGFappearance(this);
-        this.default_material.setAmbient(0.1, 0.1, 0.1, 1);
+        this.default_material.setAmbient(0.2, 0.2, 0.2, 1);
         this.default_material.setDiffuse(0.9, 0.9, 0.9, 1);
         this.default_material.setSpecular(0.1, 0.1, 0.1, 1);
         this.default_material.setShininess(10.0);
@@ -119,17 +118,7 @@ export class Scene extends CGFscene {
 
     initUIValues() {
         // Top-level
-        this.scale_factor = 1;
-        this.display_axis = true;
         this.display_normals = false;
-
-        // The wagon is always present (drivable), so only the inspection props
-        // are part of the selectable dropdown.
-        this.object_ids = {
-            HayBale: 0,
-            Rock: 1,
-        };
-        this.selected_object = 0;
     }
 
     initObjects() {
@@ -137,32 +126,33 @@ export class Scene extends CGFscene {
         this.fps_counter = new FpsCounter();
         this.last_display_time = performance.now();
 
-        this.axis = new CGFaxis(this);
+        // Environment
         this.sky_sphere = new SkySphere(this);
+        this.terrain = new Terrain(this);
 
-        this.haybale = new HayBale(this);
-        this.rock = new Rock(this);
+        // Wagon
         this.wagon = new Wagon(this);
 
-        // Environment
-        this.terrain = new Terrain(this);
-        this.flower_patch_1 = new MyFlowerPatch(this, 15, 10, 10);
-        this.flower_patch_2 = new MyFlowerPatch(this, 20, 15, 15);
+        // Objects
         this.barn = new Barn(this);
 
-        this.selectable_objects = [this.haybale, this.rock];
-        this.all_objects = [this.haybale, this.rock, this.wagon, this.sky_sphere];
+        this.all_objects = [this.sky_sphere, this.terrain, this.wagon];
     }
 
-    // == Update ===========================================
+    // =====================================================
+    // Update
+    // =====================================================
 
     update() {
         // Calculate delta time
-        const current_time = Date.now();
+        const current_time = performance.now();
         this.delta_time = current_time - this.last_time;
         this.last_time = current_time;
 
+        // Environment
         this.sky_sphere.update(this.delta_time);
+
+        // Wagon
         this.applyWagonInput();
         this.wagon.update(this.delta_time / 1000.0);
         this.updateCamera();
@@ -307,6 +297,10 @@ export class Scene extends CGFscene {
         this.camera.setTarget(vec3.fromValues(this.cam_anchor[0], this.cam_anchor[1], this.cam_anchor[2]));
     }
 
+    // =====================================================
+    // Display
+    // =====================================================
+
     display() {
         // Per-frame FPS measurement (display() runs once per rendered frame).
         const now = performance.now();
@@ -320,27 +314,16 @@ export class Scene extends CGFscene {
         this.loadIdentity();
         this.applyViewMatrix();
 
-        // World transform
         this.setDefaultAppearance();
-        // prettier-ignore
-        const scale_matrix = [
-            this.scale_factor, 0.0,               0.0,               0.0,
-            0.0,               this.scale_factor, 0.0,               0.0,
-            0.0,               0.0,               this.scale_factor, 0.0,
-            0.0,               0.0,               0.0,               1.0,
-        ];
-        this.multMatrix(scale_matrix);
 
-        // Normal visualization toggle
-        for (const obj of this.all_objects) {
-            if (this.display_normals) obj.enableNormalViz();
-            else obj.disableNormalViz();
-        }
-
-        // Lights and axis
-        if (this.display_axis) this.axis.display();
+        // Lights
         this.sky_sphere.display();
+        // Push both lights here, after the view matrix is applied, so their
+        // eye-space positions are correct for any shader that lights with them
+        // (e.g. the terrain). SkySphere.update() runs in the update phase under a
+        // stale matrix, so that pass alone leaves the moon's position wrong.
         this.lights[Scene.Lights.SUN].update();
+        this.lights[Scene.Lights.MOON].update();
 
         // Ground
         this.pushMatrix();
@@ -351,36 +334,28 @@ export class Scene extends CGFscene {
         // Player wagon (drivable with W/A/S/D)
         this.wagon.display();
 
-        // Flowers
-        this.pushMatrix();
-        this.translate(10, 0, 10);
-        this.flower_patch_1.display();
-        this.popMatrix();
-
-        this.pushMatrix();
-        this.translate(-10, 0, -10);
-        this.flower_patch_2.display();
-        this.popMatrix();
-
-        // Barn
-        this.pushMatrix();
-        this.translate(15, 0, -15);
-        this.barn.display();
-        this.popMatrix();
-
-        // Selectable inspection prop, off to the side
-        this.pushMatrix();
-        this.translate(-18, 0, 18);
-        this.selectable_objects[this.selected_object].display();
-        this.popMatrix();
+        // Barn (placement is set from the UI via the barn's own pos/scale fields)
+        // this.barn.display();
     }
 
-    // == Utils ============================================
+    // =====================================================
+    // Utils
+    // =====================================================
 
     setDefaultAppearance() {
         this.setAmbient(0.2, 0.4, 0.8, 1.0);
         this.setDiffuse(0.2, 0.4, 0.8, 1.0);
         this.setSpecular(0.2, 0.4, 0.8, 1.0);
         this.setShininess(10.0);
+    }
+
+    // Normal visualization toggle (driven by the UI checkbox, not per-frame).
+    // Propagates to every scene object.
+    enableNormalViz() {
+        for (const obj of this.all_objects) obj.enableNormalViz();
+    }
+
+    disableNormalViz() {
+        for (const obj of this.all_objects) obj.disableNormalViz();
     }
 }
