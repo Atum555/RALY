@@ -354,9 +354,6 @@ void main() {
     vec3 cast_L = u_sun_intensity >= u_moon_intensity ? L : Lm;
     float shadow = sun_shadow(v_view_pos, max(dot(n_geom, cast_L), 0.0));
 
-    vec3 lit_rock = lit_material(u_rock_diffuse_map, u_rock_normal_map, u_rock_arm_map, u_rock_disp_map, uv, T, B, n_geom, L, Lm, V, p_fade, shadow);
-    vec3 lit_path = lit_material(u_diffuse_map, u_normal_map, u_arm_map, u_disp_map, uv, T, B, n_geom, L, Lm, V, p_fade, shadow);
-
     // --- Open ground <-> path transition (unchanged edge logic) ------------
     // v_path_dist is the per-vertex normalized distance to the nearest path; we
     // perturb it with tuft-scale, rotated multi-octave fBm and threshold it so
@@ -367,8 +364,20 @@ void main() {
     float edge = dist + (breakup - 0.5) * 0.22;
     float path_amount = 1.0 - smoothstep(u_path_dirt_edge, 1.0, edge);
 
-    // Blend the two fully-lit surfaces along the noisy path edge.
-    vec3 lit_color = mix(lit_rock, lit_path, path_amount);
+    // Only the noisy edge band needs both materials; the open ground and the
+    // solid path are pure, so there we light just the one that shows and skip
+    // the other's parallax march and texture taps entirely.
+    vec3 lit_color;
+    if(path_amount <= 0.001) {
+        lit_color = lit_material(u_rock_diffuse_map, u_rock_normal_map, u_rock_arm_map, u_rock_disp_map, uv, T, B, n_geom, L, Lm, V, p_fade, shadow);
+    } else if(path_amount >= 0.999) {
+        lit_color = lit_material(u_diffuse_map, u_normal_map, u_arm_map, u_disp_map, uv, T, B, n_geom, L, Lm, V, p_fade, shadow);
+    } else {
+        vec3 lit_rock = lit_material(u_rock_diffuse_map, u_rock_normal_map, u_rock_arm_map, u_rock_disp_map, uv, T, B, n_geom, L, Lm, V, p_fade, shadow);
+        vec3 lit_path = lit_material(u_diffuse_map, u_normal_map, u_arm_map, u_disp_map, uv, T, B, n_geom, L, Lm, V, p_fade, shadow);
+        // Blend the two fully-lit surfaces along the noisy path edge.
+        lit_color = mix(lit_rock, lit_path, path_amount);
+    }
 
     // Distance fog: fade the lit colour into the horizon colour over the
     // near..far band, so distant terrain dissolves into the sky.
