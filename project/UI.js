@@ -236,10 +236,10 @@ export class UI extends CGFinterface {
         {
             const barn = this.scene.barn;
             const barn_controls = this.gui.addFolder("Barn");
-            barn_controls.add(barn, "barn_scale", 0.1, 20).step(0.1).name("Scale");
-            barn_controls.add(barn, "pos_x", -100, 100).step(0.5).name("Position X");
-            barn_controls.add(barn, "pos_y", -100, 100).step(0.5).name("Position Y");
-            barn_controls.add(barn, "pos_z", -100, 100).step(0.5).name("Position Z");
+            barn_controls.add(barn, "barn_scale", 0.1, 20).step(0.01).name("Scale");
+            barn_controls.add(barn, "pos_x", -100, 100).step(1).name("Position X");
+            barn_controls.add(barn, "pos_y", -10, 10).step(0.01).name("Position Y");
+            barn_controls.add(barn, "pos_z", -200, 200).step(1).name("Position Z");
         }
 
         // == Wagon ============================================

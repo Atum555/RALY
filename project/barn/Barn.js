@@ -11,10 +11,8 @@ export class Barn extends CGFGroup {
     // Init
     // =====================================================
 
-    constructor(scene, radius = 96, elevation = 0) {
+    constructor(scene) {
         super(scene);
-        this.radius = radius;
-        this.elevation = elevation;
         this.top = 16;
         this.opening = 14;
         this.length = 48;
@@ -26,9 +24,15 @@ export class Barn extends CGFGroup {
         // World placement, tunable from the UI. The whole barn is translated to
         // (pos_x, pos_y, pos_z) and uniformly scaled by barn_scale in display().
         this.pos_x = 0;
-        this.pos_y = elevation;
-        this.pos_z = 0;
-        this.barn_scale = 1.0;
+        this.pos_z = -110;
+        this.barn_scale = 2.7;
+
+        // Sit the barn on the terrain: sample the ground height under the front
+        // door (the +z opening face, at local z = length/2) and drop the floor
+        // (local y 0.2) onto it so the door threshold meets the ground.
+        const door_z = this.pos_z + (this.length / 2) * this.barn_scale;
+        const ground_y = scene.terrain ? scene.terrain.getHeightAt(this.pos_x, door_z) : 0;
+        this.pos_y = ground_y - 0.2 * this.barn_scale;
 
         this.initComponents();
     }
