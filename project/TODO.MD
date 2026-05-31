@@ -7,18 +7,21 @@ This document serves as your structured master checklist and implementation plan
 # PART I: PROJECT REQUIREMENTS
 
 ## 1. Environment (Sky, Sun, Clouds)
+
 - [x] Create a huge half-sphere geometry with faces turned inward and inverted normals [cite: 44].
 - [x] Apply a panoramic landscape/environment texture to the sky sphere [cite: 44].
 - [x] Implement a Sun using a Directional Light or Spotlight [cite: 45].
 - [x] **Advanced/Bonus:** Implement procedural clouds or an animated cloud layer (as a second texture) near the sky-sphere [cite: 46].
 
 ## 2. Terrain & Ground Surface
+
 - [x] Implement an elevated terrain with subtle rolling hills using height maps [cite: 48].
 - [x] Apply a soil ground texture featuring visible dirt patches [cite: 50].
 - [x] Model and overlay a defined pathway for the wagon to travel along [cite: 51].
 - [x] **Advanced/Bonus:** Generate the terrain procedurally [cite: 48].
 
 ## 3. Scatter Elements, Flora & Grass
+
 - [ ] **Scatter Elements:** Place rocks with multiple textures and apply vertex perturbation for geometric variety [cite: 53].
 - [ ] **Flora:** Create parameter-based flowers with natural randomness (varying textures, colors, scales, and placement) [cite: 55].
 - [ ] **Grass:** Distribute dense grass patches and dead/dry grass patches across the landscape to achieve a natural prairie look [cite: 58, 59, 61].
@@ -27,6 +30,7 @@ This document serves as your structured master checklist and implementation plan
     - [ ] Custom GLSL shader to simulate "wind" moving over the grass patches [cite: 60].
 
 ## 4. Covered Wagon (Prairie Schooner)
+
 - [x] Build a hierarchical model of a geometrically simplified wagon from scratch using WebCGF primitives [cite: 66, 67, 68].
 - [x] **Mandatory Structural Components:**
     - [x] A cloth cover that occupies exactly half the wagon length to leave the captured hay bales visible inside [cite: 68].
@@ -37,6 +41,7 @@ This document serves as your structured master checklist and implementation plan
 - [x] **Advanced/Bonus:** Create a highly detailed wagon with complex geometries and premium textures [cite: 70].
 
 ## 5. Movement, Interaction & Animations
+
 - [x] **Steering Mechanics:** Implement smooth keyboard control of the front steering wheel axis and the connected front tongue [cite: 73, 98]. They must rotate together on a central pivot point (in the center of the axis) as the wagon turns left or right [cite: 98].
 - [x] **Locomotion Controls (Forward Only):**
     - `W` : Accelerate forward up to horse walk speed [cite: 74, 75].
@@ -50,6 +55,7 @@ This document serves as your structured master checklist and implementation plan
 - [ ] **Advanced/Bonus:** Implement wagon acceleration using physics/kinematics and advanced detailed horse movement [cite: 81, 99].
 
 ## 6. Gameplay, Collectible System & UI
+
 - [ ] **Survival Mechanics:** Keep the driver "alive" as long as possible [cite: 21]. Total score is the cumulative seconds of a single gameplay session [cite: 22].
 - [ ] **Health Point (HP) Economy:**
     - [ ] Wagon starts with an initial set number of HPs (e.g., 100 HP) [cite: 23, 36].
@@ -72,6 +78,7 @@ This document serves as your structured master checklist and implementation plan
     - [ ] Score (survival time in seconds) [cite: 92, 94].
 
 ## 7. Project Management, Git & Delivery Artifacts
+
 - [ ] **Git Milestones & Schedule (Suggested):**
     - [ ] `environment` (Week 8): Sky, sun, clouds (Requires 2 screenshots) [cite: 105, 109].
     - [ ] `terrain` (Week 9): Terrain, ground, scatter elements (Requires 2 screenshots) [cite: 105, 109].
@@ -99,10 +106,11 @@ This document serves as your structured master checklist and implementation plan
 # PART II: OUR IDEAS
 
 ## 1. Environment (Sky, Sun, Clouds)
-* **Texture/Skybox Choice:** * **Lighting Configuration (Color, Direction, Intensity):** * **Advanced Features Implementation Strategy:** ## 2. Terrain & Ground Surface
-* **Heightmap Source / Generation Method:** * **Ground and Pathway Texture Assets:** * **Advanced Features Implementation Strategy:** ## 3. Scatter Elements, Flora & Grass
-* **Rock Geometries & Randomization Parameters:** * **Flower Variety & Distribution Logic:** * **Grass Rendering Method & Wind Shader Design:** ## 4. Covered Wagon (Prairie Schooner)
-* **Hierarchical Model Structure & Scene Graph Plan:** * **Texture Mapping (Wood, Cloth, Wheels):** * **Advanced Details Planning:** ## 5. Movement, Interaction & Animations
-* **Velocity, Turning, and Translation Math:** * **Wheel Rotation Calculation (Relationship to Distance Covered):** * **Arrow Floating Function (e.g., Sine Wave Expression):** ## 6. Gameplay, Collectible System & UI
-* **Collision Detection Tolerances (Center-to-Center Distances):** * **Spawn Logic for Random Hay Bales:** * **UI Layout & State Management:** ## 7. Project Management, Git & Delivery Artifacts
-* **Group Member Task Allocation:** * **Internal Milestones & Code Integration Dates:** * **Video Recording & Presentation Plan:**
+
+- **Texture/Skybox Choice:** _ **Lighting Configuration (Color, Direction, Intensity):** _ **Advanced Features Implementation Strategy:** ## 2. Terrain & Ground Surface
+- **Heightmap Source / Generation Method:** _ **Ground and Pathway Texture Assets:** _ **Advanced Features Implementation Strategy:** ## 3. Scatter Elements, Flora & Grass
+- **Rock Geometries & Randomization Parameters:** _ **Flower Variety & Distribution Logic:** _ **Grass Rendering Method & Wind Shader Design:** ## 4. Covered Wagon (Prairie Schooner)
+- **Hierarchical Model Structure & Scene Graph Plan:** _ **Texture Mapping (Wood, Cloth, Wheels):** _ **Advanced Details Planning:** ## 5. Movement, Interaction & Animations
+- **Velocity, Turning, and Translation Math:** _ **Wheel Rotation Calculation (Relationship to Distance Covered):** _ **Arrow Floating Function (e.g., Sine Wave Expression):** ## 6. Gameplay, Collectible System & UI
+- **Collision Detection Tolerances (Center-to-Center Distances):** _ **Spawn Logic for Random Hay Bales:** _ **UI Layout & State Management:** ## 7. Project Management, Git & Delivery Artifacts
+- **Group Member Task Allocation:** _ **Internal Milestones & Code Integration Dates:** _ **Video Recording & Presentation Plan:**
