@@ -1,5 +1,6 @@
 import { Chrysantemum } from "./chrysantemum/Chrysantemum.js";
 import { Tulip } from "./tulip/Tulip.js";
+import { BakedMesh } from "./common/BakedMesh.js";
 import { ValueNoise } from "../terrain/Noise.js";
 
 // Procedural flower field scattered over the terrain's grass.
@@ -9,6 +10,13 @@ import { ValueNoise } from "../terrain/Noise.js";
 // flower symbol draws ten petals). One unique plant per scatter point is far
 // too expensive, so the field keeps a tiny POOL of prototype flowers and reuses
 // them at every point -- the matrix changes per draw, the geometry does not.
+//
+// Each prototype is also baked once (buildPrototypes -> bakePrototype): its
+// whole L-system is flattened into a handful of static merged meshes, one per
+// material. A flower instance then costs ~3 GL draws (stem, leaf, bloom)
+// regardless of L-system depth or petal count, instead of replaying hundreds
+// of draws per flower -- the difference between a few thousand and ~100k draw
+// calls a frame at the field's budget.
 //
 // Placement is deterministic: a cell grid is hashed so a given patch of ground
 // always grows the same flowers, no popping or jitter as the wagon drives. A
@@ -31,21 +39,21 @@ export class FlowerField {
         // The field reads as broad flowering grass with denser bunches mixed in:
         // every grass cell grows at least base_per_cell flowers, and cells where
         // the density noise is high ramp up toward max_per_cell (a tight bunch).
-        this.cell_size = 25; // world units per scatter cell
-        this.base_per_cell = 4; // flowers every grass cell grows (broad coverage)
+        this.cell_size = 30; // world units per scatter cell
+        this.base_per_cell = 3; // flowers every grass cell grows (broad coverage)
         this.max_per_cell = 12; // flowers a fully-saturated cell spawns (bunch density)
-        this.density_scale = 0.004; // noise frequency: smaller = larger bunches
-        this.density_bias = 0.45; // noise above this starts ramping toward a bunch
+        this.density_scale = 0.001; // noise frequency: smaller = larger bunches
+        this.density_bias = 0.65; // noise above this starts ramping toward a bunch
         this.grass_threshold = 0.85; // terrain path_dist above this counts as open grass
 
         // -- Draw reach (world units from the wagon) --
         // A single flat radius: every grass flower within it is drawn at full
         // detail, nothing beyond. No distance tiers, no distance thinning.
-        this.draw_radius = 200;
+        this.draw_radius = 400;
 
         // Safety cap on flowers drawn per frame. Cells are visited nearest-first
         // so the cap, if ever hit, only trims the most distant flowers.
-        this.draw_budget = 1200;
+        this.draw_budget = 1000;
 
         // -- Size --
         this.base_scale = 1.7; // before per-flower jitter
@@ -60,11 +68,21 @@ export class FlowerField {
 
     // A small reused pool, built once at a single fixed detail. Every third
     // variant is a tulip, the rest chrysanthemums; each has its own colour.
+    //
+    // Each prototype's L-system is then *baked* into a handful of static meshes
+    // (one per material). Replaying an L-system per flower is hundreds of GL
+    // draws -- a single chrysanthemum head alone is rings*petals petals -- so at
+    // 1200 flowers/frame the field would issue tens of thousands of draw calls.
+    // Baking collapses one flower to ~3 draws (stem, leaf, bloom), independent
+    // of L-system depth or petal count.
     buildPrototypes() {
         this.POOL = 6;
         this.proto = [];
+        this.baked = [];
         for (let i = 0; i < this.POOL; i++) {
-            this.proto.push(this.makeVariant(i));
+            const f = this.makeVariant(i);
+            this.proto.push(f);
+            this.baked.push(this.bakePrototype(f));
         }
     }
 
@@ -82,6 +100,81 @@ export class FlowerField {
         return f;
     }
 
+    // Walk a prototype once and merge every primitive it would draw into static
+    // meshes grouped by material. Rather than re-derive the L-system + bloom
+    // layout (and risk drift from the real geometry), we temporarily replace
+    // each leaf primitive's display() with a capture that records the current
+    // model matrix and appends that primitive's transformed vertices -- so the
+    // baked mesh is exactly what display() would have drawn.
+    bakePrototype(proto) {
+        const scene = this.scene;
+
+        // One accumulation group per material instance. Stem and leaf carry
+        // their own (matching) stem material; the bloom's petals carry the
+        // flower material -- so a flower bakes down to ~3 meshes.
+        const groups = [];
+        const groupFor = (material) => {
+            let g = groups.find(x => x.material === material);
+            if (!g) { g = { material, vertices: [], normals: [], indices: [] }; groups.push(g); }
+            return g;
+        };
+
+        // Transform a primitive's local verts/normals by the live model matrix
+        // (column-major mat4) and append them to its material group.
+        const append = (group, prim, m) => {
+            const base = group.vertices.length / 3;
+            const v = prim.vertices, nrm = prim.normals;
+            for (let i = 0; i < v.length; i += 3) {
+                const x = v[i], y = v[i + 1], z = v[i + 2];
+                group.vertices.push(
+                    m[0] * x + m[4] * y + m[8] * z + m[12],
+                    m[1] * x + m[5] * y + m[9] * z + m[13],
+                    m[2] * x + m[6] * y + m[10] * z + m[14],
+                );
+                const nx = nrm[i], ny = nrm[i + 1], nz = nrm[i + 2];
+                const tx = m[0] * nx + m[4] * ny + m[8] * nz;
+                const ty = m[1] * nx + m[5] * ny + m[9] * nz;
+                const tz = m[2] * nx + m[6] * ny + m[10] * nz;
+                const len = Math.hypot(tx, ty, tz) || 1;
+                group.normals.push(tx / len, ty / len, tz / len);
+            }
+            const idx = prim.indices;
+            for (let i = 0; i < idx.length; i++) group.indices.push(base + idx[i]);
+        };
+
+        // Swap each leaf primitive's draw for a capture. The Flower symbol "F"
+        // is a composite that draws Petals through its own petal object, so we
+        // hook that petal (with the flower material) rather than the Flower.
+        const captures = [];
+        const hook = (prim, material) => {
+            const group = groupFor(material);
+            const orig = prim.display;
+            prim.display = () => append(group, prim, scene.activeMatrix);
+            captures.push({ prim, orig });
+        };
+        for (let j = 0; j < proto.grammar.length; j++) {
+            const prim = proto.primitives[j];
+            if (proto.grammar[j] === "F") hook(prim.petal, prim.material);
+            else hook(prim, prim.material);
+        }
+
+        // Replay the prototype in its own local space, then restore the draws.
+        scene.pushMatrix();
+        scene.loadIdentity();
+        proto.display();
+        scene.popMatrix();
+        for (const c of captures) c.prim.display = c.orig;
+
+        // A primitive that never appears in the expansion (e.g. a leaf the
+        // grammar didn't grow) leaves an empty group -- skip it, no draw.
+        return groups
+            .filter(g => g.indices.length > 0)
+            .map(g => ({
+                material: g.material,
+                mesh: new BakedMesh(scene, g.vertices, g.normals, g.indices),
+            }));
+    }
+
     // =====================================================
     // Normal visualization (delegated to every prototype)
     // =====================================================
@@ -90,12 +183,20 @@ export class FlowerField {
         for (const f of this.proto) fn(f);
     }
 
+    // Viz the baked meshes, not the prototypes -- the field renders the baked
+    // geometry, so the prototypes are never drawn.
+    forEachBaked(fn) {
+        for (const groups of this.baked) {
+            for (const b of groups) fn(b.mesh);
+        }
+    }
+
     enableNormalViz() {
-        this.forEachProto(f => f.enableNormalViz());
+        this.forEachBaked(m => m.enableNormalViz());
     }
 
     disableNormalViz() {
-        this.forEachProto(f => f.disableNormalViz());
+        this.forEachBaked(m => m.disableNormalViz());
     }
 
     // =====================================================
@@ -192,7 +293,7 @@ export class FlowerField {
             if (sample.path_dist < this.grass_threshold) continue;
 
             const variant = Math.min(this.POOL - 1, (hv * this.POOL) | 0);
-            const proto = this.proto[variant];
+            const baked = this.baked[variant];
             const y = terrain.getHeightAt(px, pz);
             const scl = this.base_scale * (0.75 + hs * 0.6);
 
@@ -200,7 +301,12 @@ export class FlowerField {
             scene.translate(px, y, pz);
             scene.rotate(hr * Math.PI * 2, 0, 1, 0);
             scene.scale(scl, scl, scl);
-            proto.display();
+            // Baked: one material apply + one draw per group (~3 total) instead
+            // of replaying the whole L-system.
+            for (const b of baked) {
+                b.material.apply();
+                b.mesh.display();
+            }
             scene.popMatrix();
 
             count.n++;
