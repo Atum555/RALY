@@ -9,7 +9,8 @@
  */
 export class GameState {
     constructor() {
-        this.hp = 100;
+        this.max_hp = 1000;
+        this.hp = this.max_hp;
         this.score = 0; // total seconds survived
         this.bales_carried = 0; // max 2 at any time
         this.total_bales_delivered = 0;
@@ -57,8 +58,8 @@ export class GameState {
     checkBarnDelivery(wagon, barn_x, barn_z, radius) {
         const dist = Math.hypot(wagon.position_x - barn_x, wagon.position_z - barn_z);
         if (dist < radius && this.bales_carried > 0 && this.barn_delivery_cooldown <= 0) {
-            this.last_heal = this.bales_carried * 50;
-            this.hp = Math.min(100, this.hp + this.last_heal);
+            this.last_heal = this.bales_carried * 200;
+            this.hp = Math.min(this.max_hp, this.hp + this.last_heal);
             this.total_bales_delivered += this.bales_carried;
             this.bales_carried = 0;
             this.barn_delivery_cooldown = 3.0; // 3-second cooldown
@@ -67,13 +68,22 @@ export class GameState {
         return false;
     }
 
-    // Apply random 5-15 HP damage on rock contact, with a per-rock cooldown so a
-    // single rock can't drain HP every frame while the wagon sits against it.
+    // Apply HP damage on rock contact, scaled by how fast the wagon is going and
+    // how big the rock is, with a per-rock cooldown so a single rock can't drain
+    // HP every frame while the wagon sits against it. A hard nudge into a boulder
+    // hurts; brushing a pebble at a crawl barely registers.
     checkRockCollisions(wagon, rocks, delta) {
         for (const rock of rocks) {
             const dist = Math.hypot(wagon.position_x - rock.x, wagon.position_z - rock.z);
             if (dist < this.rock_hit_radius && rock.damageCooldown <= 0) {
-                this.last_damage = Math.floor(Math.random() * 11) + 5; // 5..15
+                // Speed factor: ~0 when stopped, ~1 at normal top speed, up to ~2
+                // when boosting. Size factor: rock scale (~1.6 pebble..5 boulder)
+                // normalised so a big rock roughly doubles a small one's hit.
+                const speed_factor = Math.abs(wagon.speed) / wagon.base_max_speed;
+                const size_factor = (rock.scale || 1) / 5;
+                // Base 25 HP impact, scaled by both, with a small floor so even a
+                // gentle tap stings.
+                this.last_damage = Math.max(2, Math.round(25 * speed_factor * size_factor));
                 this.hp = Math.max(0, this.hp - this.last_damage);
                 rock.damageCooldown = 2.0;
             }

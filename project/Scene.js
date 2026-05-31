@@ -310,9 +310,11 @@ export class Scene extends CGFscene {
         if (!this._hud_health_fill) return;
 
         const hp = Math.max(0, Math.round(this.game_state.hp));
-        this._hud_health_fill.style.width = hp + "%";
+        // Bar fills relative to max HP; colour keys off the same fraction.
+        const pct = (hp / this.game_state.max_hp) * 100;
+        this._hud_health_fill.style.width = pct + "%";
         // Green when healthy, fading to red as it drains.
-        this._hud_health_fill.style.background = hp > 50 ? "#3cdc4b" : hp > 25 ? "#e0c020" : "#dc3c3c";
+        this._hud_health_fill.style.background = pct > 50 ? "#3cdc4b" : pct > 25 ? "#e0c020" : "#dc3c3c";
         this._hud_health_text.textContent = hp;
 
         this._hud_score.textContent = "Score: " + Math.floor(this.game_state.score) + " s";
