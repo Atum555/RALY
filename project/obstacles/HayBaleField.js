@@ -1,4 +1,5 @@
 import { HayBale } from "./HayBale.js";
+import { Arrow } from "./Arrow.js";
 
 // A scatter of hay bales strewn along the procedural dirt paths, acting as
 // loose obstacles on the trails. Placement is baked once at construction:
@@ -20,6 +21,17 @@ export class HayBaleField {
         // bale rests on the ground when lifted by its scale.
         this.bale = new HayBale(scene);
         this.lift = this.scale;
+
+        // Proximity marker: a single shared arrow drawn hovering over any bale the
+        // wagon gets near, bobbing up and down. One mesh, instanced per visible
+        // bale (see displayArrows). All distances are world units.
+        this.arrow = new Arrow(scene);
+        this.arrow_distance = opts.arrow_distance ?? 400; // show within this range of the wagon
+        this.arrow_scale = opts.arrow_scale ?? 1.6; // size of the marker
+        this.arrow_gap = opts.arrow_gap ?? 1.2; // clearance between the bale top and the arrow tip
+        this.arrow_bob_amp = opts.arrow_bob_amp ?? 0.6; // vertical bob amplitude
+        this.arrow_bob_speed = opts.arrow_bob_speed ?? 3.0; // bob rate (rad/s)
+        this.time = 0; // accumulated seconds, drives the bob
 
         // Set by the wagon's shadow bake if it ever drives the field; harmless
         // otherwise. Kept here so display() can mirror it onto the shared mesh.
@@ -119,6 +131,70 @@ export class HayBaleField {
             bale.displayShape();
             s.popMatrix();
         }
+    }
+
+    // =====================================================
+    // Proximity arrows
+    // =====================================================
+
+    // Advance the bob animation. Called once per frame from the scene update.
+    update(dt) {
+        this.time += dt;
+    }
+
+    // Draw a bobbing arrow over every bale within arrow_distance of the wagon.
+    // Main pass only (the depth pass calls display(), not this), so the markers
+    // never cast shadows. The arrows are self-lit, so they're switched onto the
+    // scene's default lit shader (the bale shader is still active here) and drawn
+    // with culling off, then both are restored.
+    displayArrows() {
+        const wagon = this.scene.wagon;
+        if (!wagon || this.placements.length === 0) return;
+
+        const wx = wagon.position_x;
+        const wz = wagon.position_z;
+        const r2 = this.arrow_distance * this.arrow_distance;
+
+        // Skip touching any GL state if no bale is in range this frame.
+        let any = false;
+        for (const p of this.placements) {
+            const dx = p.x - wx;
+            const dz = p.z - wz;
+            if (dx * dx + dz * dz <= r2) {
+                any = true;
+                break;
+            }
+        }
+        if (!any) return;
+
+        const s = this.scene;
+        const gl = s.gl;
+        const prev_shader = s.activeShader;
+        s.setActiveShader(s.defaultShader);
+        gl.disable(gl.CULL_FACE);
+        this.arrow.material.apply();
+
+        for (let i = 0; i < this.placements.length; i++) {
+            const p = this.placements[i];
+            const dx = p.x - wx;
+            const dz = p.z - wz;
+            if (dx * dx + dz * dz > r2) continue;
+
+            // bob in [0, 2*amp] so the tip never dips below the gap above the bale.
+            // Phase by index so neighbouring markers don't bob in lockstep.
+            const bale_top = p.y + this.lift + this.scale;
+            const bob = this.arrow_bob_amp * (1 + Math.sin(this.time * this.arrow_bob_speed + i * 1.7));
+            const tip_y = bale_top + this.arrow_gap + bob;
+
+            s.pushMatrix();
+            s.translate(p.x, tip_y, p.z);
+            s.scale(this.arrow_scale, this.arrow_scale, this.arrow_scale);
+            this.arrow.displayShape();
+            s.popMatrix();
+        }
+
+        gl.enable(gl.CULL_FACE);
+        s.setActiveShader(prev_shader);
     }
 
     // Normal visualization toggles the shared mesh: every instance is drawn
