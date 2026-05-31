@@ -50,12 +50,31 @@ export class ShadowMap {
     static LIGHT_CUTOFF_SIN = Math.sin((-2.0 * Math.PI) / 180.0); // off at/below -2 deg
     static LIGHT_FULL_SIN = 0.0;                                  // full at the horizon
 
+    // Sunset feel. The bare cosine (N.L) falloff already dims surfaces as the sun
+    // leaves the zenith, long before it sets, and there is no colour shift. To
+    // soften that, a "low-sun" weight ramps 0 -> 1 as the sun sinks from
+    // SUN_LOW_HI down to SUN_LOW_LO (sin of elevation); it lifts the direct
+    // intensity (so the low sun stays brighter than the cosine alone) and warms
+    // the sunlight toward SUN_WARM_COLOR. Above SUN_LOW_HI the light is the plain
+    // neutral daytime sun.
+    static SUN_LOW_HI = 0.5;   // sin(~30 deg): warm/lift fully off above this
+    static SUN_LOW_LO = 0.06;  // sin(~3.5 deg): warm/lift fully on near the horizon
+    static SUN_LOW_LIFT = 0.6; // extra direct intensity at the horizon (1 -> 1.6x)
+    static SUN_WARM = 0.55;    // how far the low sun tints toward SUN_WARM_COLOR
+    static SUN_WARM_COLOR = [1.0, 0.72, 0.45]; // warm orange of the low/setting sun
+
     // Smooth 0->1 gate for a light at elevation asin(dir_y): 0 at/below the cutoff,
     // 1 at/above full, smoothstepped between so it can't pop on at the threshold.
     static horizonGate(dir_y) {
         const lo = ShadowMap.LIGHT_CUTOFF_SIN;
         const hi = ShadowMap.LIGHT_FULL_SIN;
         const t = Math.max(0, Math.min(1, (dir_y - lo) / (hi - lo)));
+        return t * t * (3 - 2 * t);
+    }
+
+    // Smoothstep edge0 -> edge1 at x, matching the GLSL builtin.
+    static smoothstep(edge0, edge1, x) {
+        const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
         return t * t * (3 - 2 * t);
     }
 
@@ -143,6 +162,10 @@ export class ShadowMap {
         this.sun_intensity = 1;
         this.moon_intensity = 0;
 
+        // Warm tint multiplied into the direct sunlight, white by day and warming
+        // toward SUN_WARM_COLOR as the sun sets. Recomputed each frame in updateSun().
+        this.sun_tint = [1, 1, 1];
+
         // Uniform locations cached per shader program (the terrain and wagon body
         // shaders share these uniforms but have different locations).
         this._loc_by_prog = new Map();
@@ -220,8 +243,18 @@ export class ShadowMap {
 
         // Fade each light out over the 0 -> -2 deg band (dir is normalized, so its Y
         // is sin of the elevation). Multiplied into the direct terms in the shaders.
-        this.sun_intensity = ShadowMap.horizonGate(this.sun_dir[1]);
+        const sun_gate = ShadowMap.horizonGate(this.sun_dir[1]);
         this.moon_intensity = ShadowMap.horizonGate(this.moon_dir[1]);
+
+        // Low-sun weight: 0 while the sun is high, ramping to 1 as it sinks toward
+        // the horizon. Lift the direct intensity so the setting sun keeps more of
+        // its punch than the bare cosine falloff, and warm its colour toward orange.
+        const low = 1 - ShadowMap.smoothstep(ShadowMap.SUN_LOW_LO, ShadowMap.SUN_LOW_HI, this.sun_dir[1]);
+        this.sun_intensity = sun_gate * (1 + ShadowMap.SUN_LOW_LIFT * low);
+        const warm = ShadowMap.SUN_WARM * low;
+        this.sun_tint[0] = 1 + (ShadowMap.SUN_WARM_COLOR[0] - 1) * warm;
+        this.sun_tint[1] = 1 + (ShadowMap.SUN_WARM_COLOR[1] - 1) * warm;
+        this.sun_tint[2] = 1 + (ShadowMap.SUN_WARM_COLOR[2] - 1) * warm;
     }
 
     // Re-render all three depth maps for the sun's current position and rebuild
@@ -582,6 +615,7 @@ export class ShadowMap {
         gl.uniform3f(this.loc("u_sun_eye_dir"), this.sun_eye[0], this.sun_eye[1], this.sun_eye[2]);
         gl.uniform3f(this.loc("u_moon_eye_dir"), this.moon_eye[0], this.moon_eye[1], this.moon_eye[2]);
         gl.uniform1f(this.loc("u_sun_intensity"), this.sun_intensity);
+        gl.uniform3f(this.loc("u_sun_tint"), this.sun_tint[0], this.sun_tint[1], this.sun_tint[2]);
         gl.uniform1f(this.loc("u_moon_intensity"), this.moon_intensity);
         gl.uniform1i(this.loc("u_shadow_enabled"), 1);
         // Per-map gates: a fragment skips a map whose toggle is off, so the
@@ -600,6 +634,7 @@ export class ShadowMap {
         gl.uniform3f(this.loc("u_sun_eye_dir"), this.sun_eye[0], this.sun_eye[1], this.sun_eye[2]);
         gl.uniform3f(this.loc("u_moon_eye_dir"), this.moon_eye[0], this.moon_eye[1], this.moon_eye[2]);
         gl.uniform1f(this.loc("u_sun_intensity"), this.sun_intensity);
+        gl.uniform3f(this.loc("u_sun_tint"), this.sun_tint[0], this.sun_tint[1], this.sun_tint[2]);
         gl.uniform1f(this.loc("u_moon_intensity"), this.moon_intensity);
         gl.uniform1i(this.loc("u_shadow_enabled"), 0);
     }
