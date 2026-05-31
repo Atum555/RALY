@@ -1,5 +1,4 @@
 import { CGFobject } from "../../../lib/CGF.js";
-import { WagonWoodMaterial } from "../materials/WagonWoodMaterial.js";
 
 export class Cylinder extends CGFobject {
     // =====================================================
@@ -12,18 +11,7 @@ export class Cylinder extends CGFobject {
         this.slices = slices;
         this.stacks = stacks;
 
-        this.material = new WagonWoodMaterial(scene);
-
         this.initBuffers();
-    }
-
-    // =====================================================
-    // Display
-    // =====================================================
-
-    display() {
-        this.material.apply();
-        super.display();
     }
 
     // =====================================================
@@ -34,6 +22,7 @@ export class Cylinder extends CGFobject {
         this.vertices = [];
         this.indices = [];
         this.normals = [];
+        this.texCoords = [];
 
         const alpha_ang = (2 * Math.PI) / this.slices;
         const stack_z = 1 / this.stacks;
@@ -56,6 +45,7 @@ export class Cylinder extends CGFobject {
                 normal[2] /= n_size;
 
                 this.normals.push(...normal);
+                this.texCoords.push(i / this.slices, j / this.stacks);
                 ang += alpha_ang;
             }
 
@@ -75,8 +65,10 @@ export class Cylinder extends CGFobject {
         // Cap centres (bottom then top)
         this.vertices.push(0, 0, 0);
         this.normals.push(0, 0, -1);
+        this.texCoords.push(0.5, 0.5);
         this.vertices.push(0, 0, z - stack_z);
         this.normals.push(0, 0, 1);
+        this.texCoords.push(0.5, 0.5);
 
         // Cap triangles fanning out from each centre
         for (let i = 0; i < this.slices; i++) {
@@ -94,6 +86,12 @@ export class Cylinder extends CGFobject {
 
         this.initGLBuffers();
     }
+
+    // =====================================================
+    // Display
+    // =====================================================
+    // Display is inherited from CGFobject; rendering runs under the body shader
+    // (set by Wagon.applyBodyShader), which provides the wood texture + shadows.
 
     // =====================================================
     // Update

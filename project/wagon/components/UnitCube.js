@@ -1,5 +1,4 @@
 import { CGFobject } from "../../../lib/CGF.js";
-import { WagonWoodMaterial } from "../materials/WagonWoodMaterial.js";
 
 export class UnitCube extends CGFobject {
     // =====================================================
@@ -9,18 +8,7 @@ export class UnitCube extends CGFobject {
     constructor(scene) {
         super(scene);
 
-        this.material = new WagonWoodMaterial(scene);
-
         this.initBuffers();
-    }
-
-    // =====================================================
-    // Display
-    // =====================================================
-
-    display() {
-        this.material.apply();
-        super.display();
     }
 
     // =====================================================
@@ -88,6 +76,21 @@ export class UnitCube extends CGFobject {
             20, 22, 23
         ];
 
+        this.texCoords = [
+            // Front
+            0, 0,  1, 0,  0, 1,  1, 1,
+            // Back
+            0, 0,  1, 0,  0, 1,  1, 1,
+            // Left
+            0, 0,  1, 0,  0, 1,  1, 1,
+            // Right
+            0, 0,  1, 0,  0, 1,  1, 1,
+            // Top
+            0, 0,  1, 0,  0, 1,  1, 1,
+            // Bottom
+            0, 0,  1, 0,  0, 1,  1, 1,
+        ];
+
         // prettier-ignore
         this.normals = [
             // Front
@@ -130,4 +133,10 @@ export class UnitCube extends CGFobject {
         this.primitiveType = this.scene.gl.TRIANGLES;
         this.initGLBuffers();
     }
+
+    // =====================================================
+    // Display
+    // =====================================================
+    // Display is inherited from CGFobject; rendering runs under the body shader
+    // (set by Wagon.applyBodyShader), which provides the wood texture + shadows.
 }
