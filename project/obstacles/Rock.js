@@ -7,17 +7,29 @@ import { fbm } from "./noiseUtils.js";
  * @param scene - Reference to MyScene object
  */
 export class Rock extends CGFobject {
-    constructor(scene) {
+    // @param opts.slices / opts.stacks  Tessellation of this mesh (a LOD level).
+    // @param opts.sx / opts.sy / opts.sz  Per-axis stretch giving the rock its
+    //   lumpy silhouette. Passed in so a rock's several LOD meshes share one
+    //   shape (same stretch + the position-deterministic fbm) and differ only in
+    //   resolution; randomized when a Rock is built standalone.
+    // @param opts.skipMaterial  Skip the standalone CGFappearance (RockField
+    //   draws the pool under its own shadow-aware material instead).
+    constructor(scene, opts = {}) {
         super(scene);
 
-        this.slices = 10;
-        this.stacks = 10;
+        this.slices = opts.slices ?? 10;
+        this.stacks = opts.stacks ?? 10;
         this.radius = 1;
         this.scale = 1.5;
         this.uNoiseScale = 5.0;
         this.uNoiseStrength = 6.0;
+
+        this.sx = opts.sx ?? 1.0 + Math.random() * (this.scale - 1.0);
+        this.sy = opts.sy ?? 1.0 + Math.random() * (this.scale - 1.0);
+        this.sz = opts.sz ?? 1.0 + Math.random() * (this.scale - 1.0);
+
         this.initBuffers();
-        this.initMaterials();
+        if (!opts.skipMaterial) this.initMaterials();
     }
 
     initMaterials() {
@@ -42,9 +54,9 @@ export class Rock extends CGFobject {
         this.normals = [];
         this.texCoords = [];
 
-        var sx = 1.0 + Math.random() * (this.scale - 1.0);
-        var sy = 1.0 + Math.random() * (this.scale - 1.0);
-        var sz = 1.0 + Math.random() * (this.scale - 1.0);
+        var sx = this.sx;
+        var sy = this.sy;
+        var sz = this.sz;
 
         var sliceStep = (2 * Math.PI) / this.slices;
         var stackStep = Math.PI / this.stacks;

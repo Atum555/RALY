@@ -4,6 +4,7 @@ import { Wagon } from "./wagon/Wagon.js";
 import { Terrain } from "./terrain/Terrain.js";
 import { Barn } from "./barn/Barn.js";
 import { HayBaleField } from "./obstacles/HayBaleField.js";
+import { RockField } from "./obstacles/RockField.js";
 import { ShadowMap } from "./lighting/ShadowMap.js";
 import { FpsCounter } from "./core/FpsCounter.js";
 import { patchCGFShaders } from "./core/patchCGFShaders.js";
@@ -114,12 +115,18 @@ export class Scene extends CGFscene {
         // Loose hay bales strewn along the dirt paths as obstacles.
         this.haybales = new HayBaleField(this, this.terrain);
 
+        // Rocks scattered over the open grass and path shoulders (never the flat
+        // drivable path or the barn clearing). Built after the terrain and barn,
+        // since it needs the terrain's height field, path network, and the barn's
+        // clearing to place against.
+        this.rock_field = new RockField(this);
+
         // Sun/moon shadow maps for the terrain and the wagon. Scene-owned: it
         // drives the depth pass each frame (display) and both the terrain and the
         // wagon sample the same maps. Built after the casters it renders.
         this.shadow_map = new ShadowMap(this);
 
-        this.all_objects = [this.sky_sphere, this.terrain, this.wagon, this.barn, this.haybales];
+        this.all_objects = [this.sky_sphere, this.terrain, this.wagon, this.barn, this.haybales, this.rock_field];
 
         // Gameplay layer (HP/score, bale pickup, barn delivery, rock damage).
         this.initGameplay();
@@ -411,6 +418,13 @@ export class Scene extends CGFscene {
 
         // Proximity markers hovering over the uncollected bales near the wagon.
         this.haybales.displayArrows();
+
+        // Scattered rocks on the grass and path shoulders. Drawn with the other
+        // ground obstacles, in world space (the terrain's -90deg X rotation has
+        // been popped above). Like the hay bales, the field activates its own
+        // textured, shadow-aware shader (so the rocks both receive and cast the
+        // sun's shadows), so no shader needs to be bound here first.
+        this.rock_field.display();
 
         // Hazard rocks.
         this.displayGameplay();

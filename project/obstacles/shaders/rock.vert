@@ -1,6 +1,6 @@
-// Hay-bale shader: textured cargo that takes the sun's terrain and self shadows,
-// the same way the wagon body does. Eye-space position + normal and the texture
-// UV are passed to the fragment stage; the shadow maps are sampled there with the
+// Rock shader: textured stone that takes the sun's terrain shadows, the same way
+// the hay bales and wagon body do. Eye-space position + normal and the texture UV
+// are passed to the fragment stage; the shadow maps are sampled there with the
 // exact same uniforms as the terrain and wagon shaders.
 attribute vec3 aVertexPosition;
 attribute vec3 aVertexNormal;
