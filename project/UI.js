@@ -71,6 +71,89 @@ export class UI extends CGFinterface {
         cloud_controls.add(sky, "sky_clouds_light", 0.0, 1.0).step(0.05).name("Light");
         cloud_controls.add(sky, "sky_clouds_dark", 0.0, 1.0).step(0.05).name("Dark");
 
+        // == Terrain ==========================================
+        {
+            const terrain = this.scene.terrain;
+            // Rebuild the mesh buffers and re-push the shader's static uniforms:
+            // some of them derive from these controls and are set once in
+            // initShaders, so they need a refresh on change. The textures depend
+            // on no control, so they are not reloaded here.
+            const rebuild_terrain = () => {
+                terrain.initHeightField();
+                terrain.initShaders();
+            };
+            const terrain_controls = this.gui.addFolder("Terrain");
+
+            // -- Size ---------------------------------------------
+            // A target terrain size is requested; the effective (actual) size is
+            // snapped to a whole number of leaf tiles and shown read-only.
+            terrain_controls
+                .add(terrain, "terrain_size", 100, 50000)
+                .step(100)
+                .name("Terrain Size")
+                .onChange(rebuild_terrain);
+            readonly(terrain_controls.add(terrain, "effective_size").name("Effective Size (derived)").listen());
+
+            // -- Height field -------------------------------------
+
+            const height_controls = terrain_controls.addFolder("Height Field");
+            height_controls.add(terrain, "terrain_noise_seed", 0, 9999).step(1).name("Seed").onChange(rebuild_terrain);
+            height_controls
+                .add(terrain, "terrain_min_height", 0, 1000)
+                .step(1)
+                .name("Height (origin)")
+                .onChange(rebuild_terrain);
+            height_controls
+                .add(terrain, "terrain_mid_height", 0, 1000)
+                .step(1)
+                .name("Height (mid)")
+                .onChange(rebuild_terrain);
+            height_controls
+                .add(terrain, "terrain_max_height", 0, 1500)
+                .step(1)
+                .name("Height (edge)")
+                .onChange(rebuild_terrain);
+            height_controls
+                .add(terrain, "terrain_mid_radius", 0.01, 0.99)
+                .step(0.01)
+                .name("Mid Radius")
+                .onChange(rebuild_terrain);
+            height_controls
+                .add(terrain, "terrain_noise_scale", 0.0005, 0.02)
+                .step(0.0005)
+                .name("Noise Scale")
+                .onChange(rebuild_terrain);
+            height_controls
+                .add(terrain, "terrain_noise_octaves", 1, 50)
+                .step(1)
+                .name("Octaves")
+                .onChange(rebuild_terrain);
+
+            // -- LOD ----------------------------------------------
+            // Quadtree level-of-detail: the terrain is tiled by the leaf (finest) tile
+            // size, and each tile is subdivided by the detail density. The LOD level
+            // count and per-tile subdivisions fall out of these and are shown read-only.
+            // The split factor (detail reach) is applied every frame from its bound
+            // value, so it needs no rebuild; the rest rebuild the buffers on change.
+            const lod_controls = terrain_controls.addFolder("LOD");
+            lod_controls.add(terrain, "terrain_lod_enabled").name("Enable").onChange(rebuild_terrain);
+            readonly(lod_controls.add(terrain, "lod_levels").name("LOD Levels (derived)").listen());
+            readonly(
+                lod_controls.add(terrain, "effective_tile_subdivisions").name("Tile Subdivisions (derived)").listen(),
+            );
+            lod_controls
+                .add(terrain, "terrain_lod_tile_size", 20, 2000)
+                .step(10)
+                .name("Tile Size")
+                .onChange(rebuild_terrain);
+            lod_controls
+                .add(terrain, "terrain_lod_detail_density", 1, 400)
+                .step(1)
+                .name("Detail Density")
+                .onChange(rebuild_terrain);
+            lod_controls.add(terrain, "terrain_lod_split_factor", 1.5, 5).step(0.1).name("Detail Reach");
+        }
+
         // == Obstacles ========================================
 
         var obstacle_controls = this.gui.addFolder("Obstacles");

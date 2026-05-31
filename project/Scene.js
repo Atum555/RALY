@@ -345,7 +345,6 @@ export class Scene extends CGFscene {
         // Ground
         this.pushMatrix();
         this.rotate(-Math.PI / 2, 1, 0, 0);
-        this.scale(50, 50, 1);
         this.terrain.display();
         this.popMatrix();
 
