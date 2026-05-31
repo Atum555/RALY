@@ -11,7 +11,7 @@ export class SkySphere extends CGFobject {
 
         // -- UI-controlled state --
 
-        this.sky_radius = 500;
+        this.sky_radius = 50000;
         this.sky_slices = 100;
         this.sky_stacks = 100;
         this.day_night_cycle_speed = 1;
@@ -37,6 +37,16 @@ export class SkySphere extends CGFobject {
         this.time_of_day = 2.5;
         this.day_factor = 0;
         this.sky_clouds_drift = 0;
+
+        // Scene-world direction towards the sun (Y up), tracking the visible
+        // sun's arc so the shadow maps and surface lighting follow the day/night
+        // cycle. Refreshed each update(); kept un-normalized (ShadowMap normalizes).
+        this.sun_world_dir = [0, 1, 0];
+
+        // Scene-world direction towards the moon, the sun's antipode, tracking the
+        // visible moon's arc so the surface shaders pick up a cool moonlight fill at
+        // night. Like the sun, refreshed each update() and left un-normalized.
+        this.moon_world_dir = [0, -1, 0];
 
         this.initBuffers();
         this.initShaders();
@@ -114,8 +124,8 @@ export class SkySphere extends CGFobject {
     initShaders() {
         this.sphere_shader = new CGFshader(
             this.scene.gl,
-            "sky/shaders/sphereClouds.vert",
-            "sky/shaders/sphereClouds.frag",
+            "sky/shaders/sky_sphere.vert",
+            "sky/shaders/sky_sphere.frag",
         );
     }
 
@@ -128,7 +138,7 @@ export class SkySphere extends CGFobject {
         this.sky_clouds_drift += this.sky_clouds_drift_speed * delta_time * 0.001;
 
         // Update Day/Night cycle
-        this.time_of_day += this.day_night_cycle_speed * delta_time * 0.0001;
+        this.time_of_day += this.day_night_cycle_speed * delta_time * 0.00001;
 
         const sun_pitch = (this.time_of_day / (Math.PI * 2)) * Math.PI;
         const sun_y = Math.sin(sun_pitch);
@@ -137,7 +147,7 @@ export class SkySphere extends CGFobject {
         this.day_factor = Math.max(0, Math.min(1, (sun_y + 0.1) / (0.3)));
         this.day_factor = this.day_factor * this.day_factor;
 
-        const radius = 20.0;
+        const radius = 200.0;
         const x = -2;
         const y = Math.sin(sun_pitch) * radius;
         const z = -Math.cos(sun_pitch) * radius;
@@ -147,6 +157,18 @@ export class SkySphere extends CGFobject {
 
         sun.setPosition(x, y - 3.5, -z, 1.0);
         moon.setPosition(x, -y + 3.5, z, 1.0);
+
+        // Direction towards the sun from the origin, matching the visible sun's
+        // arc above; the shadow maps light and cast from this.
+        this.sun_world_dir[0] = x;
+        this.sun_world_dir[1] = y;
+        this.sun_world_dir[2] = -z;
+
+        // Direction towards the moon, mirroring the moon light's antipodal arc
+        // (setPosition above); the surface shaders light from this at night.
+        this.moon_world_dir[0] = x;
+        this.moon_world_dir[1] = -y;
+        this.moon_world_dir[2] = z;
 
         const buffer = 3.0;
         if (y > -buffer) sun.enable();
@@ -179,7 +201,8 @@ export class SkySphere extends CGFobject {
             cloud_cover: this.sky_clouds_cover,
             cloud_light: this.sky_clouds_light,
             cloud_dark: this.sky_clouds_dark,
-            sun_angle: this.time_of_day,
+            sun_world_dir: this.sun_world_dir,
+            moon_world_dir: this.moon_world_dir,
             day_factor: this.day_factor,
         });
         super.display();
