@@ -104,10 +104,11 @@ To run this project locally, ensure you have a modern web browser with WebGL ena
 
 ## Screenshots
 
-| Description                                                                                     | Preview Link       |
-| ----------------------------------------------------------------------------------------------- | ------------------ |
+| Description                                                                                     | Preview Link                                             |
+| ----------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
 | Overall scene wide-angle view showing landscape boundaries and active projected shadows         | [project-t11g10-1.png](docs/images/project-t11g10-1.png) |
 | Close-up details of rocks, procedural flowers, and grass texturing showcasing active LOD levels | [project-t11g10-2.png](docs/images/project-t11g10-2.png) |
 | Wagon close-up showcasing hierarchical texturing and imported horse assets                      | [project-t11g10-3.png](docs/images/project-t11g10-3.png) |
 | Animated GIF showcasing the custom GLSL wind shader effect and shifting clouds                  | [project-t11g10-4.gif](docs/images/project-t11g10-4.gif) |
 | Night scenery, wide angle, with UI controls                                                     | [project-t11g10-5.png](docs/images/project-t11g10-5.png) |
+| Full project demo video                                                                         | [project-t11g10.mp4](docs/videos/project-t11g10.mp4)     |
