@@ -30,11 +30,25 @@ export class Tulip extends LSystem {
             flower_white: "#f2f2f2",
             flower_orange: "#ff9911",
             flower_pink: "#ff66b3",
+            flower_yellow: "#ffd633",
+            flower_magenta: "#e6228c",
+            flower_apricot: "#ff8c66",
+            flower_lavender: "#b39ddb",
             stem_light: "#4d9933",
             stem_dark: "#266619",
         };
 
-        const flowerKeys = ["flower_red", "flower_purple", "flower_white", "flower_orange", "flower_pink"];
+        const flowerKeys = [
+            "flower_red",
+            "flower_purple",
+            "flower_white",
+            "flower_orange",
+            "flower_pink",
+            "flower_yellow",
+            "flower_magenta",
+            "flower_apricot",
+            "flower_lavender",
+        ];
         const stemKeys = ["stem_light", "stem_dark"];
 
         this.flowerColor = hexToRGB(this.tulip_colors[flowerKeys[Math.floor(Math.random() * flowerKeys.length)]], false);

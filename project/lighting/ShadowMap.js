@@ -516,6 +516,11 @@ export class ShadowMap {
         gl.cullFace(gl.BACK);
 
         mat4.multiply(this.wagon_frozen, cam.getProjectionMatrix(this.wagon_size, this.wagon_size), cam.getViewMatrix());
+
+        // The wind-bent grass casts into the near map too (and only this one) -- it
+        // follows the wagon, so the blades drop crisp contact shadows on the ground
+        // and on each other where the player sees them. See castGrass.
+        this.castGrass();
     }
 
     // Emit the barn's timber into whichever terrain map is currently bound, under
@@ -555,6 +560,28 @@ export class ShadowMap {
         field.display();
         field._depth_pass = false;
         gl.enable(gl.CULL_FACE);
+    }
+
+    // Emit the grass field into the currently bound (near) map. Like the flowers it
+    // follows the wagon; the whole-terrain map is far too coarse to resolve a blade,
+    // so the grass casts into the near map only. The grass carries its own depth
+    // shader (its geometry is world-space with a separate ground-height attribute
+    // and a wind bend), so display() swaps that program in for the draw -- restore
+    // the shared depth shader after, for the casters that follow. Double-sided
+    // (cull off): the blades are thin, so a back-face cull would punch holes in
+    // their shadows.
+    castGrass() {
+        const grass = this.scene.grassPatch;
+        if (!grass) return;
+        const gl = this.gl;
+
+        gl.disable(gl.CULL_FACE);
+        grass._depth_pass = true;
+        grass.display();
+        grass._depth_pass = false;
+        gl.enable(gl.CULL_FACE);
+
+        this.scene.setActiveShader(this.depth_shader); // grass swapped in its own program
     }
 
     // Emit the path-scattered hay bales into the currently bound depth map, under

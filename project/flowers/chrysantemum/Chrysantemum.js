@@ -30,6 +30,10 @@ export class Chrysantemum extends LSystem {
             flower_pink: "#ff6699",
             flower_white: "#fff0f0",
             flower_yellow: "#ffcc33",
+            flower_coral: "#ff7755",
+            flower_lavender: "#c299ff",
+            flower_burgundy: "#8c1f3d",
+            flower_peach: "#ffb380",
             stem_light: "#3d7a1a",
             stem_dark: "#1f4d0a",
         };
@@ -39,6 +43,10 @@ export class Chrysantemum extends LSystem {
             "flower_pink",
             "flower_white",
             "flower_yellow",
+            "flower_coral",
+            "flower_lavender",
+            "flower_burgundy",
+            "flower_peach",
         ];
         const stemKeys = ["stem_light", "stem_dark"];
 

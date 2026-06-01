@@ -1,6 +1,7 @@
 import { CGFscene, CGFcamera } from "../lib/CGF.js";
 import { SkySphere } from "./sky/SkySphere.js";
 import { Wagon } from "./wagon/Wagon.js";
+import { GrassPatch } from "./grass/GrassPatch.js";
 import { Terrain } from "./terrain/Terrain.js";
 import { Barn } from "./barn/Barn.js";
 import { HayBaleField } from "./obstacles/HayBaleField.js";
@@ -132,6 +133,9 @@ export class Scene extends CGFscene {
         // internally (see FlowerField), so no scene light is needed.
         this.flower_field = new FlowerField(this, this.terrain);
 
+        // Wind-animated grass scattered over the terrain's grass (follows the wagon).
+        this.grassPatch = new GrassPatch(this, this.terrain);
+
         this.all_objects = [
             this.sky_sphere,
             this.terrain,
@@ -140,6 +144,7 @@ export class Scene extends CGFscene {
             this.haybales,
             this.rock_field,
             this.flower_field,
+            this.grassPatch,
         ];
     }
 
@@ -218,6 +223,9 @@ export class Scene extends CGFscene {
 
         // Bob the hay-bale proximity arrows.
         this.haybales.update(this.delta_time / 1000.0);
+
+        // Grass wind animation.
+        this.grassPatch.update(this.delta_time);
 
         // Gameplay: HP drain + score, rock damage. Bale pickup (P) and barn
         // delivery (L) are both manual key actions — see UI.js.
@@ -596,6 +604,10 @@ export class Scene extends CGFscene {
         // shader needs to be bound here first.
         this.rock_field.display();
         this.flower_field.display();
+
+        // Wind-animated grass scattered over the grass around the wagon. The field
+        // binds its own sun/shadow-aware shader and places each tile in world space.
+        this.grassPatch.display();
 
         // Hay bales scattered along the paths — these are the collectibles
         // (collected ones hide themselves).

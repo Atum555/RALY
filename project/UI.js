@@ -271,6 +271,16 @@ export class UI extends CGFinterface {
             game_controls.open();
         }
 
+        // == Grass ============================================
+
+        const grass = this.scene.grassPatch;
+        const grass_controls = this.gui.addFolder("Grass");
+        const wind_controls = grass_controls.addFolder("Wind");
+        wind_controls.add(grass, "windEnabled").name("Wind Enabled");
+        wind_controls.add(grass, "windStrength", 0, 2).step(0.1).name("Strength");
+        wind_controls.add(grass, "windSpeed", 0, 10).step(0.1).name("Speed");
+        wind_controls.add(grass, "windSpatialFreq", 0, 2).step(0.01).name("Spatial Freq");
+
         this.initKeys();
         return true;
     }
