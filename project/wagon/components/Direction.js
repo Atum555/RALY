@@ -114,9 +114,6 @@ export class Direction extends CGFGroup {
         this.scene.pushMatrix();
         // Steer the whole axle by the current steering angle. The horses are
         // drawn by Wagon in its own articulated frame (displayHorses), not here.
-        if (this._ralyMode) {
-            this.scene.rotate(Math.PI, 0, 1, 0);
-        }
         this.scene.rotate(this.steering_angle, 0, 1, 0);
         this.displayBeams();
         this.displayWheels();
@@ -163,10 +160,13 @@ export class Direction extends CGFGroup {
     }
 
     displayBeams() {
-        // Longitudinal beam reaching forward from the rear axle cross beam
+        // Longitudinal beam reaching forward from the rear axle cross beam.
+        // Hidden in raly mode.
         this.scene.pushMatrix();
         this.scene.translate(0, 0, this.beam_length / 2);
-        this.beam.display();
+        if (!this._ralyMode) {
+            this.beam.display();
+        }
 
         // Back cross beam (the steering axle that carries the two front wheels)
         this.scene.pushMatrix();

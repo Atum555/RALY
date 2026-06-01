@@ -14,7 +14,7 @@ export class Body extends CGFGroup {
         this.endBoard = this.addPart(new Board(this.scene, 1.5, 4.4, 4));
         this.foothold = this.addPart(new Board(this.scene, 4, 1, 1));
 
-        this.engine = new CGFobjModel(this.scene, "wagon/engine/2GR.obj")
+        this.engine = new CGFobjModel(this.scene, "wagon/engine/2GR.obj");
         this._ralyMode = false;
     }
 
@@ -43,6 +43,8 @@ export class Body extends CGFGroup {
         this.scene.rotate(Math.PI / 2, 0, 1, 0);
         this.foothold.display();
         this.scene.popMatrix();
+
+        // Engine
         if (this._ralyMode) {
             this.scene.pushMatrix();
             this.scene.translate(-4.5, 3.5, 5);
