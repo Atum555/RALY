@@ -44,10 +44,11 @@ export class Scene extends CGFscene {
         this.initUIValues();
         this.initObjects();
 
-        this._ralySequence = ['KeyR', 'KeyA', 'KeyL', 'KeyY'];
-        this._ralySequenceIndex = 0;
-        this._ralyPrevKeys = {};
-        this._ralyInitialized = false;
+        // "raly" cheat code: typing R-A-L-Y in order switches the wagon into
+        // raly mode. _raly_prev_keys is seeded lazily on the first poll.
+        this._raly_code = ["KeyR", "KeyA", "KeyL", "KeyY"];
+        this._raly_progress = 0;
+        this._raly_prev_keys = null;
 
         this.initGameplay();
     }
@@ -292,31 +293,37 @@ export class Scene extends CGFscene {
             else if (this.wagon.steering_angle < 0) this.wagon.steer(steer_step);
         }
 
-        // -- "raly" cheat code sequence --
-        if (this.wagon && !this.wagon._ralyMode) {
-            if (!this._ralyInitialized) {
-                for (const key of this._ralySequence) {
-                    this._ralyPrevKeys[key] = this.gui.isKeyPressed(key);
-                }
-                this._ralyInitialized = true;
+        this.checkRalyCode();
+    }
+
+    // Watch for the "raly" cheat code (R-A-L-Y pressed in order) and switch the
+    // wagon into raly mode once it completes. Matches on key-press edges so a
+    // held key counts once; pressing a key out of sequence restarts it.
+    checkRalyCode() {
+        if (this.wagon._ralyMode) return;
+
+        // Seed previous state on the first poll so keys already held down don't
+        // register a stray press edge.
+        if (!this._raly_prev_keys) {
+            this._raly_prev_keys = {};
+            for (const key of this._raly_code) {
+                this._raly_prev_keys[key] = this.gui.isKeyPressed(key);
             }
+        }
 
-            const expected = this._ralySequence[this._ralySequenceIndex];
+        const expected = this._raly_code[this._raly_progress];
+        for (const key of this._raly_code) {
+            const pressed = this.gui.isKeyPressed(key);
+            const edge = pressed && !this._raly_prev_keys[key];
+            this._raly_prev_keys[key] = pressed;
+            if (!edge) continue;
 
-            for (const key of this._ralySequence) {
-                const prev = this._ralyPrevKeys[key] || false;
-                const curr = this.gui.isKeyPressed(key);
-                if (curr && !prev) {
-                    if (key === expected) {
-                        this._ralySequenceIndex++;
-                        if (this._ralySequenceIndex >= this._ralySequence.length) {
-                            this.wagon.activateRalyMode();
-                        }
-                    } else {
-                        this._ralySequenceIndex = 0;
-                    }
+            if (key === expected) {
+                if (++this._raly_progress === this._raly_code.length) {
+                    this.wagon.activateRalyMode();
                 }
-                this._ralyPrevKeys[key] = curr;
+            } else {
+                this._raly_progress = 0;
             }
         }
     }
