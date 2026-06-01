@@ -130,8 +130,8 @@ export class Scene extends CGFscene {
         // Flowers (CGFappearance-based; lit by the default shader -- see initFlowers).
         this.initFlowers();
 
-        // Wind-animated grass patch, sat on the terrain near the origin.
-        this.grassPatch = new GrassPatch(this, 30);
+        // Wind-animated grass scattered over the terrain's grass (follows the wagon).
+        this.grassPatch = new GrassPatch(this, this.terrain);
 
         this.all_objects = [this.sky_sphere, this.terrain, this.wagon, this.barn, this.haybales, this.rock_field, this.tulip, this.flower_field, this.grassPatch];
     }
@@ -408,11 +408,9 @@ export class Scene extends CGFscene {
         // Flowers.
         this.displayFlowers();
 
-        // Wind-animated grass patch, sat on the terrain near the origin.
-        this.pushMatrix();
-        this.translate(0, this.terrain.getHeightAt(0, 0), 0);
+        // Wind-animated grass scattered over the grass around the wagon. The field
+        // binds its own sun/shadow-aware shader and places each tile in world space.
         this.grassPatch.display();
-        this.popMatrix();
     }
 
     // Draw the flowers sitting on the terrain at their sampled ground height. The

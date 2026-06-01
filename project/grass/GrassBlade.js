@@ -17,37 +17,36 @@ export class GrassBlade extends CGFobject {
         this.indices = [];
         this.normals = [];
 
-        let ang = 0;
-        let alphaAng = 2*Math.PI/this.slices;
+        // A single flat triangle: an apex at the top and two base corners spread
+        // along X at the ground. The blade lies in one plane (no depth), so it is
+        // exactly 3 vertices instead of the old radial tuft of slices triangles.
+        const x1 = -this.width / 2;
+        const x2 =  this.width / 2;
 
-        for (let i = 0; i < this.slices; i++) {
+        this.vertices.push(this.leanX, this.height, this.leanZ);
+        this.vertices.push(x1, 0, 0);
+        this.vertices.push(x2, 0, 0);
 
-            let z1 = Math.sin(ang) * this.depth / 2;
-            let z2 = Math.sin(ang + alphaAng) * this.depth / 2;
-            let x1 = Math.cos(ang) * this.width / 2;
-            let x2 = Math.cos(ang + alphaAng) * this.width / 2;
+        // Outward face normal. The blade is drawn double-sided (both windings,
+        // see below) under the scene's back-face culling, so the fragment shader
+        // never sees a back face and cannot flip the normal toward the camera --
+        // it lights the geometric normal as-is. u x v comes out pointing inward
+        // (toward the blade axis), which lit the blades from the side away from
+        // the sun, so take v x u to face outward.
+        let ux = x1 - this.leanX, uy = -this.height, uz = -this.leanZ;
+        let vx = x2 - this.leanX, vy = -this.height, vz = -this.leanZ;
+        let nx = uz * vy - uy * vz;
+        let ny = ux * vz - uz * vx;
+        let nz = uy * vx - ux * vy;
+        let len = Math.sqrt(nx * nx + ny * ny + nz * nz);
+        nx /= len; ny /= len; nz /= len;
 
-            this.vertices.push(this.leanX, this.height, this.leanZ);
-            this.vertices.push(x1, 0, z1);
-            this.vertices.push(x2, 0, z2);
+        this.normals.push(nx, ny, nz);
+        this.normals.push(nx, ny, nz);
+        this.normals.push(nx, ny, nz);
 
-            let ux = x1 - this.leanX, uy = -this.height, uz = z1 - this.leanZ;
-            let vx = x2 - this.leanX, vy = -this.height, vz = z2 - this.leanZ;
-            let nx = uy * vz - uz * vy;
-            let ny = uz * vx - ux * vz;
-            let nz = ux * vy - uy * vx;
-            let len = Math.sqrt(nx * nx + ny * ny + nz * nz);
-            nx /= len; ny /= len; nz /= len;
-
-            this.normals.push(nx, ny, nz);
-            this.normals.push(nx, ny, nz);
-            this.normals.push(nx, ny, nz);
-
-            let base = i * 3;
-            this.indices.push(base, base + 1, base + 2);
-            this.indices.push(base, base + 2, base + 1);
-            ang += alphaAng;
-        }
+        this.indices.push(0, 1, 2);
+        this.indices.push(0, 2, 1);
 
         this.primitiveType = this.scene.gl.TRIANGLES;
         this.initGLBuffers();
