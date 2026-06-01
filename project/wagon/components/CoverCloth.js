@@ -1,4 +1,5 @@
 import { CGFobject } from "../../../lib/CGF.js";
+import { ShadowedTexturedMaterial } from "../../core/ShadowedTexturedMaterial.js";
 import { buildArchProfile, getBeamZPositions } from "./CoverUtils.js";
 
 export class CoverCloth extends CGFobject {
@@ -14,6 +15,15 @@ export class CoverCloth extends CGFobject {
         this.totalLength = length;
         this.sagFactor = sagFactor;
         this.zSegmentsPerInterval = 6;
+        this._depth_pass = false;
+
+        this.material = new ShadowedTexturedMaterial(
+            this.scene,
+            "wagon/textures/fabric.jpg",
+            "wagon/shaders/wagon.vert",
+            "wagon/shaders/wagon.frag",
+            "u_wagon_texture",
+        );
 
         this.initBuffers();
     }
@@ -23,6 +33,11 @@ export class CoverCloth extends CGFobject {
     // =====================================================
 
     display() {
+        if (this._depth_pass) {
+            super.display();
+            return;
+        }
+        this.material.apply();
         super.display();
     }
 

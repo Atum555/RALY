@@ -1,5 +1,4 @@
 import { CGFobject } from "../../../lib/CGF.js";
-import { WagonWoodMaterial } from "../materials/WagonWoodMaterial.js";
 
 export class WheelRim extends CGFobject {
     // =====================================================
@@ -13,17 +12,7 @@ export class WheelRim extends CGFobject {
         this.width = width;
         this.slices = slices;
 
-        this.material = new WagonWoodMaterial(scene);
         this.initBuffers();
-    }
-
-    // =====================================================
-    // Display
-    // =====================================================
-
-    display() {
-        this.material.apply();
-        super.display();
     }
 
     initBuffers() {
@@ -107,4 +96,10 @@ export class WheelRim extends CGFobject {
         this.primitiveType = this.scene.gl.TRIANGLES;
         this.initGLBuffers();
     }
+
+    // =====================================================
+    // Display
+    // =====================================================
+    // Display is inherited from CGFobject; rendering runs under the body shader
+    // (set by Wagon.applyBodyShader), which provides the wood texture + shadows.
 }

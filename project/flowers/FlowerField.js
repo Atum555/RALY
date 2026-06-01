@@ -50,9 +50,9 @@ export class FlowerField {
         // The field reads as broad flowering grass with denser bunches mixed in:
         // every grass cell grows at least base_per_cell flowers, and cells where
         // the density noise is high ramp up toward max_per_cell (a tight bunch).
-        this.cell_size = 40; // world units per scatter cell
-        this.base_per_cell = 2; // flowers every grass cell grows (broad coverage)
-        this.max_per_cell = 8; // flowers a fully-saturated cell spawns (bunch density)
+        this.cell_size = 60; // world units per scatter cell
+        this.base_per_cell = 3; // flowers every grass cell grows (broad coverage)
+        this.max_per_cell = 9; // flowers a fully-saturated cell spawns (bunch density)
         this.density_scale = 0.001; // noise frequency: smaller = larger bunches
         this.density_bias = 0.65; // noise above this starts ramping toward a bunch
         this.grass_threshold = 0.85; // terrain path_dist above this counts as open grass
@@ -60,11 +60,11 @@ export class FlowerField {
         // -- Draw reach (world units from the wagon) --
         // A single flat radius: every grass flower within it is drawn at full
         // detail, nothing beyond. No distance tiers, no distance thinning.
-        this.draw_radius = 400;
+        this.draw_radius = 750;
 
         // Safety cap on flowers drawn per frame. Cells are visited nearest-first
         // so the cap, if ever hit, only trims the most distant flowers.
-        this.draw_budget = 800;
+        this.draw_budget = 1400;
 
         // -- Size --
         this.base_scale = 1.7; // before per-flower jitter
