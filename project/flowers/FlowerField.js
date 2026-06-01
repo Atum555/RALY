@@ -74,6 +74,13 @@ export class FlowerField {
         this.density_noise = new ValueNoise(20260531);
         this.rng = new ValueNoise(1973);
 
+        // Scatter cache: a cell's flowers (position, variant, height, scale,
+        // rotation) depend only on its coordinates, never on the wagon, so each
+        // cell is scattered once -- hashes, density noise and the heavy terrain
+        // sampling (getHeightAt/sample_at_model) run on first visit and are
+        // reused forever. Bounded by the (finite) terrain extent. Keyed "cx,cz".
+        this._cell_cache = new Map();
+
         this.buildPrototypes();
     }
 
@@ -275,9 +282,22 @@ export class FlowerField {
         return cells;
     }
 
-    // Scatter and draw one cell's flowers, accumulating the global draw count
-    // (mutated in place) against the per-frame budget.
-    drawCell(cx, cz, wx, wz, count) {
+    // The deterministic flower instances for a cell, scattered once and cached.
+    // Everything here -- density count, per-instance hashes, the terrain bounds
+    // and grass test, the sampled height -- depends only on the cell's world
+    // coordinates, so the result never changes and is reused on every later
+    // visit. Returns an array of { px, pz, y, variant, scl, rot }.
+    cellInstances(cx, cz) {
+        const key = cx + "," + cz;
+        let inst = this._cell_cache.get(key);
+        if (inst) return inst;
+        inst = this.buildCell(cx, cz);
+        this._cell_cache.set(key, inst);
+        return inst;
+    }
+
+    // Scatter one cell from scratch (called once per cell, on first visit).
+    buildCell(cx, cz) {
         const cs = this.cell_size;
         const cell_x = cx * cs;
         const cell_z = cz * cs;
@@ -294,13 +314,11 @@ export class FlowerField {
         const count_in_cell = this.base_per_cell + extra;
 
         const terrain = this.terrain;
-        const scene = this.scene;
         const half = terrain.half_extent;
         const H = this.rng;
 
+        const out = [];
         for (let k = 0; k < count_in_cell; k++) {
-            if (count.n >= this.draw_budget) return;
-
             // Deterministic per-instance hashes in [0, 1].
             const hx = H.hash(cx * 7 + k * 101, cz * 13 + k * 131);
             const hz = H.hash(cx * 17 + k * 53, cz * 19 - k * 97);
@@ -311,24 +329,40 @@ export class FlowerField {
             const px = cell_x + (hx - 0.5) * cs;
             const pz = cell_z + (hz - 0.5) * cs;
 
-            // Flat draw reach: cull anything past the radius, same detail inside.
-            const dist = Math.hypot(px - wx, pz - wz);
-            if (dist > this.draw_radius) continue;
-
             // Stay on the terrain and only on open grass (skip paths/clearing dirt).
             if (px < -half || px > half || pz < -half || pz > half) continue;
             const sample = terrain.sample_at_model(px, -pz); // reused scratch: read immediately
             if (sample.path_dist < this.grass_threshold) continue;
 
             const variant = Math.min(this.POOL - 1, (hv * this.POOL) | 0);
-            const baked = this.baked[variant];
             const y = terrain.getHeightAt(px, pz);
             const scl = this.base_scale * (0.75 + hs * 0.6);
+            const rot = hr * Math.PI * 2;
 
+            out.push({ px, pz, y, variant, scl, rot });
+        }
+        return out;
+    }
+
+    // Draw one cell's (cached) flowers, accumulating the global draw count
+    // (mutated in place) against the per-frame budget. The only per-frame work
+    // is the flat distance cull and the matrix/draw emission.
+    drawCell(cx, cz, wx, wz, count) {
+        const scene = this.scene;
+        const inst = this.cellInstances(cx, cz);
+
+        for (let i = 0; i < inst.length; i++) {
+            if (count.n >= this.draw_budget) return;
+            const f = inst[i];
+
+            // Flat draw reach: cull anything past the radius, same detail inside.
+            if (Math.hypot(f.px - wx, f.pz - wz) > this.draw_radius) continue;
+
+            const baked = this.baked[f.variant];
             scene.pushMatrix();
-            scene.translate(px, y, pz);
-            scene.rotate(hr * Math.PI * 2, 0, 1, 0);
-            scene.scale(scl, scl, scl);
+            scene.translate(f.px, f.y, f.pz);
+            scene.rotate(f.rot, 0, 1, 0);
+            scene.scale(f.scl, f.scl, f.scl);
             // Baked: ~3 draws per flower (stem, leaf, bloom) instead of replaying
             // the whole L-system. The main pass sets each group's flat colour on
             // the already-bound flower shader; the depth pass just emits geometry.
