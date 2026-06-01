@@ -3,6 +3,7 @@ import { Chrysantemum } from "./chrysantemum/Chrysantemum.js";
 import { Tulip } from "./tulip/Tulip.js";
 import { BakedMesh } from "./common/BakedMesh.js";
 import { ValueNoise } from "../terrain/Noise.js";
+import { hexToRGB } from "../utils.js";
 
 // Procedural flower field scattered over the terrain's grass.
 //
@@ -84,8 +85,31 @@ export class FlowerField {
         this.buildPrototypes();
     }
 
-    // A small reused pool, built once at a single fixed detail. Every third
-    // variant is a tulip, the rest chrysanthemums; each has its own colour.
+    // The curated palette of distinct flower variants the field scatters. Each
+    // entry is a hand-picked type + bloom colour + stem tint combination, so the
+    // pool reads as a varied wild meadow rather than a few repeated plants. The
+    // mix of tulips and chrysanthemums and warm/cool blooms is deliberate; add or
+    // reorder entries here to change the field's look. POOL tracks its length.
+    static VARIANTS = [
+        { type: "tulip",        flower: "#e63333", stem: "#4d9933" }, // red tulip
+        { type: "tulip",        flower: "#ffd633", stem: "#266619" }, // yellow tulip
+        { type: "tulip",        flower: "#9933cc", stem: "#4d9933" }, // purple tulip
+        { type: "tulip",        flower: "#ff9911", stem: "#266619" }, // orange tulip
+        { type: "tulip",        flower: "#ff66b3", stem: "#4d9933" }, // pink tulip
+        { type: "tulip",        flower: "#f2f2f2", stem: "#266619" }, // white tulip
+        { type: "tulip",        flower: "#e6228c", stem: "#4d9933" }, // magenta tulip
+        { type: "chrysantemum", flower: "#cc0033", stem: "#3d7a1a" }, // red mum
+        { type: "chrysantemum", flower: "#ffcc33", stem: "#1f4d0a" }, // yellow mum
+        { type: "chrysantemum", flower: "#ff6699", stem: "#3d7a1a" }, // pink mum
+        { type: "chrysantemum", flower: "#c299ff", stem: "#1f4d0a" }, // lavender mum
+        { type: "chrysantemum", flower: "#ff7755", stem: "#3d7a1a" }, // coral mum
+        { type: "chrysantemum", flower: "#fff0f0", stem: "#1f4d0a" }, // white mum
+        { type: "chrysantemum", flower: "#8c1f3d", stem: "#3d7a1a" }, // burgundy mum
+    ];
+
+    // A reused pool, built once at a single fixed detail -- one baked prototype
+    // per entry in VARIANTS, so the field's colour/type variety is exactly that
+    // table.
     //
     // Each prototype's L-system is then *baked* into a handful of static meshes
     // (one per material). Replaying an L-system per flower is hundreds of GL
@@ -94,7 +118,7 @@ export class FlowerField {
     // Baking collapses one flower to ~3 draws (stem, leaf, bloom), independent
     // of L-system depth or petal count.
     buildPrototypes() {
-        this.POOL = 6;
+        this.POOL = FlowerField.VARIANTS.length;
         this.proto = [];
         this.baked = [];
         for (let i = 0; i < this.POOL; i++) {
@@ -105,8 +129,16 @@ export class FlowerField {
     }
 
     makeVariant(i) {
-        const isTulip = i % 3 === 0;
+        const v = FlowerField.VARIANTS[i];
+        const isTulip = v.type === "tulip";
         const f = isTulip ? new Tulip(this.scene) : new Chrysantemum(this.scene);
+
+        // Pin this prototype's colours to the curated combo (the constructors
+        // pick a random palette colour; override before the re-init below so the
+        // baked mesh carries our chosen bloom/stem tint instead).
+        f.flowerColor = hexToRGB(v.flower, false);
+        f.stemColor = hexToRGB(v.stem, false);
+
         f.iterations = 2;
         f.flower_petals = 8;
         if (!isTulip) f.flower_rings = 3;
@@ -114,7 +146,7 @@ export class FlowerField {
         // ~2.8x larger than at the showcase's 4 iterations, which would blow the
         // leaves up out of proportion with the bloom. Shrink them to compensate.
         f.leaf_scale = isTulip ? 1.2 : 0.8;
-        f.init(); // rebuild the L-system + blooms at this detail
+        f.init(); // rebuild the L-system + blooms at this detail (and colours)
         return f;
     }
 
