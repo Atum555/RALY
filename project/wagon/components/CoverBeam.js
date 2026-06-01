@@ -1,5 +1,4 @@
 import { CGFobject } from "../../../lib/CGF.js";
-import { WagonWoodMaterial } from "../materials/WagonWoodMaterial.js";
 import { buildArchProfile } from "./CoverUtils.js";
 
 export class CoverBeam extends CGFobject {
@@ -11,17 +10,7 @@ export class CoverBeam extends CGFobject {
         super(scene);
         this.thickness = thickness;
         this.slices = slices;
-        this.material = new WagonWoodMaterial(scene);
         this.initBuffers();
-    }
-
-    // =====================================================
-    // Display
-    // =====================================================
-
-    display() {
-        this.material.apply();
-        super.display();
     }
 
     initBuffers() {
@@ -84,4 +73,10 @@ export class CoverBeam extends CGFobject {
         this.primitiveType = this.scene.gl.TRIANGLES;
         this.initGLBuffers();
     }
+
+    // =====================================================
+    // Display
+    // =====================================================
+    // Display is inherited from CGFobject; rendering runs under the body shader
+    // (set by Wagon.applyBodyShader), which provides the wood texture + shadows.
 }

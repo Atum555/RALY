@@ -675,6 +675,15 @@ export class Terrain extends CGFGroup {
             // so lift it into world space (translate + uniform scale) and map world
             // z to -model y, matching the AO centre and getHeightAt's frame.
             const s = barn.barn_scale;
+            // Light the marker up while the wagon sits on the disc, regardless of
+            // whether it's carrying any hay (purely a position check).
+            const wagon = this.scene.wagon;
+            let marker_active = false;
+            if (wagon) {
+                const dx = wagon.position_x - this.scene.barn_zone_x;
+                const dz = wagon.position_z - this.scene.barn_zone_z;
+                marker_active = dx * dx + dz * dz < this.scene.barn_zone_r * this.scene.barn_zone_r;
+            }
             this.shader.setUniformsValues({
                 u_barn_ao_enabled: true,
                 u_barn_center: [barn.pos_x, -barn.pos_z],
@@ -686,6 +695,7 @@ export class Terrain extends CGFGroup {
                 u_marker_enabled: true,
                 u_marker_center: [barn.pos_x + barn.pickup.x * s, -(barn.pos_z + barn.pickup.z * s)],
                 u_marker_radius: barn.pickup.r * s,
+                u_marker_active: marker_active,
             });
         } else {
             this.shader.setUniformsValues({ u_barn_ao_enabled: false, u_marker_enabled: false });

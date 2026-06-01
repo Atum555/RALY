@@ -11,7 +11,8 @@
 ---
 
 ## Project Description
-This project is an interactive 3D WebGL-based computer graphics simulation developed using the **WebCGF** library. It renders a vast, dynamic Spring Prairie Landscape environment where players control a historically styled Covered Wagon (Prairie Schooner) pulled by an animated horse team. 
+
+This project is an interactive 3D WebGL-based computer graphics simulation developed using the **WebCGF** library. It renders a vast, dynamic Spring Prairie Landscape environment where players control a historically styled Covered Wagon (Prairie Schooner) pulled by an animated horse team.
 
 The game is a survival time-trial: players must steer the wagon through procedural terrain, locate randomly spawned hay bales, and return them safely to the barn delivery zone to replenish their draining Health Points. The world is enriched with flora, a beautiful sky, rolling hills and ever growing terrain with a gust of wind flowing along.
 
@@ -20,60 +21,69 @@ The game is a survival time-trial: players must steer the wagon through procedur
 ## Implemented Features
 
 ### 1. Environment & Lighting
-* **Sky Hemisphere:** A large, inward-facing half-sphere with inverted normals.
-* **Dynamic Lighting:** A moving `configurable` directional system acting as the Sun, paired with a day night cycle with updating light warmth and strength.
-* **Procedural/Animated Clouds (Bonus):** Fully procedurally generated sky, with easilly configurable moving clouds that can obscure the sun/moon.
+
+- **Sky Hemisphere:** A large, inward-facing half-sphere with inverted normals.
+- **Dynamic Lighting:** A moving `configurable` directional system acting as the Sun, paired with a day night cycle with updating light warmth and strength.
+- **Procedural/Animated Clouds (Bonus):** Fully procedurally generated sky, with easilly configurable moving clouds that can obscure the sun/moon.
 
 ### 2. Terrain & Ground Surface
-* **Rolling Hills:** Heightmap-driven mesh transformation simulating complex, natural topographical elevations.
-* **Procedural Terrain (Bonus):** On-the-fly generation of terrain properties using noise calculations to randomize slopes.
-* **Surface Materials:** Distinctive soil/dirt textures integrated with a structured vector path overlay guiding the player's navigation.
+
+- **Rolling Hills:** Heightmap-driven mesh transformation simulating complex, natural topographical elevations.
+- **Procedural Terrain (Bonus):** On-the-fly generation of terrain properties using noise calculations to randomize slopes.
+- **Surface Materials:** Distinctive soil/dirt textures integrated with a structured vector path overlay guiding the player's navigation.
 
 ### 3. Scatter Elements, Flora & Grass
-* **Geometric Rocks:** Scattered elements using randomized scaling, multi-texturing, and noise to prevent repeating geometric shapes.
-* **Parametric Flowers (Bonus):** Procedurally calculated flower variations featuring localized structural randomness in scale, color schemes, and density placement.
-* **Dynamic Grass Patches:** Alternating lush green patches and dry prairie grass clusters.
-* **Wind Simulation Shader (Bonus):** A custom GLSL vertex shader that modifies vertex positions using a time-dependent sine wave function to realistically animate grass swaying in the wind.
+
+- **Geometric Rocks:** Scattered elements using randomized scaling, multi-texturing, and noise to prevent repeating geometric shapes.
+- **Parametric Flowers (Bonus):** Procedurally calculated flower variations featuring localized structural randomness in scale, color schemes, and density placement.
+- **Dynamic Grass Patches:** Alternating lush green patches and dry prairie grass clusters.
+- **Wind Simulation Shader (Bonus):** A custom GLSL vertex shader that modifies vertex positions using a time-dependent sine wave function to realistically animate grass swaying in the wind.
 
 ### 4. Covered Wagon (Prairie Schooner) & Locomotion
-* **Hierarchical Modeling:** Complete multi-joint transformation tree built purely from WebCGF primitives representing the wagon body, wooden frame, canvas cloth cover, and tongue.
-* **Asset Integration:** High-quality external horse models imported via `.obj` parsing class.
-* **Steering & Physics Kinematics (Bonus):** Advanced kinematic wheel-turn mechanics linking keyboard steering directly to both the axle alignment and front structural tongue. Includes forward acceleration momentum curves.
-* **Adaptive Wheel Rotation:** All four wheels dynamically alter their rotation velocity based on the calculated distance traveled over time.
+
+- **Hierarchical Modeling:** Complete multi-joint transformation tree built purely from WebCGF primitives representing the wagon body, wooden frame, canvas cloth cover, and tongue.
+- **Asset Integration:** High-quality external horse models imported via `.obj` parsing class.
+- **Steering & Physics Kinematics (Bonus):** Advanced kinematic wheel-turn mechanics linking keyboard steering directly to both the axle alignment and front structural tongue. Includes forward acceleration momentum curves.
+- **Adaptive Wheel Rotation:** All four wheels dynamically alter their rotation velocity based on the calculated distance traveled over time.
 
 ### 5. Gameplay & Collectible Systems
-* **HP Decay Loop:** Survival logic where HP continuously depletes at a configurable rate.
-* **Collision Detection:** Bounding-box check loops calculating impacts against rock scatter elements, incurring randomized structural damage between 5 and 15 HP.
-* **Hay Bale Logistics:** Randomly distributed pickups over the map space, capped at a maximum wagon capacity of 2 bales.
-* **Floating Indicator UI:** A fully modeled vertical pinpointing arrow that performs a smooth, time-based floating animation over active objectives.
-* **Barn Delivery Zone:** A stylized barn featuring a circular delivery field that changes color boundaries upon intersection, unloading resources and awarding HP per bale.
-* **DAT.gui Dashboard:** Full control interface monitoring real-time HP, collision damage events, score, delivery telemetry, and shader settings.
+
+- **HP Decay Loop:** Survival logic where HP continuously depletes at a configurable rate.
+- **Collision Detection:** Bounding-box check loops calculating impacts against rock scatter elements, incurring randomized structural damage between 5 and 15 HP.
+- **Hay Bale Logistics:** Randomly distributed pickups over the map space, capped at a maximum wagon capacity of 2 bales.
+- **Floating Indicator UI:** A fully modeled vertical pinpointing arrow that performs a smooth, time-based floating animation over active objectives.
+- **Barn Delivery Zone:** A stylized barn featuring a circular delivery field that changes color boundaries upon intersection, unloading resources and awarding HP per bale.
+- **DAT.gui Dashboard:** Full control interface monitoring real-time HP, collision damage events, score, delivery telemetry, and shader settings.
 
 ### 6. Advanced Rendering & Optimizations
-* **Projected Shadows:** Real-time ground plane projected shadows generated by computing custom transformation shadow matrices mapping objects based on the dynamic position of the moving Sun.
-* **Level of Detail / LOD:** A performance optimization system that tracks the distance between the scene camera and heavy props (e.g., highly detailed rocks, complex flowers). The pipeline dynamically swaps asset models between High, Medium, and Low geometric complexity based on distance thresholds to keep the frame rate stable.
+
+- **Projected Shadows:** Real-time ground plane projected shadows generated by computing custom transformation shadow matrices mapping objects based on the dynamic position of the moving Sun.
+- **Level of Detail / LOD:** A performance optimization system that tracks the distance between the scene camera and heavy props (e.g., highly detailed rocks, complex flowers). The pipeline dynamically swaps asset models between High, Medium, and Low geometric complexity based on distance thresholds to keep the frame rate stable.
+
 ---
 
 ## Execution Instructions
+
 To run this project locally, ensure you have a modern web browser with WebGL enabled and a local web server tool.
 
 1. Clone or extract the contents of the project ZIP folder.
 2. Open your terminal in the directory containing `index.html`.
 3. Launch a local development server. For example, using Python:
-   ```bash
-   python -m http.server 8000
+    ```bash
+    python -m http.server 8000
+    ```
 
---- 
+---
 
 ## Controls
 
-[W]       -> Accelerate Forward  : Increases wagon speed up to max horse walking velocity.
-[S]       -> Decelerate / Brake : Decreases speed smoothly using kinematic deceleration.
-[A]       -> Steer Left          : Rotates front axle and connecting vehicle tongue left.
-[D]       -> Steer Right         : Rotates front axle and connecting vehicle tongue right.
-[SHIFT]   -> Sprint Modifier     : Hold down while pressing [W] to break speed limit thresholds.
-[P]       -> Pick Up Hay Bale    : Captures an adjacent targeted hay bale (max capacity: 2).
-[L]       -> Drop / Unload Bale  : Manually drops a hay bale inside the active delivery area.
+[W] -> Accelerate Forward : Increases wagon speed up to max horse walking velocity.
+[S] -> Decelerate / Brake : Decreases speed smoothly using kinematic deceleration.
+[A] -> Steer Left : Rotates front axle and connecting vehicle tongue left.
+[D] -> Steer Right : Rotates front axle and connecting vehicle tongue right.
+[SHIFT] -> Sprint Modifier : Hold down while pressing [W] to break speed limit thresholds.
+[P] -> Pick Up Hay Bale : Captures an adjacent targeted hay bale (max capacity: 2).
+[L] -> Drop / Unload Bale : Manually drops a hay bale inside the active delivery area.
 
 ---
 
@@ -94,12 +104,10 @@ To run this project locally, ensure you have a modern web browser with WebGL ena
 
 ## Screenshots
 
- 
-| Screenshot Reference | Description | Preview Link |
-|---|---|---|
-| **Screenshot 1** | Overall scene wide-angle view showing landscape boundaries and active projected shadows | `project-tg-1.png` |
-| **Screenshot 2** | Close-up details of rocks, procedural flowers, and grass texturing showcasing active LOD levels | `project-tg-2.png` |
-| **Screenshot 3** | Wagon close-up showcasing hierarchical texturing and imported horse assets | `project-tg-3.png` |
-| **Screenshot 4** | Animated GIF showcasing the custom GLSL wind shader effect and shifting clouds | `project-tg-4.gif` |
-| **Screenshot 5** | Gameplay in action highlighting UI elements, Day/Night lighting state transitions, and DAT.gui | `project-tg-5.png` |
- 
+| Description                                                                                     | Preview Link       |
+| ----------------------------------------------------------------------------------------------- | ------------------ |
+| Overall scene wide-angle view showing landscape boundaries and active projected shadows         | [project-t11g10-1.png](docs/images/project-t11g10-1.png) |
+| Close-up details of rocks, procedural flowers, and grass texturing showcasing active LOD levels | [project-t11g10-2.png](docs/images/project-t11g10-2.png) |
+| Wagon close-up showcasing hierarchical texturing and imported horse assets                      | [project-t11g10-3.png](docs/images/project-t11g10-3.png) |
+| Animated GIF showcasing the custom GLSL wind shader effect and shifting clouds                  | [project-t11g10-4.gif](docs/images/project-t11g10-4.gif) |
+| Night scenery, wide angle, with UI controls                                                     | [project-t11g10-5.png](docs/images/project-t11g10-5.png) |

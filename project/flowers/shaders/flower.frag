@@ -4,8 +4,8 @@ precision highp float;
 
 varying vec3 v_normal;
 varying vec3 v_view_pos;
+varying vec3 v_color;            // flat petal/stem/leaf colour (baked per-vertex; the field is untextured)
 
-uniform vec3 u_flower_color;     // flat petal/stem/leaf colour (the baked field is untextured)
 uniform vec3 u_sun_eye_dir;      // sun direction in eye space (the abstract sun)
 uniform vec3 u_moon_eye_dir;     // moon direction in eye space (cool night fill)
 uniform float u_sun_intensity;   // 0..1, faded to 0 over the 0 -> -2 deg horizon band
@@ -102,8 +102,8 @@ void main() {
 
     // Flat base colour: a fill that never goes black, plus the sun's diffuse that
     // the shadow darkens, plus the same cool moon term the other surfaces use.
-    vec3 ambient = u_flower_color * 0.35;
-    vec3 diffuse = u_flower_color * ndl * shadow * 0.75 * u_sun_intensity;
-    vec3 moon = u_flower_color * MOON_COLOR * moon_ndl * shadow * 0.75 * u_moon_intensity;
+    vec3 ambient = v_color * 0.35;
+    vec3 diffuse = v_color * ndl * shadow * 0.75 * u_sun_intensity;
+    vec3 moon = v_color * MOON_COLOR * moon_ndl * shadow * 0.75 * u_moon_intensity;
     gl_FragColor = vec4(ambient + diffuse + moon, 1.0);
 }

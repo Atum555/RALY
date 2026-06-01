@@ -1,5 +1,4 @@
 import { CGFobject } from "../../../lib/CGF.js";
-import { WagonWoodMaterial } from "../materials/WagonWoodMaterial.js";
 
 export class Board extends CGFobject {
     // =====================================================
@@ -11,7 +10,6 @@ export class Board extends CGFobject {
         this.length = length;
         this.top_width = top_width;
         this.bottom_width = bottom_width;
-        this.material = new WagonWoodMaterial(scene);
         this.initBuffers();
     }
 
@@ -84,6 +82,21 @@ export class Board extends CGFobject {
             22, 23, 21,
         ];
 
+        this.texCoords = [
+            // bottom
+            0, 0, 1, 0, 0, 1, 1, 1,
+            // top
+            0, 0, 1, 0, 0, 1, 1, 1,
+            // front
+            0, 0, 1, 0, 0, 1, 1, 1,
+            // back
+            0, 0, 1, 0, 0, 1, 1, 1,
+            // left
+            0, 0, 1, 0, 0, 1, 1, 1,
+            // right
+            0, 0, 1, 0, 0, 1, 1, 1,
+        ];
+
         // prettier-ignore
         this.normals = [
             // bottom
@@ -125,9 +138,4 @@ export class Board extends CGFobject {
     // =====================================================
     // Display
     // =====================================================
-
-    display() {
-        this.material.apply();
-        super.display();
-    }
 }

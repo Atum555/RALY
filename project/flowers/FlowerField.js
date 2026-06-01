@@ -3,6 +3,7 @@ import { Chrysantemum } from "./chrysantemum/Chrysantemum.js";
 import { Tulip } from "./tulip/Tulip.js";
 import { BakedMesh } from "./common/BakedMesh.js";
 import { ValueNoise } from "../terrain/Noise.js";
+import { hexToRGB } from "../utils.js";
 
 // Procedural flower field scattered over the terrain's grass.
 //
@@ -50,9 +51,9 @@ export class FlowerField {
         // The field reads as broad flowering grass with denser bunches mixed in:
         // every grass cell grows at least base_per_cell flowers, and cells where
         // the density noise is high ramp up toward max_per_cell (a tight bunch).
-        this.cell_size = 40; // world units per scatter cell
-        this.base_per_cell = 2; // flowers every grass cell grows (broad coverage)
-        this.max_per_cell = 8; // flowers a fully-saturated cell spawns (bunch density)
+        this.cell_size = 50; // world units per scatter cell
+        this.base_per_cell = 3; // flowers every grass cell grows (broad coverage)
+        this.max_per_cell = 9; // flowers a fully-saturated cell spawns (bunch density)
         this.density_scale = 0.001; // noise frequency: smaller = larger bunches
         this.density_bias = 0.65; // noise above this starts ramping toward a bunch
         this.grass_threshold = 0.85; // terrain path_dist above this counts as open grass
@@ -60,7 +61,7 @@ export class FlowerField {
         // -- Draw reach (world units from the wagon) --
         // A single flat radius: every grass flower within it is drawn at full
         // detail, nothing beyond. No distance tiers, no distance thinning.
-        this.draw_radius = 400;
+        this.draw_radius = 600;
 
         // Safety cap on flowers drawn per frame. Cells are visited nearest-first
         // so the cap, if ever hit, only trims the most distant flowers.
@@ -74,11 +75,41 @@ export class FlowerField {
         this.density_noise = new ValueNoise(20260531);
         this.rng = new ValueNoise(1973);
 
+        // Scatter cache: a cell's flowers (position, variant, height, scale,
+        // rotation) depend only on its coordinates, never on the wagon, so each
+        // cell is scattered once -- hashes, density noise and the heavy terrain
+        // sampling (getHeightAt/sample_at_model) run on first visit and are
+        // reused forever. Bounded by the (finite) terrain extent. Keyed "cx,cz".
+        this._cell_cache = new Map();
+
         this.buildPrototypes();
     }
 
-    // A small reused pool, built once at a single fixed detail. Every third
-    // variant is a tulip, the rest chrysanthemums; each has its own colour.
+    // The curated palette of distinct flower variants the field scatters. Each
+    // entry is a hand-picked type + bloom colour + stem tint combination, so the
+    // pool reads as a varied wild meadow rather than a few repeated plants. The
+    // mix of tulips and chrysanthemums and warm/cool blooms is deliberate; add or
+    // reorder entries here to change the field's look. POOL tracks its length.
+    static VARIANTS = [
+        { type: "tulip",        flower: "#e63333", stem: "#4d9933" }, // red tulip
+        { type: "tulip",        flower: "#ffd633", stem: "#266619" }, // yellow tulip
+        { type: "tulip",        flower: "#9933cc", stem: "#4d9933" }, // purple tulip
+        { type: "tulip",        flower: "#ff9911", stem: "#266619" }, // orange tulip
+        { type: "tulip",        flower: "#ff66b3", stem: "#4d9933" }, // pink tulip
+        { type: "tulip",        flower: "#f2f2f2", stem: "#266619" }, // white tulip
+        { type: "tulip",        flower: "#e6228c", stem: "#4d9933" }, // magenta tulip
+        { type: "chrysantemum", flower: "#cc0033", stem: "#3d7a1a" }, // red mum
+        { type: "chrysantemum", flower: "#ffcc33", stem: "#1f4d0a" }, // yellow mum
+        { type: "chrysantemum", flower: "#ff6699", stem: "#3d7a1a" }, // pink mum
+        { type: "chrysantemum", flower: "#c299ff", stem: "#1f4d0a" }, // lavender mum
+        { type: "chrysantemum", flower: "#ff7755", stem: "#3d7a1a" }, // coral mum
+        { type: "chrysantemum", flower: "#fff0f0", stem: "#1f4d0a" }, // white mum
+        { type: "chrysantemum", flower: "#8c1f3d", stem: "#3d7a1a" }, // burgundy mum
+    ];
+
+    // A reused pool, built once at a single fixed detail -- one baked prototype
+    // per entry in VARIANTS, so the field's colour/type variety is exactly that
+    // table.
     //
     // Each prototype's L-system is then *baked* into a handful of static meshes
     // (one per material). Replaying an L-system per flower is hundreds of GL
@@ -87,7 +118,7 @@ export class FlowerField {
     // Baking collapses one flower to ~3 draws (stem, leaf, bloom), independent
     // of L-system depth or petal count.
     buildPrototypes() {
-        this.POOL = 6;
+        this.POOL = FlowerField.VARIANTS.length;
         this.proto = [];
         this.baked = [];
         for (let i = 0; i < this.POOL; i++) {
@@ -98,8 +129,16 @@ export class FlowerField {
     }
 
     makeVariant(i) {
-        const isTulip = i % 3 === 0;
+        const v = FlowerField.VARIANTS[i];
+        const isTulip = v.type === "tulip";
         const f = isTulip ? new Tulip(this.scene) : new Chrysantemum(this.scene);
+
+        // Pin this prototype's colours to the curated combo (the constructors
+        // pick a random palette colour; override before the re-init below so the
+        // baked mesh carries our chosen bloom/stem tint instead).
+        f.flowerColor = hexToRGB(v.flower, false);
+        f.stemColor = hexToRGB(v.stem, false);
+
         f.iterations = 2;
         f.flower_petals = 8;
         if (!isTulip) f.flower_rings = 3;
@@ -107,7 +146,7 @@ export class FlowerField {
         // ~2.8x larger than at the showcase's 4 iterations, which would blow the
         // leaves up out of proportion with the bloom. Shrink them to compensate.
         f.leaf_scale = isTulip ? 1.2 : 0.8;
-        f.init(); // rebuild the L-system + blooms at this detail
+        f.init(); // rebuild the L-system + blooms at this detail (and colours)
         return f;
     }
 
@@ -179,15 +218,16 @@ export class FlowerField {
         // A primitive that never appears in the expansion (e.g. a leaf the
         // grammar didn't grow) leaves an empty group -- skip it, no draw.
         //
-        // Keep just the material's flat colour (RGB of its diffuse): the field is
-        // lit by its own shadow shader, not the CGFappearance, so a group is one
-        // colour uniform + one draw rather than a full appearance apply.
+        // Bake the material's flat colour (RGB of its diffuse) straight into the
+        // mesh as a per-vertex attribute: the field is lit by its own shadow
+        // shader, not the CGFappearance, so a group is a single coloured draw with
+        // no per-draw uniform or appearance apply.
         return groups
             .filter(g => g.indices.length > 0)
-            .map(g => ({
-                color: [g.material.diffuse[0], g.material.diffuse[1], g.material.diffuse[2]],
-                mesh: new BakedMesh(scene, g.vertices, g.normals, g.indices),
-            }));
+            .map(g => new BakedMesh(
+                scene, g.vertices, g.normals, g.indices,
+                [g.material.diffuse[0], g.material.diffuse[1], g.material.diffuse[2]],
+            ));
     }
 
     // =====================================================
@@ -202,7 +242,7 @@ export class FlowerField {
     // geometry, so the prototypes are never drawn.
     forEachBaked(fn) {
         for (const groups of this.baked) {
-            for (const b of groups) fn(b.mesh);
+            for (const mesh of groups) fn(mesh);
         }
     }
 
@@ -275,9 +315,22 @@ export class FlowerField {
         return cells;
     }
 
-    // Scatter and draw one cell's flowers, accumulating the global draw count
-    // (mutated in place) against the per-frame budget.
-    drawCell(cx, cz, wx, wz, count) {
+    // The deterministic flower instances for a cell, scattered once and cached.
+    // Everything here -- density count, per-instance hashes, the terrain bounds
+    // and grass test, the sampled height -- depends only on the cell's world
+    // coordinates, so the result never changes and is reused on every later
+    // visit. Returns an array of { px, pz, y, variant, scl, rot }.
+    cellInstances(cx, cz) {
+        const key = cx + "," + cz;
+        let inst = this._cell_cache.get(key);
+        if (inst) return inst;
+        inst = this.buildCell(cx, cz);
+        this._cell_cache.set(key, inst);
+        return inst;
+    }
+
+    // Scatter one cell from scratch (called once per cell, on first visit).
+    buildCell(cx, cz) {
         const cs = this.cell_size;
         const cell_x = cx * cs;
         const cell_z = cz * cs;
@@ -294,13 +347,11 @@ export class FlowerField {
         const count_in_cell = this.base_per_cell + extra;
 
         const terrain = this.terrain;
-        const scene = this.scene;
         const half = terrain.half_extent;
         const H = this.rng;
 
+        const out = [];
         for (let k = 0; k < count_in_cell; k++) {
-            if (count.n >= this.draw_budget) return;
-
             // Deterministic per-instance hashes in [0, 1].
             const hx = H.hash(cx * 7 + k * 101, cz * 13 + k * 131);
             const hz = H.hash(cx * 17 + k * 53, cz * 19 - k * 97);
@@ -311,31 +362,45 @@ export class FlowerField {
             const px = cell_x + (hx - 0.5) * cs;
             const pz = cell_z + (hz - 0.5) * cs;
 
-            // Flat draw reach: cull anything past the radius, same detail inside.
-            const dist = Math.hypot(px - wx, pz - wz);
-            if (dist > this.draw_radius) continue;
-
             // Stay on the terrain and only on open grass (skip paths/clearing dirt).
             if (px < -half || px > half || pz < -half || pz > half) continue;
             const sample = terrain.sample_at_model(px, -pz); // reused scratch: read immediately
             if (sample.path_dist < this.grass_threshold) continue;
 
             const variant = Math.min(this.POOL - 1, (hv * this.POOL) | 0);
-            const baked = this.baked[variant];
             const y = terrain.getHeightAt(px, pz);
             const scl = this.base_scale * (0.75 + hs * 0.6);
+            const rot = hr * Math.PI * 2;
 
+            out.push({ px, pz, y, variant, scl, rot });
+        }
+        return out;
+    }
+
+    // Draw one cell's (cached) flowers, accumulating the global draw count
+    // (mutated in place) against the per-frame budget. The only per-frame work
+    // is the flat distance cull and the matrix/draw emission.
+    drawCell(cx, cz, wx, wz, count) {
+        const scene = this.scene;
+        const inst = this.cellInstances(cx, cz);
+
+        for (let i = 0; i < inst.length; i++) {
+            if (count.n >= this.draw_budget) return;
+            const f = inst[i];
+
+            // Flat draw reach: cull anything past the radius, same detail inside.
+            if (Math.hypot(f.px - wx, f.pz - wz) > this.draw_radius) continue;
+
+            const baked = this.baked[f.variant];
             scene.pushMatrix();
-            scene.translate(px, y, pz);
-            scene.rotate(hr * Math.PI * 2, 0, 1, 0);
-            scene.scale(scl, scl, scl);
+            scene.translate(f.px, f.y, f.pz);
+            scene.rotate(f.rot, 0, 1, 0);
+            scene.scale(f.scl, f.scl, f.scl);
             // Baked: ~3 draws per flower (stem, leaf, bloom) instead of replaying
-            // the whole L-system. The main pass sets each group's flat colour on
-            // the already-bound flower shader; the depth pass just emits geometry.
-            for (const b of baked) {
-                if (!this._depth_pass) this.shadowShader.setUniformsValues({ u_flower_color: b.color });
-                b.mesh.display();
-            }
+            // the whole L-system. Each group carries its own flat colour as a
+            // baked vertex attribute, so there is no per-draw uniform work in
+            // either pass -- just emit the geometry.
+            for (const mesh of baked) mesh.display();
             scene.popMatrix();
 
             count.n++;
