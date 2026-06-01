@@ -1,5 +1,5 @@
-import { CGFshader } from "../../lib/CGF.js";
 import { CGFGroup } from "../core/CGFGroup.js";
+import { ShadowedTexturedMaterial } from "../core/ShadowedTexturedMaterial.js";
 import { Body } from "./components/Body.js";
 import { UnderBody } from "./components/UnderBody.js";
 import { Cover } from "./components/Cover.js";
@@ -63,6 +63,15 @@ export class Wagon extends CGFGroup {
         this.drag_rate = 25.0; // coasting deceleration when no throttle/brake
         this.steering_rate = 2.0;
         this.wheel_base = 8.0; // front axle (z=5.5) to rear axle (z=-2.5), see UnderBody
+
+        // Collision response (see avoidObstacle): instead of a hard knockback, a
+        // hit stops the wagon and slowly swings its nose to one side for a short
+        // spell so it noses off and deviates around whatever it struck. The total
+        // turn is roughly avoid_turn_rate * avoid_duration radians.
+        this.avoid_turn_rate = 1.4; // rad/s the nose swings during avoidance
+        this.avoid_duration = 0.5; // seconds an avoidance turn lasts
+        this.avoid_timer = 0; // seconds left in the current avoidance turn
+        this.avoid_dir = 0; // +1 swings the nose right, -1 left
 
         // Length of the front steering axle (UnderBody builds Direction with 5.5),
         // whose wheels mount at ±front_axle_beam/2 from the central pivot. That
@@ -135,11 +144,17 @@ export class Wagon extends CGFGroup {
         this.cover = this.addPart(new Cover(this.scene, 7.5, 5));
         this.haybale = this.addPart(new HayBale(this.scene, 10, 10));
 
-        // Soft solid-colour shader for the body and chassis (not the hay), lit by
-        // the abstract sun and taking the terrain + self shadows. _depth_pass is
-        // set by ShadowMap while casting, so display() emits plain geometry then.
-        this.body_shader = new CGFshader(this.scene.gl, "wagon/shaders/wagon.vert", "wagon/shaders/wagon.frag");
-        this.body_shader.setUniformsValues({ u_wagon_color: [0.62, 0.46, 0.34] });
+        // Textured + shadow-aware material for the wood body and chassis (not the
+        // hay nor the cloth). Uses the same shadow / fog / lighting infrastructure
+        // as the hay bales and horses. _depth_pass is set by ShadowMap while
+        // casting, so display() emits plain geometry then.
+        this.woodMaterial = new ShadowedTexturedMaterial(
+            this.scene,
+            "wagon/textures/wood.jpg",
+            "wagon/shaders/wagon.vert",
+            "wagon/shaders/wagon.frag",
+            "u_wagon_texture",
+        );
         this._depth_pass = false;
     }
 
@@ -189,11 +204,41 @@ export class Wagon extends CGFGroup {
         this.steering_angle = this.clamp(this.steering_angle + amount, -limit, limit);
     }
 
+    // React to a collision without the old hard knockback: kill forward speed and
+    // start a slow turn that swings the nose away from the obstacle, so over the
+    // next moment the wagon deviates off to the side instead of snapping back.
+    // update() runs the turn (and holds the wagon still) while avoid_timer lasts.
+    // `from_x/z` is the world point that was struck.
+    avoidObstacle(from_x, from_z) {
+        this.speed = 0;
+
+        // Which way to turn: look at where the obstacle sits along the wagon's
+        // right axis. Increasing heading swings the nose right, so to turn away
+        // we rotate opposite the side the obstacle is on; dead ahead falls back
+        // to the way the wagon was last steered.
+        const dx = from_x - this.position_x;
+        const dz = from_z - this.position_z;
+        const local_right = dx * Math.cos(this.heading) - dz * Math.sin(this.heading);
+        this.avoid_dir = local_right > 0 ? -1 : local_right < 0 ? 1 : this.last_steered_dir || 1;
+        this.avoid_timer = this.avoid_duration;
+    }
+
     // =====================================================
     // Update
     // =====================================================
 
     update(delta_seconds = 0) {
+        // Collision avoidance: a hit stops the wagon and runs a brief, slow turn
+        // that noses it off to one side so it deviates around the obstacle. While
+        // it runs the wagon is held still (any throttle this frame is overridden)
+        // so it can't drive back into what it hit; afterwards driving resumes in
+        // the new heading.
+        if (this.avoid_timer > 0) {
+            this.speed = 0;
+            this.heading += this.avoid_dir * this.avoid_turn_rate * delta_seconds;
+            this.avoid_timer = Math.max(0, this.avoid_timer - delta_seconds);
+        }
+
         // Drag: with no throttle or brake input, rolling resistance bleeds the
         // speed toward zero so the wagon coasts to a stop.
         if (this.coasting && delta_seconds > 0 && this.speed > 0) {
@@ -278,7 +323,8 @@ export class Wagon extends CGFGroup {
         // The axle pivots about its centre, so the two wheels arc in opposite
         // directions as the steering sweeps: the scrub subtracts on the right and
         // adds on the left, while both keep the shared forward roll.
-        this.frontWheelRotationRight = (this.frontWheelRotationRight + front_wheel_roll - steering_scrub) % (Math.PI * 2);
+        this.frontWheelRotationRight =
+            (this.frontWheelRotationRight + front_wheel_roll - steering_scrub) % (Math.PI * 2);
         this.frontWheelRotationLeft = (this.frontWheelRotationLeft + front_wheel_roll + steering_scrub) % (Math.PI * 2);
 
         this.under_body.update(this.wheelRotation, this.frontWheelRotationRight, this.frontWheelRotationLeft);
@@ -378,6 +424,7 @@ export class Wagon extends CGFGroup {
         // their shadow casting.
         if (!this._depth_pass) this.applyBodyShader();
         this.under_body._depth_pass = this._depth_pass;
+        this.cover._depth_pass = this._depth_pass;
 
         // -- Wagon body + chassis: drive around the world, tilted on the terrain
         //    so all four wheels track the ground.
@@ -426,24 +473,25 @@ export class Wagon extends CGFGroup {
         this.scene.popMatrix();
     }
 
-    // Activate the body shader and feed it the sun + shadow uniforms from the
-    // scene's shadow maps, so the body lights softly and takes terrain and self
-    // shadows. Falls back to a plain unshadowed look if shadows are off.
     applyBodyShader() {
-        this.scene.setActiveShader(this.body_shader);
-        const sm = this.scene.shadow_map;
-        if (!sm) return;
-        if (sm.enabled) sm.applyUniforms(this.body_shader);
-        else sm.disable(this.body_shader);
+        this.woodMaterial.apply();
     }
 
     displayHayBales() {
-        // Two bales turned 90° so they lie crosswise, stacked one on top of the
-        // other at the back of the wagon (relative to the body frame).
+        // The cargo shows exactly the bales the wagon is currently carrying (0–2),
+        // so the load you see matches the gameplay count. Pick up a bale and one
+        // appears; deliver at the barn and the bed empties.
+        const carried = this.scene.game_state ? this.scene.game_state.bales_carried : 0;
+        if (carried <= 0) return;
+
+        // Up to two bales turned 90° so they lie crosswise, stacked one on top of
+        // the other at the back of the wagon (relative to the body frame). The
+        // first bale carried fills the lower slot, the second stacks on top.
         const x = 0;
         const z = -2.6;
         const scale = 0.9;
-        const heights = [1.1, 2.7];
+        const slot_heights = [1.1, 2.7];
+        const heights = slot_heights.slice(0, carried);
 
         // The bale runs from local z = 0 to z = 3, so its centre sits at z = 1.5;
         // shift back by that after the turn to keep it centred across the wagon.

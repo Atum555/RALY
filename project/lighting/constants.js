@@ -20,7 +20,7 @@ export const TERRAIN_SHADOW_BIAS_MAX = 0.006;
 // centred on the wagon, at the wagon-centred LOD so it reuses the main pass's
 // fine tiles. Where a fragment is inside this map it overrides the whole-area map.
 export const TERRAIN_NEAR_SHADOW_SIZE = 8192;
-export const TERRAIN_NEAR_SHADOW_RADIUS = 350; // half-extent of the near map, world units
+export const TERRAIN_NEAR_SHADOW_RADIUS = 400; // half-extent of the near map, world units
 export const TERRAIN_NEAR_SHADOW_BIAS_MIN = 0.0008;
 export const TERRAIN_NEAR_SHADOW_BIAS_MAX = 0.004;
 // The near frustum sits up-sun of the wagon far enough to contain distant
@@ -32,7 +32,7 @@ export const TERRAIN_NEAR_SHADOW_BIAS_MAX = 0.004;
 export const TERRAIN_NEAR_SHADOW_SUN_FLOOR = 0.05;
 export const TERRAIN_NEAR_SHADOW_BACK_HEADROOM = 256; // world units beyond the terrain size
 
-export const WAGON_SHADOW_SIZE = 4096; // small + crisp; follows the wagon
-export const WAGON_SHADOW_RADIUS = 50; // half-extent of the wagon map, world units
+export const WAGON_SHADOW_SIZE = 8192; // small + crisp; follows the wagon
+export const WAGON_SHADOW_RADIUS = 100; // half-extent of the wagon map, world units
 export const WAGON_SHADOW_BIAS_MIN = 0.0008;
 export const WAGON_SHADOW_BIAS_MAX = 0.003;

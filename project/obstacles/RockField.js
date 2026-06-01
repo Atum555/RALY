@@ -5,7 +5,7 @@ import { ShadowedTexturedMaterial } from "../core/ShadowedTexturedMaterial.js";
 // -- Scatter tuning (all tunable) -------------------------------------------
 // How many rocks to place. A heavy scatter that reads as a genuine rock field
 // rather than the occasional boulder.
-const ROCK_COUNT = 850;
+const ROCK_COUNT = 1500;
 // Candidates are sampled in a square around the origin of this half-size
 // (world units). Kept well inside the 10000-unit terrain: it covers the area
 // the wagon actually drives through (where the path network lives) without

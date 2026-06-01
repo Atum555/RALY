@@ -4,16 +4,46 @@ precision highp float;
 
 varying vec3 v_normal;
 varying vec3 v_view_pos;
-varying vec3 v_color;            // flat petal/stem/leaf colour (baked per-vertex; the field is untextured)
+varying float v_local_y;
+varying vec2 v_world_xz;
 
 uniform vec3 u_sun_eye_dir;      // sun direction in eye space (the abstract sun)
 uniform vec3 u_moon_eye_dir;     // moon direction in eye space (cool night fill)
 uniform float u_sun_intensity;   // 0..1, faded to 0 over the 0 -> -2 deg horizon band
 uniform float u_moon_intensity;  // 0..1, faded to 0 over the 0 -> -2 deg horizon band
 
-const vec3 MOON_COLOR = vec3(0.12, 0.16, 0.26); // very dim, dark-cool moonlight
+const vec3 GRASS_TOP = vec3(0.57, 0.65, 0.15);  // bright, light blade tips
+const vec3 GRASS_BASE = vec3(0.24, 0.36, 0.11);  // softer, slightly shaded roots
+const vec3 MOON_COLOR = vec3(0.12, 0.16, 0.26);  // very dim, dark-cool moonlight
 
-// --- Sun shadows (same maps and uniforms as the terrain/wagon/hay shaders) ----
+// --- Dead grass: a rare scatter of dry, yellow-brown blades. A smooth value-noise
+// field over the world XZ decides how "dry" each spot is; only the top of that
+// field (above DEAD_THRESHOLD) tips a blade over into the dead colour, so dead
+// blades show up sparsely and cluster into small patches rather than speckling.
+const vec3 DEAD_TOP = vec3(0.82, 0.61, 0.3);   // sun-bleached straw tips
+const vec3 DEAD_BASE = vec3(0.42, 0.31, 0.05);  // browner, shaded dead roots
+const float DEAD_SCALE = 0.03;        // noise frequency: smaller => larger patches
+const float DEAD_THRESHOLD = 0.60;    // dryness above this starts to read as dead
+const float DEAD_SOFTNESS = 0.2;     // fade band above the threshold
+
+float hash21(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+}
+
+// Smooth value noise: bilinearly interpolate hashed lattice corners with a
+// smoothstep fade, so neighbouring blades share a dryness and patches stay coherent.
+float value_noise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    float a = hash21(i);
+    float b = hash21(i + vec2(1.0, 0.0));
+    float c = hash21(i + vec2(0.0, 1.0));
+    float d = hash21(i + vec2(1.0, 1.0));
+    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+
+// --- Sun shadows (same maps and uniforms as the terrain/wagon/flower shaders) --
 uniform bool u_shadow_enabled;
 uniform sampler2D u_terrain_shadow_map;
 uniform sampler2D u_terrain_near_shadow_map;
@@ -66,8 +96,9 @@ float terrain_shadow(vec3 view_pos, float ndl) {
     return fs < 0.0 ? 1.0 : fs;
 }
 
-// Sun visibility: the darker of the terrain maps (which now hold the flowers too,
-// so flowers shadow the ground and one another) and the wagon's own map.
+// Sun visibility: the darker of the terrain maps (which also hold the flowers,
+// hay bales and rocks) and the wagon's own map -- so the grass is shadowed by the
+// terrain, the wagon, and every other caster around it.
 float sun_shadow(vec3 view_pos, float ndl) {
     if(!u_shadow_enabled)
         return 1.0;
@@ -77,8 +108,8 @@ float sun_shadow(vec3 view_pos, float ndl) {
 }
 
 void main() {
-    // Petals are thin and drawn from both sides, so flip the normal to face the
-    // viewer -- the back of a petal lights like its front instead of going black.
+    // Blades are thin and drawn from both sides, so flip the normal to face the
+    // viewer -- the back of a blade lights like its front instead of going black.
     vec3 N = normalize(v_normal);
     if(!gl_FrontFacing)
         N = -N;
@@ -93,17 +124,30 @@ void main() {
     vec3 cast_L = u_sun_intensity >= u_moon_intensity ? L : Lm;
     float ndl_cast = max(dot(N, cast_L), 0.0);
 
-    // Flowers cast into the coarse near map (a texel spans many petals) and read
-    // it back, so push the lookup toward the light to clear their own depth, plus
-    // a small normal offset that grows at grazing angles -- otherwise the flat
-    // petals speckle with self-shadow acne.
+    // Grass does not cast into the maps itself; it only receives. Push the lookup
+    // slightly toward the light and along the normal so a blade reads the ground's
+    // shadow under it cleanly rather than speckling on the coarse near-map texels.
     vec3 sample_pos = v_view_pos + cast_L * 0.12 + N * (0.03 + 0.05 * (1.0 - ndl_cast));
     float shadow = sun_shadow(sample_pos, ndl_cast);
 
-    // Flat base colour: a fill that never goes black, plus the sun's diffuse that
-    // the shadow darkens, plus the same cool moon term the other surfaces use.
-    vec3 ambient = v_color * 0.35;
-    vec3 diffuse = v_color * ndl * shadow * 0.75 * u_sun_intensity;
-    vec3 moon = v_color * MOON_COLOR * moon_ndl * shadow * 0.75 * u_moon_intensity;
+    // Darken toward the root so the blades read as tufts rather than flat green.
+    float tip = clamp(v_local_y, 0.0, 1.0);
+    vec3 base = mix(GRASS_BASE, GRASS_TOP, tip);
+
+    // Rarely, dry out a blade into yellow-brown dead grass. The dryness comes from a
+    // smooth noise field keyed to the blade's world position, so the same blade is
+    // always (and wholly) dead, and dead blades clump into the odd patch.
+    float dryness = value_noise(v_world_xz * DEAD_SCALE);
+    float dead = smoothstep(DEAD_THRESHOLD, DEAD_THRESHOLD + DEAD_SOFTNESS, dryness);
+    base = mix(base, mix(DEAD_BASE, DEAD_TOP, tip), dead);
+
+    // A fill that never goes black, plus the sun's diffuse that the shadow darkens,
+    // plus the same cool moon term the other surfaces use. The blade normals are
+    // rounded toward up (see grass.vert), so every blade now catches the sun evenly
+    // like the ground does -- these weights are kept modest so the field sits at the
+    // terrain's brightness instead of glowing as if self-lit.
+    vec3 ambient = base * 0.12;
+    vec3 diffuse = base * ndl * shadow * 0.45 * u_sun_intensity;
+    vec3 moon = base * MOON_COLOR * moon_ndl * shadow * 0.75 * u_moon_intensity;
     gl_FragColor = vec4(ambient + diffuse + moon, 1.0);
 }

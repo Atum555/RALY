@@ -33,6 +33,7 @@ uniform float u_terrain_size;   // terrain full extent
 uniform bool u_marker_enabled;
 uniform vec2 u_marker_center;  // marker centre, terrain model coords
 uniform float u_marker_radius; // marker radius, model units
+uniform bool u_marker_active;  // wagon is currently parked on the disc
 
 // --- Two tiled PBR materials ------------------------------------------------
 // The open ground is rocky terrain; the dirt paths are gravelly sand. Each set
@@ -96,6 +97,7 @@ const vec3 SUN_COLOR = vec3(1.0, 0.96, 0.88);     // warm sunlight (used on the 
 const vec3 MOON_COLOR = vec3(0.12, 0.16, 0.26);   // very dim, dark-cool moonlight
 const vec3 SKY_AMBIENT = vec3(0.22, 0.25, 0.32);  // cool fill for shadowed dirt slopes
 const vec3 MARKER_COLOR = vec3(0.95, 0.92, 0.82);  // warm cream glow of the pickup disc
+const vec3 MARKER_ACTIVE_COLOR = vec3(0.35, 0.95, 0.45); // green glow while the wagon is on the disc
 const float MARKER_GLOW = 0.45;                     // how strongly the disc lights the ground
 
 // --- Value noise + fBm, so the grass varies without any image texture ---
@@ -436,7 +438,8 @@ void main() {
 
     // Light up the pickup disc: add a warm cream glow on top of the lit ground
     // rather than replacing it, so the rock/path texture still reads through.
-    lit_color += MARKER_COLOR * (MARKER_GLOW * pickup_marker());
+    vec3 marker_color = u_marker_active ? MARKER_ACTIVE_COLOR : MARKER_COLOR;
+    lit_color += marker_color * (MARKER_GLOW * pickup_marker());
 
     // Distance fog: fade the lit colour into the horizon colour over the
     // near..far band, so distant terrain dissolves into the sky.
