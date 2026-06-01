@@ -101,6 +101,23 @@ export class Scene extends CGFscene {
         this.CAM_TILT_RATE = 4.0; // tilt easing rate (1/s)
         this.CAM_TILT_GAIN = 0.9; // fraction of the wagon's slope to mirror
         this.CAM_PITCH_LIMIT = 1.4; // clamp on pitch (+tilt) so the rig can't go under the anchor or past overhead
+
+        // -- Collision camera shake --
+        // A hit injects "trauma" (0..1) that bleeds off each frame; every frame
+        // the camera position (and, lightly, its target) is jittered by an amount
+        // that grows with trauma², so a crash jolts the view and then settles.
+        // Raly mode multiplies the displacement so its crashes are wildly OTT.
+        this.cam_shake_trauma = 0;
+        this.CAM_SHAKE_DECAY = 1.6; // trauma shed per second
+        this.CAM_SHAKE_AMOUNT = 2.0; // world-units of jitter at full trauma
+        this.CAM_SHAKE_RALY_MULT = 7.0; // raly mode crashes shake this much harder
+    }
+
+    // Inject camera shake from a collision. `intensity` (0..1) stacks onto the
+    // current trauma (capped at 1); applyCameraShake() turns it into per-frame
+    // jitter. Raly mode exaggeration is applied at jitter time, not here.
+    triggerCameraShake(intensity = 1) {
+        this.cam_shake_trauma = Math.min(1, this.cam_shake_trauma + intensity);
     }
 
     initUIValues() {
@@ -278,13 +295,10 @@ export class Scene extends CGFscene {
         const left = this.gui.isKeyPressed("KeyA");
         const right = this.gui.isKeyPressed("KeyD");
 
-        // In raly mode the front axle faces backward, so steering is reversed.
-        const steer_dir = this.wagon._ralyMode ? -1 : 1;
-
         if (left && !right) {
-            this.wagon.steer(steer_step * steer_dir);
+            this.wagon.steer(steer_step);
         } else if (right && !left) {
-            this.wagon.steer(-steer_step * steer_dir);
+            this.wagon.steer(-steer_step);
         } else if (Math.abs(this.wagon.speed) > 0.01) {
             // Recenter the wheels while rolling with no steering input.
             // Snap to zero once we're within a step to avoid flickering past it.
@@ -552,6 +566,34 @@ export class Scene extends CGFscene {
         this.camera.fov += (target_fov - this.camera.fov) * kf;
 
         this.applyCamState();
+        this.applyCameraShake(dt);
+    }
+
+    // Jitter the camera by the current collision trauma, then decay it. Runs
+    // after applyCamState() rebuilds the clean position each frame, so the shake
+    // is a transient offset that never accumulates into the orbit state. The
+    // displacement scales with trauma² (small jolts stay subtle) and is blown up
+    // in raly mode for a wild, screen-rattling crash.
+    applyCameraShake(dt) {
+        if (this.cam_shake_trauma <= 0) return;
+
+        const raly = !!(this.wagon && this.wagon._ralyMode);
+        const amount = this.CAM_SHAKE_AMOUNT * (raly ? this.CAM_SHAKE_RALY_MULT : 1);
+        const shake = amount * this.cam_shake_trauma * this.cam_shake_trauma;
+
+        const rand = () => (Math.random() * 2 - 1) * shake;
+        const px = rand();
+        const py = rand();
+        const pz = rand();
+        const p = this.camera.position;
+        this.camera.setPosition(vec3.fromValues(p[0] + px, p[1] + py, p[2] + pz));
+
+        // Rattle the look target on its own (smaller, independent) offset so the
+        // view direction shudders rather than just sliding with the position.
+        const t = this.camera.target;
+        this.camera.setTarget(vec3.fromValues(t[0] + rand() * 0.35, t[1] + rand() * 0.35, t[2] + rand() * 0.35));
+
+        this.cam_shake_trauma = Math.max(0, this.cam_shake_trauma - this.CAM_SHAKE_DECAY * dt);
     }
 
     // Capture the orbit offset (yaw/pitch/distance) the user's mouse produced,

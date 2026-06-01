@@ -222,6 +222,12 @@ export class Wagon extends CGFGroup {
         const local_right = dx * Math.cos(this.heading) - dz * Math.sin(this.heading);
         this.avoid_dir = local_right > 0 ? -1 : local_right < 0 ? 1 : this.last_steered_dir || 1;
         this.avoid_timer = this.avoid_duration;
+
+        // Jolt the camera on impact; raly mode wildly exaggerates the shake
+        // (see Scene.triggerCameraShake / applyCameraShake).
+        if (this.scene && this.scene.triggerCameraShake) {
+            this.scene.triggerCameraShake(1);
+        }
     }
 
     // =====================================================
@@ -424,6 +430,7 @@ export class Wagon extends CGFGroup {
         // carry their own textured material, so forward the depth-pass flag for
         // their shadow casting.
         if (!this._depth_pass) this.applyBodyShader();
+        this.body._depth_pass = this._depth_pass;
         this.under_body._depth_pass = this._depth_pass;
         this.cover._depth_pass = this._depth_pass;
 
@@ -488,9 +495,15 @@ export class Wagon extends CGFGroup {
         this.body._ralyMode = true;
         this.under_body._ralyMode = true;
         this.under_body.direction._ralyMode = true;
+        
         this.base_max_speed = 200.0;
         this.boost_factor = 4.0;
         this.max_speed = this.base_max_speed;
+        this.acceleration_rate = 60.0;
+        this.braking_rate = 100.0;
+        this.drag_rate = 50.0;
+        this.max_steering_angle = Math.PI / 20;
+        this.min_steering_angle = -Math.PI / 20;
     }
 
     displayHayBales() {
