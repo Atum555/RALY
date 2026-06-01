@@ -2,6 +2,7 @@ import { CGFshader } from "../../lib/CGF.js";
 import { GrassBlade } from "./GrassBlade.js";
 import { GrassCellMesh } from "./GrassCellMesh.js";
 import { ValueNoise } from "../terrain/Noise.js";
+import { TERRAIN_NEAR_SHADOW_RADIUS } from "../lighting/constants.js";
 
 // Procedural grass scattered over the terrain's open grass, following the wagon.
 //
@@ -32,7 +33,10 @@ import { ValueNoise } from "../terrain/Noise.js";
 //
 // The grass shader receives the sun/moon and all three shadow maps (terrain,
 // near, wagon), so the blades are shadowed by the terrain, the wagon and every
-// other caster around them. It does not cast into the maps itself.
+// other caster around them. The blades also cast into the near map (and only
+// that one -- it follows the wagon, and the whole-terrain map is far too coarse
+// to resolve a blade), via a depth pass with its own wind-bent depth shader, so
+// the field drops crisp contact shadows on the ground and on itself.
 export class GrassPatch {
     constructor(scene, terrain) {
         this.scene = scene;
@@ -44,9 +48,9 @@ export class GrassPatch {
         // values (~0.08 -> ~80-unit waves) read as broad gusts rolling over the
         // meadow rather than fine ripples.
         this.windEnabled = true;
-        this.windStrength = 0.85;
-        this.windSpeed = 1.6;
-        this.windSpatialFreq = 0.08;
+        this.windStrength = 0.5;
+        this.windSpeed = 2.6;
+        this.windSpatialFreq = 0.05;
         this.windDir = [0.944, 0.330]; // normalized world wind direction (XZ)
         this.windTime = 0;
 
@@ -55,13 +59,13 @@ export class GrassPatch {
         // each bunch packs a hashed number of tufts (bunch_clumps_min..max) inside
         // a hashed radius (bunch_radius_min..max). Tufts cluster toward the bunch
         // core and thin at the rim, leaving bare ground between bunches.
-        this.cell_size = 16;          // world units per scatter cell
-        this.bunches_per_cell = 3;    // bunch centres a fully-grass cell seeds
+        this.cell_size = 20;          // world units per scatter cell
+        this.bunches_per_cell = 7;    // bunch centres a fully-grass cell seeds
         this.bunch_radius_min = 1.5;  // tight little bunch
         this.bunch_radius_max = 5.5;  // broad sprawling bunch
-        this.bunch_clumps_min = 6;    // sparse bunch
-        this.bunch_clumps_max = 20;   // dense bunch
-        this.base_scale = 0.6;        // before per-tuft size jitter
+        this.bunch_clumps_min = 5;    // sparse bunch
+        this.bunch_clumps_max = 25;   // dense bunch
+        this.base_scale = 0.65;        // before per-tuft size jitter
 
         // -- Soft grass edge (terrain path_dist) --
         // path_dist is 0 on a path centerline and 1 out on open grass. A clump's
@@ -76,19 +80,24 @@ export class GrassPatch {
         // frame. Cells are visited nearest-first, so the budget fills the nearest
         // cells solid and trims the most distant ones -- the grass stays dense
         // around the wagon and fades out at the budget frontier.
-        this.draw_radius = 1000;
-        this.draw_budget = 20000;
+        this.draw_radius = 600;
+        this.draw_budget = 150000;
 
         // Cap on cached cell meshes kept resident. The active set (cells inside the
         // budget frontier) is only a couple of hundred; the rest are cells the
         // wagon has driven past. When the cache outgrows this, the farthest cells
         // are evicted and their GL buffers freed.
-        this.max_cached_cells = 600;
+        this.max_cached_cells = 3500;
 
         // (cx,cz) -> { mesh: GrassCellMesh|null, tufts, cx, cz }. mesh is null for a
         // cell that baked no tufts (all dirt/path), cached so it isn't re-scattered.
         this.cellCache = new Map();
         this._normalViz = false;
+
+        // Set by ShadowMap.castGrass while the field is being rendered into the
+        // near shadow map: display() then swaps in the depth shader below instead
+        // of the lit one and emits only the bent silhouette.
+        this._depth_pass = false;
 
         // Deterministic noise for per-clump hashes (position, yaw, scale, variant,
         // and the keep-chance dither at the grass edge).
@@ -98,6 +107,20 @@ export class GrassPatch {
         // sun/moon + all three shadow maps exactly like the terrain/flower shaders.
         this.shader = new CGFshader(scene.gl, "grass/shaders/grass.vert", "grass/shaders/grass.frag");
         this.shader.setUniformsValues({
+            uTime: 0,
+            uWindEnabled: 0,
+            uWindStrength: this.windStrength,
+            uWindSpeed: this.windSpeed,
+            uWindSpatialFreq: this.windSpatialFreq,
+            uWindDir: this.windDir,
+        });
+
+        // Depth-only twin of the lit shader, used when the field casts into the
+        // near shadow map. It reproduces the same wind bend so the cast shadow
+        // sways with the blade; it takes the same aBase attribute and wind uniforms
+        // but writes no colour (the map captures hardware depth).
+        this.depthShader = new CGFshader(scene.gl, "grass/shaders/grass_depth.vert", "grass/shaders/grass_depth.frag");
+        this.depthShader.setUniformsValues({
             uTime: 0,
             uWindEnabled: 0,
             uWindStrength: this.windStrength,
@@ -342,13 +365,18 @@ export class GrassPatch {
 
     display() {
         const scene = this.scene;
+        const depth = this._depth_pass;
 
-        // Bind the grass shader once and feed it this frame's wind state plus the
-        // scene's sun/moon + shadow-map uniforms. These are identical for every
-        // cell, so they're set once here; the cell meshes carry their own world
-        // geometry, so there are no per-cell uniforms in the draw loop.
-        scene.setActiveShader(this.shader);
-        this.shader.setUniformsValues({
+        // Depth pass (ShadowMap.castGrass): swap in the depth-only twin and feed it
+        // this frame's wind state so the cast shadow bends with the blade. No
+        // shadow-map uniforms -- the grass only casts here, it does not receive.
+        // Main pass: bind the lit grass shader and feed it the wind state plus the
+        // scene's sun/moon + shadow-map uniforms. Either way the uniforms are
+        // identical for every cell, so they're set once here; the cell meshes carry
+        // their own world geometry, so there are no per-cell uniforms in the loop.
+        const shader = depth ? this.depthShader : this.shader;
+        scene.setActiveShader(shader);
+        shader.setUniformsValues({
             uTime: this.windTime,
             uWindEnabled: this.windEnabled ? 1 : 0,
             uWindStrength: this.windStrength,
@@ -356,10 +384,12 @@ export class GrassPatch {
             uWindSpatialFreq: this.windSpatialFreq,
             uWindDir: this.windDir,
         });
-        const sm = scene.shadow_map;
-        if (sm) {
-            if (sm.enabled) sm.applyUniforms(this.shader);
-            else sm.disable(this.shader);
+        if (!depth) {
+            const sm = scene.shadow_map;
+            if (sm) {
+                if (sm.enabled) sm.applyUniforms(this.shader);
+                else sm.disable(this.shader);
+            }
         }
 
         // Centre the grid on the wagon, like the terrain and the flower field (the
@@ -367,11 +397,16 @@ export class GrassPatch {
         const wx = scene.wagon ? scene.wagon.position_x : 0;
         const wz = scene.wagon ? scene.wagon.position_z : 0;
 
+        // The depth pass only needs the cells that can drop a shadow onto the near
+        // map's footprint, so it draws a tighter ring (the near radius plus a margin
+        // for the short shadows a blade just outside the edge casts inward); the lit
+        // pass draws out to the full visible reach.
         const cs = this.cell_size;
-        const reach = Math.ceil(this.draw_radius / cs);
+        const draw_radius = depth ? TERRAIN_NEAR_SHADOW_RADIUS + 4 * cs : this.draw_radius;
+        const reach = Math.ceil(draw_radius / cs);
         const wcx = Math.round(wx / cs);
         const wcz = Math.round(wz / cs);
-        const radius2 = this.draw_radius * this.draw_radius;
+        const radius2 = draw_radius * draw_radius;
 
         // Visit cells nearest-first (cached order) and draw whole cells until the
         // tuft budget is spent, so the nearest cells fill solid and the field fades
@@ -394,8 +429,13 @@ export class GrassPatch {
             }
         }
 
-        scene.setActiveShader(scene.defaultShader);
-        this.evictDistantCells(wx, wz);
+        // The depth pass leaves the active shader for ShadowMap.castGrass to restore
+        // (more casters follow it into the same map); only the main pass resets to
+        // the default shader and ages out distant cached cells.
+        if (!depth) {
+            scene.setActiveShader(scene.defaultShader);
+            this.evictDistantCells(wx, wz);
+        }
     }
 
     // Keep the cache bounded: once it outgrows max_cached_cells, drop the cells
@@ -419,16 +459,19 @@ export class GrassPatch {
     }
 
     // Offsets (dx, dz) of every cell within `reach`, sorted by distance from the
-    // centre cell. Cached per reach value (matches the flower field).
+    // centre cell. Cached per reach value: the depth pass (near footprint) and the
+    // lit pass (full draw reach) ask for different reaches every frame, so both are
+    // kept rather than recomputed and re-sorted as the two passes alternate.
     cellOrder(reach) {
-        if (this._cell_order_reach === reach) return this._cell_order;
-        const cells = [];
+        if (!this._cell_order) this._cell_order = new Map();
+        let cells = this._cell_order.get(reach);
+        if (cells) return cells;
+        cells = [];
         for (let dz = -reach; dz <= reach; dz++) {
             for (let dx = -reach; dx <= reach; dx++) cells.push([dx, dz]);
         }
         cells.sort((a, b) => a[0] * a[0] + a[1] * a[1] - (b[0] * b[0] + b[1] * b[1]));
-        this._cell_order = cells;
-        this._cell_order_reach = reach;
+        this._cell_order.set(reach, cells);
         return cells;
     }
 }

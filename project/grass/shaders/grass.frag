@@ -11,8 +11,8 @@ uniform vec3 u_moon_eye_dir;     // moon direction in eye space (cool night fill
 uniform float u_sun_intensity;   // 0..1, faded to 0 over the 0 -> -2 deg horizon band
 uniform float u_moon_intensity;  // 0..1, faded to 0 over the 0 -> -2 deg horizon band
 
-const vec3 GRASS_TOP = vec3(0.55, 0.82, 0.38);  // bright, light blade tips
-const vec3 GRASS_BASE = vec3(0.30, 0.52, 0.20);  // softer, slightly shaded roots
+const vec3 GRASS_TOP = vec3(0.57, 0.65, 0.15);  // bright, light blade tips
+const vec3 GRASS_BASE = vec3(0.24, 0.36, 0.11);  // softer, slightly shaded roots
 const vec3 MOON_COLOR = vec3(0.12, 0.16, 0.26);  // very dim, dark-cool moonlight
 
 // --- Sun shadows (same maps and uniforms as the terrain/wagon/flower shaders) --
@@ -106,9 +106,12 @@ void main() {
     vec3 base = mix(GRASS_BASE, GRASS_TOP, clamp(v_local_y, 0.0, 1.0));
 
     // A fill that never goes black, plus the sun's diffuse that the shadow darkens,
-    // plus the same cool moon term the other surfaces use.
-    vec3 ambient = base * 0.18;
-    vec3 diffuse = base * ndl * shadow * 0.75 * u_sun_intensity;
+    // plus the same cool moon term the other surfaces use. The blade normals are
+    // rounded toward up (see grass.vert), so every blade now catches the sun evenly
+    // like the ground does -- these weights are kept modest so the field sits at the
+    // terrain's brightness instead of glowing as if self-lit.
+    vec3 ambient = base * 0.12;
+    vec3 diffuse = base * ndl * shadow * 0.45 * u_sun_intensity;
     vec3 moon = base * MOON_COLOR * moon_ndl * shadow * 0.75 * u_moon_intensity;
     gl_FragColor = vec4(ambient + diffuse + moon, 1.0);
 }

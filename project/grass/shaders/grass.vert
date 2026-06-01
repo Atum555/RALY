@@ -60,6 +60,14 @@ void main() {
     vec4 view_pos = uMVMatrix * vec4(world_pos, 1.0);
     gl_Position = uPMatrix * view_pos;
     v_view_pos = view_pos.xyz;
-    v_normal = normalize((uNMatrix * vec4(aVertexNormal, 0.0)).xyz);
+
+    // A blade is a near-vertical triangle, so its geometric normal is almost
+    // horizontal, and the per-tuft yaw baked into the mesh sends it off in a
+    // random world direction. Under the directional sun that lit each tuft by the
+    // luck of which way it happened to face -- some blazing, some near-black. Round
+    // the lighting normal strongly toward world up so every blade is lit alike by
+    // the sun overhead; the root-to-tip gradient (v_local_y) still shapes the tuft.
+    vec3 rounded_normal = normalize(mix(normalize(aVertexNormal), vec3(0.0, 1.0, 0.0), 0.7));
+    v_normal = normalize((uNMatrix * vec4(rounded_normal, 0.0)).xyz);
     v_local_y = localY;
 }
