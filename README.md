@@ -1,18 +1,18 @@
-# CG 2025/2026 - Hollow Acres
+# Hollow Acres
 
-## Group T11G10
+## Team
 
-| Name              | Number    | E-Mail            |
-| ----------------- | --------- | ----------------- |
-| Cláudio Meireles  | 202306618 | up202306618@up.pt |
-| Miguel Pereira    | 202304387 | up202304387@up.pt |
-| Abecassis Devesse | 202209729 | up202209729@up.pt |
+| Name              | E-Mail            |
+| ----------------- | ----------------- |
+| Cláudio Meireles  | up202306618@up.pt |
+| Miguel Pereira    | up202304387@up.pt |
+| Abecassis Devesse | up202209729@up.pt |
 
 ---
 
 ## Project Description
 
-This project is an interactive 3D WebGL-based computer graphics simulation developed using the **WebCGF** library. It renders a vast, dynamic Spring Prairie Landscape environment where players control a historically styled Covered Wagon (Prairie Schooner) pulled by an animated horse team.
+This project is an interactive 3D WebGL-based simulation developed using the **WebCGF** library. It renders a vast, dynamic Spring Prairie Landscape environment where players control a historically styled Covered Wagon (Prairie Schooner) pulled by an animated horse team.
 
 The game is a survival time-trial: players must steer the wagon through procedural terrain, locate randomly spawned hay bales, and return them safely to the barn delivery zone to replenish their draining Health Points. The world is enriched with flora, a beautiful sky, rolling hills and ever growing terrain with a gust of wind flowing along.
 
