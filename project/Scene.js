@@ -10,6 +10,7 @@ import { ShadowMap } from "./lighting/ShadowMap.js";
 import { FpsCounter } from "./core/FpsCounter.js";
 import { patchCGFShaders } from "./core/patchCGFShaders.js";
 import { lerpAngle } from "./utils.js";
+import { GameState } from "./gameplay/GameState.js";
 import { FlowerField } from "./flowers/FlowerField.js";
 
 export class Scene extends CGFscene {
@@ -42,6 +43,7 @@ export class Scene extends CGFscene {
         this.initCamera();
         this.initUIValues();
         this.initObjects();
+        this.initGameplay();
     }
 
     initCamera() {
@@ -146,11 +148,66 @@ export class Scene extends CGFscene {
         ];
     }
 
+    initGameplay() {
+        this.game_state = new GameState();
+        this._game_over_logged = false;
+
+        // Barn delivery zone = the barn's pickup marker disc (the terrain already
+        // paints a glow there). Lift the barn-local pickup spot into world space.
+        const s = this.barn.barn_scale;
+        this.barn_zone_x = this.barn.pos_x + this.barn.pickup.x * s;
+        this.barn_zone_z = this.barn.pos_z + this.barn.pickup.z * s;
+        this.barn_zone_r = this.barn.pickup.r * s;
+        this.barn_delivered = false;
+
+        // Solid barn footprint (world half-extents) for wagon collision: the
+        // building's width/length scaled by barn_scale. The delivery zone sits
+        // just in front of the door, outside this box, so it stays reachable.
+        this.barn_half_x = (this.barn.width / 2) * s;
+        this.barn_half_z = (this.barn.length / 2) * s;
+
+        // The collectibles ARE the hay bales scattered across the field: the
+        // pickup logic marks a placement collected, and the field then hides that
+        // bale and drops its proximity arrow. Each placement is { x, y, z, yaw };
+        // the collected flag is added lazily on pickup.
+        this.bales = this.haybales.placements;
+        // Bales are also solid obstacles (block + damage like rocks): tag each
+        // with a per-bale cooldown and precompute its world-space box half-extents.
+        // The HayBale mesh is a unit-squircle cross-section (radius 1 -> half-width
+        // 1.0) extruded over a length of 3 and centred on the placement, so the
+        // local footprint is 1.0 across x and 1.5 along z; the field scales the
+        // whole bale. See GameState.checkBaleCollisions.
+        for (const bale of this.bales) bale.damageCooldown = 0;
+        this.bale_half_x = 1.0 * this.haybales.scale;
+        this.bale_half_z = 1.5 * this.haybales.scale;
+
+        // Hazard rocks: the wagon takes damage from the rocks scattered by the
+        // RockField, so the rocks the player sees are exactly the ones that hurt.
+        // Reuse the field's placements as the damage records, tagging each with a
+        // per-rock cooldown (see GameState.checkRockCollisions). The field already
+        // draws them, so there's no separate hazard-rock geometry.
+        this.rocks = this.rock_field.placements;
+        for (const rock of this.rocks) rock.damageCooldown = 0;
+
+        this.initHUD();
+    }
+
     // =====================================================
     // Update
     // =====================================================
 
     update() {
+        // Game over freezes the whole update loop (movement, HP drain, camera);
+        // display() keeps running, so the world stays on screen, frozen.
+        if (this.game_state && this.game_state.game_over) {
+            if (!this._game_over_logged) {
+                this._game_over_logged = true;
+                console.log("GAME OVER — Score: " + Math.floor(this.game_state.score));
+                this.showGameOverScreen();
+            }
+            return;
+        }
+
         // Calculate delta time
         const current_time = performance.now();
         this.delta_time = current_time - this.last_time;
@@ -169,6 +226,23 @@ export class Scene extends CGFscene {
 
         // Grass wind animation.
         this.grassPatch.update(this.delta_time);
+
+        // Gameplay: HP drain + score, rock damage. Bale pickup (P) and barn
+        // delivery (L) are both manual key actions — see UI.js.
+        const delta = this.delta_time / 1000.0;
+        this.game_state.update(delta);
+        this.game_state.checkRockCollisions(this.wagon, this.rocks, delta);
+        this.game_state.checkBaleCollisions(this.wagon, this.bales, this.bale_half_x, this.bale_half_z, delta);
+        this.game_state.checkBarnCollision(
+            this.wagon,
+            this.barn.pos_x,
+            this.barn.pos_z,
+            this.barn_half_x,
+            this.barn_half_z,
+            delta,
+        );
+
+        this.updateHUD();
     }
 
     applyWagonInput() {
@@ -208,6 +282,154 @@ export class Scene extends CGFscene {
             else if (this.wagon.steering_angle > 0) this.wagon.steer(-steer_step);
             else if (this.wagon.steering_angle < 0) this.wagon.steer(steer_step);
         }
+    }
+
+    // Build the on-screen HUD: a plain DOM bar pinned to the top of the screen
+    // showing the live health and score, layered over the canvas. Created once
+    // when gameplay starts; refreshed every frame by updateHUD().
+    initHUD() {
+        if (document.getElementById("game-hud")) return;
+
+        const hud = document.createElement("div");
+        hud.id = "game-hud";
+        Object.assign(hud.style, {
+            position: "fixed",
+            top: "0",
+            left: "0",
+            right: "0",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: "32px",
+            padding: "16px 24px",
+            boxSizing: "border-box",
+            color: "#fff",
+            fontFamily: "sans-serif",
+            fontSize: "22px",
+            fontWeight: "bold",
+            textShadow: "0 1px 3px rgba(0, 0, 0, 0.8)",
+            pointerEvents: "none",
+            zIndex: "900",
+        });
+
+        // Health (a coloured bar + readout) and score sit together, centred at the
+        // top of the screen.
+        const health = document.createElement("div");
+        Object.assign(health.style, { display: "flex", alignItems: "center", gap: "10px" });
+
+        const health_label = document.createElement("span");
+        health_label.textContent = "HP";
+
+        const health_track = document.createElement("div");
+        Object.assign(health_track.style, {
+            width: "200px",
+            height: "18px",
+            border: "2px solid #fff",
+            borderRadius: "9px",
+            overflow: "hidden",
+            background: "rgba(0, 0, 0, 0.3)",
+        });
+        this._hud_health_fill = document.createElement("div");
+        Object.assign(this._hud_health_fill.style, {
+            height: "100%",
+            width: "100%",
+            background: "#3cdc4b",
+            transition: "width 0.1s linear, background 0.2s linear",
+        });
+        health_track.appendChild(this._hud_health_fill);
+
+        this._hud_health_text = document.createElement("span");
+
+        health.append(health_label, health_track, this._hud_health_text);
+
+        this._hud_score = document.createElement("div");
+
+        hud.append(health, this._hud_score);
+        document.body.appendChild(hud);
+
+        this.updateHUD();
+    }
+
+    // Push the current HP/score into the HUD elements. Cheap enough to run every
+    // frame: it just sets a width and two text strings.
+    updateHUD() {
+        if (!this._hud_health_fill) return;
+
+        const hp = Math.max(0, Math.round(this.game_state.hp));
+        // Bar fills relative to max HP; colour keys off the same fraction.
+        const pct = (hp / this.game_state.max_hp) * 100;
+        this._hud_health_fill.style.width = pct + "%";
+        // Green when healthy, fading to red as it drains.
+        this._hud_health_fill.style.background = pct > 50 ? "#3cdc4b" : pct > 25 ? "#e0c020" : "#dc3c3c";
+        this._hud_health_text.textContent = hp;
+
+        this._hud_score.textContent = "Score: " + Math.floor(this.game_state.score) + " s";
+    }
+
+    // Build and show the game-over overlay (a plain DOM element layered over the
+    // canvas) once HP hits zero. The frozen world keeps rendering behind it. The
+    // Restart button just reloads the page, which rebuilds a fresh scene/run.
+    showGameOverScreen() {
+        if (document.getElementById("game-over-overlay")) return;
+
+        const overlay = document.createElement("div");
+        overlay.id = "game-over-overlay";
+        Object.assign(overlay.style, {
+            position: "fixed",
+            inset: "0",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "24px",
+            background: "rgba(0, 0, 0, 0.7)",
+            color: "#fff",
+            fontFamily: "sans-serif",
+            zIndex: "1000",
+        });
+
+        const title = document.createElement("div");
+        title.textContent = "GAME OVER";
+        Object.assign(title.style, { fontSize: "64px", fontWeight: "bold", letterSpacing: "4px" });
+
+        const score = document.createElement("div");
+        score.textContent = "Score: " + Math.floor(this.game_state.score) + " s";
+        Object.assign(score.style, { fontSize: "28px" });
+
+        const restart = document.createElement("button");
+        restart.textContent = "Restart";
+        Object.assign(restart.style, {
+            fontSize: "24px",
+            padding: "12px 36px",
+            cursor: "pointer",
+            border: "2px solid #fff",
+            borderRadius: "8px",
+            background: "transparent",
+            color: "#fff",
+            // Animate the hover state: grow slightly, invert to a filled look and
+            // glow. The transition makes both enter and leave ease smoothly.
+            transition: "transform 0.15s ease, background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease",
+        });
+        restart.onmouseenter = () => {
+            Object.assign(restart.style, {
+                transform: "scale(1.1)",
+                background: "#fff",
+                color: "#000",
+                boxShadow: "0 0 20px rgba(255, 255, 255, 0.6)",
+            });
+        };
+        restart.onmouseleave = () => {
+            Object.assign(restart.style, {
+                transform: "scale(1)",
+                background: "transparent",
+                color: "#fff",
+                boxShadow: "none",
+            });
+        };
+        restart.onclick = () => location.reload();
+
+        overlay.append(title, score, restart);
+        document.body.appendChild(overlay);
     }
 
     // Soft chase camera. See initCameras() for the overall design. The anchor
@@ -375,7 +597,11 @@ export class Scene extends CGFscene {
         // Barn
         this.barn.display();
 
-        // Props
+        // Scattered rocks on the grass and path shoulders. Drawn with the other
+        // ground obstacles, in world space (the terrain's -90deg X rotation has
+        // been popped above). The field activates its own textured, shadow-aware
+        // shader (so the rocks both receive and cast the sun's shadows), so no
+        // shader needs to be bound here first.
         this.rock_field.display();
         this.flower_field.display();
 
@@ -383,8 +609,11 @@ export class Scene extends CGFscene {
         // binds its own sun/shadow-aware shader and places each tile in world space.
         this.grassPatch.display();
 
-        // Hay bales
+        // Hay bales scattered along the paths — these are the collectibles
+        // (collected ones hide themselves).
         this.haybales.display();
+
+        // Proximity markers hovering over the uncollected bales near the wagon.
         this.haybales.displayArrows();
     }
 

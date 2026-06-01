@@ -13,12 +13,18 @@ export class UI extends CGFinterface {
         // https://github.com/dataarts/dat.gui/blob/master/API.md
         this.gui = new dat.GUI();
 
-        // == Scene ============================================
+        // == Game =============================================
         {
-            this.gui
-                .add(this.scene, "display_normals")
-                .name("Display Normals")
-                .onChange(on => (on ? this.scene.enableNormalViz() : this.scene.disableNormalViz()));
+            // Live gameplay telemetry: read-only, kept in sync via listen().
+            const gs = this.scene.game_state;
+            const game_controls = this.gui.addFolder("Game");
+            readonly(game_controls.add(gs, "hp").name("Health Points").listen());
+            readonly(game_controls.add(gs, "score").name("Score (s)").listen());
+            readonly(game_controls.add(gs, "bales_carried").name("Bales Carried").listen());
+            readonly(game_controls.add(gs, "total_bales_delivered").name("Bales Delivered").listen());
+            readonly(game_controls.add(gs, "last_damage").name("Last Damage").listen());
+            readonly(game_controls.add(gs, "last_heal").name("Last Heal").listen());
+            game_controls.open();
         }
 
         // == Camera ===========================================
@@ -39,6 +45,19 @@ export class UI extends CGFinterface {
                 .onChange(deg => {
                     this.scene.cam_fov_base = (deg * Math.PI) / 180;
                 });
+        }
+
+        // == Shadows ==========================================
+        {
+            // Sun/moon shadow maps. Each toggle gates one map independently: a
+            // disabled map skips its depth pass and is treated as lit, so the
+            // surfaces still light from the sun/moon. Off across the board skips
+            // the whole depth pass.
+            const shadow_map = this.scene.shadow_map;
+            const shadow_controls = this.gui.addFolder("Shadows");
+            shadow_controls.add(shadow_map, "terrain_shadows").name("Terrain");
+            shadow_controls.add(shadow_map, "terrain_detail_shadows").name("Terrain Detail");
+            shadow_controls.add(shadow_map, "wagon_shadows").name("Wagon");
         }
 
         // == Sky ==============================================
@@ -218,18 +237,15 @@ export class UI extends CGFinterface {
             fog_controls.add(terrain, "fog_end", 0, 20000).step(200).name("End");
         }
 
-        // == Lighting =========================================
+        // == Wagon ============================================
         {
-            // Sun/moon shadow maps. Each toggle gates one map independently: a
-            // disabled map skips its depth pass and is treated as lit, so the
-            // surfaces still light from the sun/moon. Off across the board skips
-            // the whole depth pass.
-            const shadow_map = this.scene.shadow_map;
-            const lighting_controls = this.gui.addFolder("Lighting");
-            const shadow_controls = lighting_controls.addFolder("Shadows");
-            shadow_controls.add(shadow_map, "terrain_shadows").name("Terrain");
-            shadow_controls.add(shadow_map, "terrain_detail_shadows").name("Terrain Detail");
-            shadow_controls.add(shadow_map, "wagon_shadows").name("Wagon");
+            const wagon = this.scene.wagon;
+            const wagon_controls = this.gui.addFolder("Wagon");
+
+            // Live driving telemetry, read-only and kept in sync via listen().
+            readonly(wagon_controls.add(wagon, "acceleration").name("Acceleration").listen());
+            readonly(wagon_controls.add(wagon, "speed").name("Speed").listen());
+            readonly(wagon_controls.add(wagon, "steering_angle_degrees").name("Steering Angle (deg)").listen());
         }
 
         // == Flower Field =====================================
@@ -246,26 +262,24 @@ export class UI extends CGFinterface {
             field_controls.add(field, "draw_budget", 50, 3000).step(20).name("Max Drawn");
         }
 
-        // == Wagon ============================================
-        {
-            const wagon = this.scene.wagon;
-            const wagon_controls = this.gui.addFolder("Wagon");
-
-            // Live driving telemetry, read-only and kept in sync via listen().
-            readonly(wagon_controls.add(wagon, "acceleration").name("Acceleration").listen());
-            readonly(wagon_controls.add(wagon, "speed").name("Speed").listen());
-            readonly(wagon_controls.add(wagon, "steering_angle_degrees").name("Steering Angle (deg)").listen());
-        }
-
         // == Grass ============================================
 
-        const grass = this.scene.grassPatch;
-        const grass_controls = this.gui.addFolder("Grass");
-        const wind_controls = grass_controls.addFolder("Wind");
-        wind_controls.add(grass, "windEnabled").name("Wind Enabled");
-        wind_controls.add(grass, "windStrength", 0, 2).step(0.1).name("Strength");
-        wind_controls.add(grass, "windSpeed", 0, 10).step(0.1).name("Speed");
-        wind_controls.add(grass, "windSpatialFreq", 0, 2).step(0.01).name("Spatial Freq");
+        {
+            const grass = this.scene.grassPatch;
+            const grass_controls = this.gui.addFolder("Grass");
+            grass_controls.add(grass, "windEnabled").name("Wind Enabled");
+            grass_controls.add(grass, "windStrength", 0, 2).step(0.1).name("Wind Strength");
+            grass_controls.add(grass, "windSpeed", 0, 10).step(0.1).name("Wind Speed");
+            grass_controls.add(grass, "windSpatialFreq", 0, 2).step(0.01).name("Wind Spatial Freq");
+        }
+
+        // == Scene ============================================
+        {
+            this.gui
+                .add(this.scene, "display_normals")
+                .name("Display Normals")
+                .onChange(on => (on ? this.scene.enableNormalViz() : this.scene.disableNormalViz()));
+        }
 
         this.initKeys();
         return true;
@@ -281,6 +295,23 @@ export class UI extends CGFinterface {
 
     processKeyDown(event) {
         this.activeKeys[event.code] = true;
+
+        // Gameplay: P picks up a nearby bale, L delivers carried bales at the barn.
+        if (this.scene.game_state) {
+            if (event.code === "KeyP") {
+                this.scene.game_state.checkBalePickup(this.scene.wagon, this.scene.bales);
+            }
+            if (event.code === "KeyL") {
+                // Deliver carried bales; only fires when the wagon is inside the
+                // barn drop-off circle (checkBarnDelivery does the zone check).
+                this.scene.barn_delivered = this.scene.game_state.checkBarnDelivery(
+                    this.scene.wagon,
+                    this.scene.barn_zone_x,
+                    this.scene.barn_zone_z,
+                    this.scene.barn_zone_r,
+                );
+            }
+        }
     }
 
     processKeyUp(event) {

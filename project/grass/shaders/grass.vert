@@ -36,6 +36,7 @@ uniform vec2  uWindDir;    // world-space wind direction (normalized), set once
 varying vec3 v_normal;   // view-space normal
 varying vec3 v_view_pos; // view-space position, for the shadow lookup
 varying float v_local_y; // local blade height (0 at the root), for root shading
+varying vec2 v_world_xz; // blade's world XZ (unbent), for the dead-patch noise
 
 void main() {
     vec2 worldXZ = aVertexPosition.xz;
@@ -70,4 +71,5 @@ void main() {
     vec3 rounded_normal = normalize(mix(normalize(aVertexNormal), vec3(0.0, 1.0, 0.0), 0.7));
     v_normal = normalize((uNMatrix * vec4(rounded_normal, 0.0)).xyz);
     v_local_y = localY;
+    v_world_xz = worldXZ; // unbent so a dead patch stays put on the ground
 }
