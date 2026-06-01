@@ -31,6 +31,10 @@ export class Direction extends CGFGroup {
         // instead of swapping in their textured look.
         this._depth_pass = false;
 
+        // Set by Wagon when the "raly" cheat is active: flips the axle 180°
+        // so the front wheels face backward and steering is visually reversed.
+        this._ralyMode = false;
+
         // horse.obj ships without vertex normals, so we derive smooth ones once it
         // has loaded (see ensureHorseNormals) before the lit shader can shade it.
         this._horse_normals_ready = false;
@@ -156,10 +160,13 @@ export class Direction extends CGFGroup {
     }
 
     displayBeams() {
-        // Longitudinal beam reaching forward from the rear axle cross beam
+        // Longitudinal beam reaching forward from the rear axle cross beam.
+        // Hidden in raly mode.
         this.scene.pushMatrix();
         this.scene.translate(0, 0, this.beam_length / 2);
-        this.beam.display();
+        if (!this._ralyMode) {
+            this.beam.display();
+        }
 
         // Back cross beam (the steering axle that carries the two front wheels)
         this.scene.pushMatrix();
