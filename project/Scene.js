@@ -42,6 +42,11 @@ export class Scene extends CGFscene {
         this.initCamera();
         this.initUIValues();
         this.initObjects();
+
+        this._ralySequence = ['KeyR', 'KeyA', 'KeyL', 'KeyY'];
+        this._ralySequenceIndex = 0;
+        this._ralyPrevKeys = {};
+        this._ralyInitialized = false;
     }
 
     initCamera() {
@@ -207,16 +212,47 @@ export class Scene extends CGFscene {
         const left = this.gui.isKeyPressed("KeyA");
         const right = this.gui.isKeyPressed("KeyD");
 
+        // In raly mode the front axle faces backward, so steering is reversed.
+        const steer_dir = this.wagon._ralyMode ? -1 : 1;
+
         if (left && !right) {
-            this.wagon.steer(steer_step);
+            this.wagon.steer(steer_step * steer_dir);
         } else if (right && !left) {
-            this.wagon.steer(-steer_step);
+            this.wagon.steer(-steer_step * steer_dir);
         } else if (Math.abs(this.wagon.speed) > 0.01) {
             // Recenter the wheels while rolling with no steering input.
             // Snap to zero once we're within a step to avoid flickering past it.
             if (Math.abs(this.wagon.steering_angle) <= steer_step) this.wagon.steer(-this.wagon.steering_angle);
             else if (this.wagon.steering_angle > 0) this.wagon.steer(-steer_step);
             else if (this.wagon.steering_angle < 0) this.wagon.steer(steer_step);
+        }
+
+        // -- "raly" cheat code sequence --
+        if (this.wagon && !this.wagon._ralyMode) {
+            if (!this._ralyInitialized) {
+                for (const key of this._ralySequence) {
+                    this._ralyPrevKeys[key] = this.gui.isKeyPressed(key);
+                }
+                this._ralyInitialized = true;
+            }
+
+            const expected = this._ralySequence[this._ralySequenceIndex];
+
+            for (const key of this._ralySequence) {
+                const prev = this._ralyPrevKeys[key] || false;
+                const curr = this.gui.isKeyPressed(key);
+                if (curr && !prev) {
+                    if (key === expected) {
+                        this._ralySequenceIndex++;
+                        if (this._ralySequenceIndex >= this._ralySequence.length) {
+                            this.wagon.activateRalyMode();
+                        }
+                    } else {
+                        this._ralySequenceIndex = 0;
+                    }
+                }
+                this._ralyPrevKeys[key] = curr;
+            }
         }
     }
 

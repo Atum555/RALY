@@ -31,6 +31,10 @@ export class Direction extends CGFGroup {
         // instead of swapping in their textured look.
         this._depth_pass = false;
 
+        // Set by Wagon when the "raly" cheat is active: flips the axle 180°
+        // so the front wheels face backward and steering is visually reversed.
+        this._ralyMode = false;
+
         // horse.obj ships without vertex normals, so we derive smooth ones once it
         // has loaded (see ensureHorseNormals) before the lit shader can shade it.
         this._horse_normals_ready = false;
@@ -110,6 +114,9 @@ export class Direction extends CGFGroup {
         this.scene.pushMatrix();
         // Steer the whole axle by the current steering angle. The horses are
         // drawn by Wagon in its own articulated frame (displayHorses), not here.
+        if (this._ralyMode) {
+            this.scene.rotate(Math.PI, 0, 1, 0);
+        }
         this.scene.rotate(this.steering_angle, 0, 1, 0);
         this.displayBeams();
         this.displayWheels();

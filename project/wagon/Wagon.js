@@ -141,6 +141,7 @@ export class Wagon extends CGFGroup {
         this.body_shader = new CGFshader(this.scene.gl, "wagon/shaders/wagon.vert", "wagon/shaders/wagon.frag");
         this.body_shader.setUniformsValues({ u_wagon_color: [0.62, 0.46, 0.34] });
         this._depth_pass = false;
+        this._ralyMode = false;
     }
 
     // =====================================================
@@ -393,7 +394,9 @@ export class Wagon extends CGFGroup {
         this.scene.translate(0, 2.4, 0);
         this.body.display();
 
-        this.cover.display();
+        if (!this._ralyMode) {
+            this.cover.display();
+        }
 
         // Cargo: the bales carry their own textured, shadow-aware shader. In the
         // depth pass they emit plain geometry under the active depth shader so they
@@ -405,7 +408,9 @@ export class Wagon extends CGFGroup {
         // -- Horse team: articulated off the wagon's front, following the terrain
         //    under their own feet (their own pitch + ground height) so the team
         //    stays on the ground while the wagon's axles do too.
-        this.displayHorses();
+        if (!this._ralyMode) {
+            this.displayHorses();
+        }
 
         if (!this._depth_pass) this.scene.setActiveShader(this.scene.defaultShader);
     }
@@ -435,6 +440,17 @@ export class Wagon extends CGFGroup {
         if (!sm) return;
         if (sm.enabled) sm.applyUniforms(this.body_shader);
         else sm.disable(this.body_shader);
+    }
+
+    activateRalyMode() {
+        if (this._ralyMode) return;
+        this._ralyMode = true;
+        this.body._ralyMode = true;
+        this.under_body._ralyMode = true;
+        this.under_body.direction._ralyMode = true;
+        this.base_max_speed = 200.0;
+        this.boost_factor = 4.0;
+        this.max_speed = this.base_max_speed;
     }
 
     displayHayBales() {

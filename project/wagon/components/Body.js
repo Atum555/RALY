@@ -1,6 +1,6 @@
 import { CGFGroup } from "../../core/CGFGroup.js";
 import { Board } from "./Board.js";
-
+import { CGFobjModel } from "../../../lib/extra/CGFobjModel.js";
 export class Body extends CGFGroup {
     // =====================================================
     // Init
@@ -13,6 +13,9 @@ export class Body extends CGFGroup {
         this.sideBoard = this.addPart(new Board(this.scene, 7.5, 1.65, 1.65));
         this.endBoard = this.addPart(new Board(this.scene, 1.5, 4.4, 4));
         this.foothold = this.addPart(new Board(this.scene, 4, 1, 1));
+
+        this.engine = new CGFobjModel(this.scene, "wagon/engine/2GR.obj")
+        this._ralyMode = false;
     }
 
     // =====================================================
@@ -40,6 +43,14 @@ export class Body extends CGFGroup {
         this.scene.rotate(Math.PI / 2, 0, 1, 0);
         this.foothold.display();
         this.scene.popMatrix();
+        if (this._ralyMode) {
+            this.scene.pushMatrix();
+            this.scene.translate(-4.5, 3.5, 5);
+            this.scene.rotate(Math.PI / 2, 1, 0, 0);
+            this.scene.scale(0.1, 0.1, 0.1);
+            this.engine.display();
+            this.scene.popMatrix();
+        }
     }
 
     displayEndBoard(z) {
