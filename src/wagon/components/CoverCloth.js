@@ -19,9 +19,9 @@ export class CoverCloth extends CGFobject {
 
         this.material = new ShadowedTexturedMaterial(
             this.scene,
-            "wagon/textures/fabric.jpg",
-            "wagon/shaders/wagon.vert",
-            "wagon/shaders/wagon.frag",
+            "src/wagon/textures/fabric.jpg",
+            "src/wagon/shaders/wagon.vert",
+            "src/wagon/shaders/wagon.frag",
             "u_wagon_texture",
         );
 

@@ -150,9 +150,9 @@ export class Wagon extends CGFGroup {
         // casting, so display() emits plain geometry then.
         this.woodMaterial = new ShadowedTexturedMaterial(
             this.scene,
-            "wagon/textures/wood.jpg",
-            "wagon/shaders/wagon.vert",
-            "wagon/shaders/wagon.frag",
+            "src/wagon/textures/wood.jpg",
+            "src/wagon/shaders/wagon.vert",
+            "src/wagon/shaders/wagon.frag",
             "u_wagon_texture",
         );
         this._depth_pass = false;

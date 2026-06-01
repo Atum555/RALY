@@ -91,7 +91,7 @@ export class ShadowMap {
         this.wagon_shadows = true;          // the wagon's own silhouette
 
         // Depth-only shader for both light passes.
-        this.depth_shader = new CGFshader(this.gl, "terrain/shaders/depth.vert", "terrain/shaders/depth.frag");
+        this.depth_shader = new CGFshader(this.gl, "src/terrain/shaders/depth.vert", "src/terrain/shaders/depth.frag");
 
         // --- Terrain map: whole terrain, re-rendered every frame ---
         this.terrain_size = TERRAIN_SHADOW_SIZE;

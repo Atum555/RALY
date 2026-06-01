@@ -34,9 +34,9 @@ export class HayBale extends CGFobject {
         // mip chain like the terrain materials.
         this.material = new ShadowedTexturedMaterial(
             this.scene,
-            "obstacles/textures/hay2.jpg",
-            "obstacles/shaders/haybale.vert",
-            "obstacles/shaders/haybale.frag",
+            "src/obstacles/textures/hay2.jpg",
+            "src/obstacles/shaders/haybale.vert",
+            "src/obstacles/shaders/haybale.frag",
             "u_hay_texture",
         );
     }

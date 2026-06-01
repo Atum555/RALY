@@ -55,13 +55,13 @@ export class Barn extends CGFGroup {
     // 8/9/10 (ShadowMap.applyUniforms), so they never collide.
     initMaterials() {
         const gl = this.scene.gl;
-        this.shader = new CGFshader(gl, "barn/shaders/barn.vert", "barn/shaders/barn.frag");
+        this.shader = new CGFshader(gl, "src/barn/shaders/barn.vert", "src/barn/shaders/barn.frag");
         this.shader.setUniformsValues({ uSampler: 0, uSampler2: 1, uSampler3: 2, uSampler4: 3, uAOStrength: 1.0 });
 
-        this.woodTex = new CGFtexture(this.scene, "barn/textures/wood.jpg");
-        this.doorTex = new CGFtexture(this.scene, "barn/textures/door.jpg");
-        this.windowTex = new CGFtexture(this.scene, "barn/textures/windows.jpg");
-        this.maskTex = new CGFtexture(this.scene, "barn/textures/mask.jpg");
+        this.woodTex = new CGFtexture(this.scene, "src/barn/textures/wood.jpg");
+        this.doorTex = new CGFtexture(this.scene, "src/barn/textures/door.jpg");
+        this.windowTex = new CGFtexture(this.scene, "src/barn/textures/windows.jpg");
+        this.maskTex = new CGFtexture(this.scene, "src/barn/textures/mask.jpg");
     }
 
     initComponents() {

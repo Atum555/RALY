@@ -1,0 +1,18 @@
+{
+    "name": "hollow-acres",
+    "version": "1.0.0",
+    "private": true,
+    "description": "Interactive 3D WebGL Spring Prairie simulation built with the WebCGF library (FEUP CG 2025/2026, group T11G10).",
+    "type": "module",
+    "scripts": {
+        "start": "serve . -l 8000",
+        "dev": "serve . -l 8000"
+    },
+    "devDependencies": {
+        "serve": "^14.2.4"
+    },
+    "engines": {
+        "node": ">=18"
+    },
+    "license": "UNLICENSED"
+}

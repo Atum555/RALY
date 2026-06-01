@@ -94,9 +94,9 @@ export class RockField extends CGFobject {
         // scene's sun + shadow-map uniforms (same maps as the bales/wagon body).
         this.material = new ShadowedTexturedMaterial(
             scene,
-            "obstacles/textures/rock.jpg",
-            "obstacles/shaders/rock.vert",
-            "obstacles/shaders/rock.frag",
+            "src/obstacles/textures/rock.jpg",
+            "src/obstacles/shaders/rock.vert",
+            "src/obstacles/shaders/rock.frag",
             "u_rock_texture",
         );
 

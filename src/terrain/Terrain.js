@@ -285,14 +285,14 @@ export class Terrain extends CGFGroup {
     initTextures() {
         // Open ground: rocky terrain. Dirt paths: gravelly sand. Each is a PBR set
         // (albedo + normal + packed ARM + displacement).
-        this.rock_diffuse_map = new CGFtexture(this.scene, "terrain/textures/rocky_terrain_02_diff_1k.png");
-        this.rock_normal_map = new CGFtexture(this.scene, "terrain/textures/rocky_terrain_02_nor_gl_1k.png");
-        this.rock_arm_map = new CGFtexture(this.scene, "terrain/textures/rocky_terrain_02_arm_1k.png");
-        this.rock_disp_map = new CGFtexture(this.scene, "terrain/textures/rocky_terrain_02_disp_1k.png");
-        this.path_diffuse_map = new CGFtexture(this.scene, "terrain/textures/gravelly_sand_diff_1k.png");
-        this.path_normal_map = new CGFtexture(this.scene, "terrain/textures/gravelly_sand_nor_gl_1k.png");
-        this.path_arm_map = new CGFtexture(this.scene, "terrain/textures/gravelly_sand_arm_1k.png");
-        this.path_disp_map = new CGFtexture(this.scene, "terrain/textures/gravelly_sand_disp_1k.png");
+        this.rock_diffuse_map = new CGFtexture(this.scene, "src/terrain/textures/rocky_terrain_02_diff_1k.png");
+        this.rock_normal_map = new CGFtexture(this.scene, "src/terrain/textures/rocky_terrain_02_nor_gl_1k.png");
+        this.rock_arm_map = new CGFtexture(this.scene, "src/terrain/textures/rocky_terrain_02_arm_1k.png");
+        this.rock_disp_map = new CGFtexture(this.scene, "src/terrain/textures/rocky_terrain_02_disp_1k.png");
+        this.path_diffuse_map = new CGFtexture(this.scene, "src/terrain/textures/gravelly_sand_diff_1k.png");
+        this.path_normal_map = new CGFtexture(this.scene, "src/terrain/textures/gravelly_sand_nor_gl_1k.png");
+        this.path_arm_map = new CGFtexture(this.scene, "src/terrain/textures/gravelly_sand_arm_1k.png");
+        this.path_disp_map = new CGFtexture(this.scene, "src/terrain/textures/gravelly_sand_disp_1k.png");
 
         // CGFtexture uploads with only a LINEAR min filter (no mip chain), so the
         // tiled ground aliases badly when minified into the distance.
@@ -313,7 +313,7 @@ export class Terrain extends CGFGroup {
     initShaders() {
         // Terrain shader: blends two tiled PBR materials (rocky ground, gravelly-sand
         // paths) under one directional sun, then fades into the sky with distance fog.
-        this.shader = new CGFshader(this.scene.gl, "terrain/shaders/terrain.vert", "terrain/shaders/terrain.frag");
+        this.shader = new CGFshader(this.scene.gl, "src/terrain/shaders/terrain.vert", "src/terrain/shaders/terrain.frag");
 
         this.shader.setUniformsValues({
             u_tex_repeat: TEX_REPEAT,

@@ -45,7 +45,7 @@ export class FlowerField {
         // Shadow-aware, untextured shader the field is lit with in the main pass.
         // It receives the sun/moon and all three shadow maps (terrain, near, wagon)
         // exactly like the terrain and wagon-cargo shaders, plus a per-group colour.
-        this.shadowShader = new CGFshader(scene.gl, "flowers/shaders/flower.vert", "flowers/shaders/flower.frag");
+        this.shadowShader = new CGFshader(scene.gl, "src/flowers/shaders/flower.vert", "src/flowers/shaders/flower.frag");
 
         // -- Scatter grid & density --
         // The field reads as broad flowering grass with denser bunches mixed in:

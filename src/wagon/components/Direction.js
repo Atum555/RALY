@@ -17,12 +17,12 @@ export class Direction extends CGFGroup {
 
         this.beam = this.addPart(new Beam(this.scene, this.beam_length, 0.2));
         this.wheel = this.addPart(new Wheel(this.scene));
-        this.horse = new CGFobjModel(this.scene, "wagon/horse/horse.obj");
+        this.horse = new CGFobjModel(this.scene, "src/wagon/horse/horse.obj");
         this.horseMaterial = new ShadowedTexturedMaterial(
             this.scene,
-            "wagon/horse/horse.jpg",
-            "wagon/shaders/horse.vert",
-            "wagon/shaders/horse.frag",
+            "src/wagon/horse/horse.jpg",
+            "src/wagon/shaders/horse.vert",
+            "src/wagon/shaders/horse.frag",
             "u_horse_texture",
         );
 

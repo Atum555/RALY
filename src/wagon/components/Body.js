@@ -15,14 +15,14 @@ export class Body extends CGFGroup {
         this.endBoard = this.addPart(new Board(this.scene, 1.5, 4.4, 4));
         this.foothold = this.addPart(new Board(this.scene, 4, 1, 1));
 
-        this.engine = new CGFobjModel(this.scene, "wagon/engine/2GR.obj");
+        this.engine = new CGFobjModel(this.scene, "src/wagon/engine/2GR.obj");
 
         // Procedural metallic, shadow-aware shader for the raly-mode engine block.
         // Unlike the wood body it carries no texture (the model has no UVs), so the
         // metal look is computed from the lighting; it reads and casts the same
         // sun/terrain/wagon shadows as the rest of the wagon. Fed the scene's shadow
         // and fog uniforms in applyEngineShader, mirroring ShadowedTexturedMaterial.
-        this.engineShader = new CGFshader(this.scene.gl, "wagon/shaders/engine.vert", "wagon/shaders/engine.frag");
+        this.engineShader = new CGFshader(this.scene.gl, "src/wagon/shaders/engine.vert", "src/wagon/shaders/engine.frag");
 
         // The engine .obj ships without vertex normals, so derive smooth ones once
         // it has loaded (see ensureEngineNormals) before the lit shader can shade it.

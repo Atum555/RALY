@@ -105,7 +105,7 @@ export class GrassPatch {
 
         // Shadow-aware, wind-bent shader the grass is lit with. It receives the
         // sun/moon + all three shadow maps exactly like the terrain/flower shaders.
-        this.shader = new CGFshader(scene.gl, "grass/shaders/grass.vert", "grass/shaders/grass.frag");
+        this.shader = new CGFshader(scene.gl, "src/grass/shaders/grass.vert", "src/grass/shaders/grass.frag");
         this.shader.setUniformsValues({
             uTime: 0,
             uWindEnabled: 0,
@@ -119,7 +119,7 @@ export class GrassPatch {
         // near shadow map. It reproduces the same wind bend so the cast shadow
         // sways with the blade; it takes the same aBase attribute and wind uniforms
         // but writes no colour (the map captures hardware depth).
-        this.depthShader = new CGFshader(scene.gl, "grass/shaders/grass_depth.vert", "grass/shaders/grass_depth.frag");
+        this.depthShader = new CGFshader(scene.gl, "src/grass/shaders/grass_depth.vert", "src/grass/shaders/grass_depth.frag");
         this.depthShader.setUniformsValues({
             uTime: 0,
             uWindEnabled: 0,

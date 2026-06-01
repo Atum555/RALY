@@ -38,7 +38,7 @@ export class Rock extends CGFobject {
         this.material.setDiffuse(0.7, 0.7, 0.7, 1);
         this.material.setSpecular(0.2, 0.2, 0.2, 1);
         this.material.setShininess(10.0);
-        this.material.loadTexture("obstacles/textures/rock.jpg");
+        this.material.loadTexture("src/obstacles/textures/rock.jpg");
         this.material.setTextureWrap("REPEAT", "REPEAT");
     }
 

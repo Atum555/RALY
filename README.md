@@ -62,16 +62,46 @@ The game is a survival time-trial: players must steer the wagon through procedur
 
 ---
 
+## Project Structure
+
+```
+.
+├── index.html          # Entry page — loads src/main.js as an ES module
+├── package.json        # Metadata + `npm start` dev-server script
+├── src/                # All application code and runtime assets (see src/README.md)
+└── docs/               # Screenshots / videos referenced below (see docs/README.md)
+```
+
+The source layout and the conventions for adding a new feature are documented in
+[src/README.md](src/README.md).
+
+---
+
 ## Execution Instructions
 
-To run this project locally, ensure you have a modern web browser with WebGL enabled and a local web server tool.
+This is a no-build project: a static file server and a modern WebGL-capable
+browser are all you need. `index.html` lives at the repository root and loads the
+code from `src/`.
 
-1. Clone or extract the contents of the project ZIP folder.
-2. Open your terminal in the directory containing `index.html`.
-3. Launch a local development server. For example, using Python:
-    ```bash
-    python -m http.server 8000
-    ```
+### Option A — npm (recommended)
+
+```bash
+npm install
+npm start          # serves the project at http://localhost:8000
+```
+
+### Option B — zero-install
+
+From the repository root (the directory containing `index.html`):
+
+```bash
+python -m http.server 8000
+```
+
+Then open <http://localhost:8000>.
+
+> Note: opening `index.html` directly via `file://` will not work — ES modules and
+> the shader/texture fetches require an HTTP server.
 
 ---
 

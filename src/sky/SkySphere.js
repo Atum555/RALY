@@ -122,7 +122,7 @@ export class SkySphere extends CGFobject {
     }
 
     initShaders() {
-        this.sphere_shader = new CGFshader(this.scene.gl, "sky/shaders/sky_sphere.vert", "sky/shaders/sky_sphere.frag");
+        this.sphere_shader = new CGFshader(this.scene.gl, "src/sky/shaders/sky_sphere.vert", "src/sky/shaders/sky_sphere.frag");
     }
 
     // =====================================================
