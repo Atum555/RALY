@@ -1,14 +1,4 @@
-# Hollow Acres
-
-## Team
-
-| Name              | E-Mail            |
-| ----------------- | ----------------- |
-| Cláudio Meireles  | up202306618@up.pt |
-| Miguel Pereira    | up202304387@up.pt |
-| Abecassis Devesse | up202209729@up.pt |
-
----
+# RALY
 
 ## Project Description
 
