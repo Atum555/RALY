@@ -50,7 +50,7 @@ export class FlowerField {
         // The field reads as broad flowering grass with denser bunches mixed in:
         // every grass cell grows at least base_per_cell flowers, and cells where
         // the density noise is high ramp up toward max_per_cell (a tight bunch).
-        this.cell_size = 60; // world units per scatter cell
+        this.cell_size = 50; // world units per scatter cell
         this.base_per_cell = 3; // flowers every grass cell grows (broad coverage)
         this.max_per_cell = 9; // flowers a fully-saturated cell spawns (bunch density)
         this.density_scale = 0.001; // noise frequency: smaller = larger bunches
@@ -60,11 +60,11 @@ export class FlowerField {
         // -- Draw reach (world units from the wagon) --
         // A single flat radius: every grass flower within it is drawn at full
         // detail, nothing beyond. No distance tiers, no distance thinning.
-        this.draw_radius = 750;
+        this.draw_radius = 600;
 
         // Safety cap on flowers drawn per frame. Cells are visited nearest-first
         // so the cap, if ever hit, only trims the most distant flowers.
-        this.draw_budget = 1400;
+        this.draw_budget = 800;
 
         // -- Size --
         this.base_scale = 1.7; // before per-flower jitter
@@ -186,15 +186,16 @@ export class FlowerField {
         // A primitive that never appears in the expansion (e.g. a leaf the
         // grammar didn't grow) leaves an empty group -- skip it, no draw.
         //
-        // Keep just the material's flat colour (RGB of its diffuse): the field is
-        // lit by its own shadow shader, not the CGFappearance, so a group is one
-        // colour uniform + one draw rather than a full appearance apply.
+        // Bake the material's flat colour (RGB of its diffuse) straight into the
+        // mesh as a per-vertex attribute: the field is lit by its own shadow
+        // shader, not the CGFappearance, so a group is a single coloured draw with
+        // no per-draw uniform or appearance apply.
         return groups
             .filter(g => g.indices.length > 0)
-            .map(g => ({
-                color: [g.material.diffuse[0], g.material.diffuse[1], g.material.diffuse[2]],
-                mesh: new BakedMesh(scene, g.vertices, g.normals, g.indices),
-            }));
+            .map(g => new BakedMesh(
+                scene, g.vertices, g.normals, g.indices,
+                [g.material.diffuse[0], g.material.diffuse[1], g.material.diffuse[2]],
+            ));
     }
 
     // =====================================================
@@ -209,7 +210,7 @@ export class FlowerField {
     // geometry, so the prototypes are never drawn.
     forEachBaked(fn) {
         for (const groups of this.baked) {
-            for (const b of groups) fn(b.mesh);
+            for (const mesh of groups) fn(mesh);
         }
     }
 
@@ -364,12 +365,10 @@ export class FlowerField {
             scene.rotate(f.rot, 0, 1, 0);
             scene.scale(f.scl, f.scl, f.scl);
             // Baked: ~3 draws per flower (stem, leaf, bloom) instead of replaying
-            // the whole L-system. The main pass sets each group's flat colour on
-            // the already-bound flower shader; the depth pass just emits geometry.
-            for (const b of baked) {
-                if (!this._depth_pass) this.shadowShader.setUniformsValues({ u_flower_color: b.color });
-                b.mesh.display();
-            }
+            // the whole L-system. Each group carries its own flat colour as a
+            // baked vertex attribute, so there is no per-draw uniform work in
+            // either pass -- just emit the geometry.
+            for (const mesh of baked) mesh.display();
             scene.popMatrix();
 
             count.n++;
