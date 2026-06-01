@@ -104,31 +104,3 @@ Then open <http://localhost:8000>.
 [SHIFT] -> Sprint Modifier : Hold down while pressing [W] to break speed limit thresholds.
 [P] -> Pick Up Hay Bale : Captures an adjacent targeted hay bale (max capacity: 2).
 [L] -> Drop / Unload Bale : Manually drops a hay bale inside the active delivery area.
-
----
-
-## Known Issues and Limitations
-
-- **Heavy Performance:** Due to the hefty size of the map and amount of vertices and normals present, this project needs the browser to be capable of using high performance mode and for the computer to have a dedicated GPU.
-- **Terrain Clipping:** Driving past the extreme boundaries of the generated heightmap terrain can cause the wagon model to clip through ground.
-
----
-
-## AI use declaration
-
-- **Mathematical Translation & Geometries**: AI was leveraged to translate complex analytical equations into functional WebGL code configurations. This was heavily utilized when calculating normal vectors for intricately structured objects to ensure accurate environmental lighting responses.
-- **Shader Optimization**: The development of custom GLSL shaders (such as the cloud textures) was facilitated by querying AI to isolate math algorithms rapidly, reducing debugging iterations.
-- **Prototyping & Automation**: Rapid scene prototyping was achieved by offloading repetitive structural code workflows to AI assistance. This included generating uniform structures for our custom object classes, setting up base parameters in our main scene, and auto-generating corresponding interface binders inside the DAT.gui controls.
-
----
-
-## Screenshots
-
-| Description                                                                                     | Preview Link                                             |
-| ----------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| Overall scene wide-angle view showing landscape boundaries and active projected shadows         | [project-t11g10-1.png](docs/images/project-t11g10-1.png) |
-| Close-up details of rocks, procedural flowers, and grass texturing showcasing active LOD levels | [project-t11g10-2.png](docs/images/project-t11g10-2.png) |
-| Wagon close-up showcasing hierarchical texturing and imported horse assets                      | [project-t11g10-3.png](docs/images/project-t11g10-3.png) |
-| Animated GIF showcasing the custom GLSL wind shader effect and shifting clouds                  | [project-t11g10-4.gif](docs/images/project-t11g10-4.gif) |
-| Night scenery, wide angle, with UI controls                                                     | [project-t11g10-5.png](docs/images/project-t11g10-5.png) |
-| Full project demo video                                                                         | [project-t11g10.mp4](docs/videos/project-t11g10.mp4)     |
