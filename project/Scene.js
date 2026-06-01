@@ -10,6 +10,7 @@ import { FpsCounter } from "./core/FpsCounter.js";
 import { patchCGFShaders } from "./core/patchCGFShaders.js";
 import { lerpAngle } from "./utils.js";
 import { GameState } from "./gameplay/GameState.js";
+import { FlowerField } from "./flowers/FlowerField.js";
 
 export class Scene extends CGFscene {
     // =====================================================
@@ -126,7 +127,20 @@ export class Scene extends CGFscene {
         // wagon sample the same maps. Built after the casters it renders.
         this.shadow_map = new ShadowMap(this);
 
-        this.all_objects = [this.sky_sphere, this.terrain, this.wagon, this.barn, this.haybales, this.rock_field];
+        // Scattered flower field: flowers throughout the grass, in clusters and
+        // singles, with distance LOD. It binds its own sun/shadow-aware shader
+        // internally (see FlowerField), so no scene light is needed.
+        this.flower_field = new FlowerField(this, this.terrain);
+
+        this.all_objects = [
+            this.sky_sphere,
+            this.terrain,
+            this.wagon,
+            this.barn,
+            this.haybales,
+            this.rock_field,
+            this.flower_field,
+        ];
     }
 
     initGameplay() {
@@ -575,19 +589,20 @@ export class Scene extends CGFscene {
         // Barn
         this.barn.display();
 
+        // Scattered rocks on the grass and path shoulders. Drawn with the other
+        // ground obstacles, in world space (the terrain's -90deg X rotation has
+        // been popped above). The field activates its own textured, shadow-aware
+        // shader (so the rocks both receive and cast the sun's shadows), so no
+        // shader needs to be bound here first.
+        this.rock_field.display();
+        this.flower_field.display();
+
         // Hay bales scattered along the paths — these are the collectibles
         // (collected ones hide themselves).
         this.haybales.display();
 
         // Proximity markers hovering over the uncollected bales near the wagon.
         this.haybales.displayArrows();
-
-        // Scattered rocks on the grass and path shoulders. Drawn with the other
-        // ground obstacles, in world space (the terrain's -90deg X rotation has
-        // been popped above). Like the hay bales, the field activates its own
-        // textured, shadow-aware shader (so the rocks both receive and cast the
-        // sun's shadows), so no shader needs to be bound here first.
-        this.rock_field.display();
     }
 
     // =====================================================

@@ -2,29 +2,18 @@
 precision highp float;
 #endif
 
-// Textured-wagon shader: samples the wood or fabric texture, lit by the abstract
-// sun (or dim moonlight), shadowed by the terrain + wagon shadow maps, and faded
-// into the distance fog — exactly like the hay-bale and terrain shaders.
-varying vec2 v_uv;
 varying vec3 v_normal;
 varying vec3 v_view_pos;
-varying float v_fog_depth;
 
-uniform sampler2D u_wagon_texture; // mipmapped wood or fabric diffuse
-uniform vec3 u_sun_eye_dir;        // sun direction in eye space (the abstract sun)
-uniform vec3 u_moon_eye_dir;       // moon direction in eye space (cool night fill)
-uniform float u_sun_intensity;     // direct sun strength: 1 by day, lifted as it sets, faded to 0 below the horizon
-uniform vec3 u_sun_tint;           // warm multiplier on the sunlight, white by day, orange as it sets
-uniform float u_moon_intensity;    // 0..1, faded to 0 over the 0 -> -2 deg horizon band
-
-uniform bool u_fog_enabled;        // distance-fog toggle (shared with the terrain)
-uniform vec3 u_fog_color;          // horizon colour the distance fades into
-uniform float u_fog_near;          // view depth where the fog begins
-uniform float u_fog_far;           // view depth where the fog is full
+uniform vec3 u_flower_color;     // flat petal/stem/leaf colour (the baked field is untextured)
+uniform vec3 u_sun_eye_dir;      // sun direction in eye space (the abstract sun)
+uniform vec3 u_moon_eye_dir;     // moon direction in eye space (cool night fill)
+uniform float u_sun_intensity;   // 0..1, faded to 0 over the 0 -> -2 deg horizon band
+uniform float u_moon_intensity;  // 0..1, faded to 0 over the 0 -> -2 deg horizon band
 
 const vec3 MOON_COLOR = vec3(0.12, 0.16, 0.26); // very dim, dark-cool moonlight
 
-// --- Sun shadows (same maps and uniforms as the terrain/wagon shaders) -------
+// --- Sun shadows (same maps and uniforms as the terrain/wagon/hay shaders) ----
 uniform bool u_shadow_enabled;
 uniform sampler2D u_terrain_shadow_map;
 uniform sampler2D u_terrain_near_shadow_map;
@@ -77,8 +66,8 @@ float terrain_shadow(vec3 view_pos, float ndl) {
     return fs < 0.0 ? 1.0 : fs;
 }
 
-// Sun visibility: the darker of the terrain shadow and the wagon's own map (the
-// wagon map holds the hay too, so the body shadows itself and the cargo).
+// Sun visibility: the darker of the terrain maps (which now hold the flowers too,
+// so flowers shadow the ground and one another) and the wagon's own map.
 float sun_shadow(vec3 view_pos, float ndl) {
     if(!u_shadow_enabled)
         return 1.0;
@@ -88,43 +77,33 @@ float sun_shadow(vec3 view_pos, float ndl) {
 }
 
 void main() {
-    vec3 texel = texture2D(u_wagon_texture, v_uv).rgb;
-
+    // Petals are thin and drawn from both sides, so flip the normal to face the
+    // viewer -- the back of a petal lights like its front instead of going black.
     vec3 N = normalize(v_normal);
+    if(!gl_FrontFacing)
+        N = -N;
+
     vec3 L = normalize(u_sun_eye_dir);
     vec3 Lm = normalize(u_moon_eye_dir);
     float ndl = max(dot(N, L), 0.0);
     float moon_ndl = max(dot(N, Lm), 0.0);
 
-    // The shadow maps cast from whichever light is above the horizon; bias the
-    // lookup against that active caster's grazing angle.
+    // The maps cast from whichever light is above the horizon; bias against that
+    // active caster's grazing angle.
     vec3 cast_L = u_sun_intensity >= u_moon_intensity ? L : Lm;
     float ndl_cast = max(dot(N, cast_L), 0.0);
 
-    // Small normal-offset bias. The wagon depth map stores back faces (front-face
-    // culling), so self-shadow acne is already prevented geometrically and the
-    // offset can stay tiny — keeping component-to-component shadows crisp. A faint
-    // grazing term still guards against terrain shadows acne-ing on the body.
-    vec3 sample_pos = v_view_pos + N * (0.02 + 0.05 * (1.0 - ndl_cast));
-
+    // Flowers cast into the coarse near map (a texel spans many petals) and read
+    // it back, so push the lookup toward the light to clear their own depth, plus
+    // a small normal offset that grows at grazing angles -- otherwise the flat
+    // petals speckle with self-shadow acne.
+    vec3 sample_pos = v_view_pos + cast_L * 0.12 + N * (0.03 + 0.05 * (1.0 - ndl_cast));
     float shadow = sun_shadow(sample_pos, ndl_cast);
 
-    // Texture-based Lambert: each face's brightness tracks its own normal, so the
-    // flat facets read crisply — like the solid-colour wagon shader, but sampled
-    // from the wood (or fabric) texture. A cool ambient fill keeps shadowed faces
-    // from going black, and the moon adds a dim second directional term at night.
-    vec3 ambient = texel * 0.3;
-    vec3 diffuse = texel * u_sun_tint * ndl * shadow * 0.7 * u_sun_intensity;
-    vec3 moon = texel * MOON_COLOR * moon_ndl * shadow * 0.7 * u_moon_intensity;
-    vec3 color = ambient + diffuse + moon;
-
-    // Distance fog: fade into the horizon colour over the near..far band, exactly
-    // as the terrain shader does (same uniforms, same -view_pos.z depth), so the
-    // wagon dissolves into the same haze as the ground it rides on.
-    if(u_fog_enabled) {
-        float fog = smoothstep(u_fog_near, u_fog_far, v_fog_depth);
-        color = mix(color, u_fog_color, fog);
-    }
-
-    gl_FragColor = vec4(color, 1.0);
+    // Flat base colour: a fill that never goes black, plus the sun's diffuse that
+    // the shadow darkens, plus the same cool moon term the other surfaces use.
+    vec3 ambient = u_flower_color * 0.35;
+    vec3 diffuse = u_flower_color * ndl * shadow * 0.75 * u_sun_intensity;
+    vec3 moon = u_flower_color * MOON_COLOR * moon_ndl * shadow * 0.75 * u_moon_intensity;
+    gl_FragColor = vec4(ambient + diffuse + moon, 1.0);
 }
