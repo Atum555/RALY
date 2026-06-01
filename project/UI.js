@@ -232,16 +232,6 @@ export class UI extends CGFinterface {
             shadow_controls.add(shadow_map, "wagon_shadows").name("Wagon");
         }
 
-        // == Tulip ============================================
-
-        const tulip = this.scene.tulip;
-        const tulip_controls = this.gui.addFolder("Tulip");
-        tulip_controls.add(tulip, "axiom").name("Axiom");
-        tulip_controls.add(tulip, "angle", 0, 90).name("Angle");
-        tulip_controls.add(tulip, "iterations", 1, 6).step(1).name("Iterations");
-        tulip_controls.add(tulip, "scaleFactor", 0.1, 1).name("Scale Factor");
-        tulip_controls.add(tulip, "init").name("Regenerate");
-
         // == Flower Field =====================================
         {
             const field = this.scene.flower_field;
