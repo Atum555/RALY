@@ -104,10 +104,10 @@ To run this project locally, ensure you have a modern web browser with WebGL ena
 
 ## Screenshots
 
-| Screenshot Reference | Description                                                                                     | Preview Link       |
-| -------------------- | ----------------------------------------------------------------------------------------------- | ------------------ |
-| **Screenshot 1**     | Overall scene wide-angle view showing landscape boundaries and active projected shadows         | `project-tg-1.png` |
-| **Screenshot 2**     | Close-up details of rocks, procedural flowers, and grass texturing showcasing active LOD levels | `project-tg-2.png` |
-| **Screenshot 3**     | Wagon close-up showcasing hierarchical texturing and imported horse assets                      | `project-tg-3.png` |
-| **Screenshot 4**     | Animated GIF showcasing the custom GLSL wind shader effect and shifting clouds                  | `project-tg-4.gif` |
-| **Screenshot 5**     | Gameplay in action highlighting UI elements, Day/Night lighting state transitions, and DAT.gui  | `project-tg-5.png` |
+| Description                                                                                     | Preview Link       |
+| ----------------------------------------------------------------------------------------------- | ------------------ |
+| Overall scene wide-angle view showing landscape boundaries and active projected shadows         | [project-t11g10-1.png](docs/images/project-t11g10-1.png) |
+| Close-up details of rocks, procedural flowers, and grass texturing showcasing active LOD levels | [project-t11g10-2.png](docs/images/project-t11g10-2.png) |
+| Wagon close-up showcasing hierarchical texturing and imported horse assets                      | [project-t11g10-3.png](docs/images/project-t11g10-3.png) |
+| Animated GIF showcasing the custom GLSL wind shader effect and shifting clouds                  | [project-t11g10-4.gif](docs/images/project-t11g10-4.gif) |
+| Night scenery, wide angle, with UI controls                                                     | [project-t11g10-5.png](docs/images/project-t11g10-5.png) |
